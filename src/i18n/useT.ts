@@ -74,6 +74,12 @@ type TranslationKey =
   | 'graphs.emptyGraphs'
   | 'graphs.noItemsSelected'
   
+  // Settings screen
+  | 'settings.title'
+  | 'settings.sereusConnections'
+  | 'settings.reminders'
+  | 'settings.futureFeatures'
+  
   // Sereus screen
   | 'sereus.title'
   | 'sereus.cadreNodes'
@@ -82,6 +88,12 @@ type TranslationKey =
   | 'sereus.removeNode'
   | 'sereus.scanQR'
   | 'sereus.emptyNodes'
+  
+  // Reminders screen
+  | 'reminders.title'
+  | 'reminders.interval'
+  | 'reminders.off'
+  | 'reminders.hours'
   
   // SelectionList component
   | 'selectionList.filterPlaceholder'
@@ -170,14 +182,26 @@ const translations: Record<TranslationKey, string> = {
   'graphs.emptyGraphs': 'No graphs yet',
   'graphs.noItemsSelected': 'Select at least one item to generate a graph',
   
+  // Settings screen
+  'settings.title': 'Settings',
+  'settings.sereusConnections': 'Sereus Connections',
+  'settings.reminders': 'Reminders',
+  'settings.futureFeatures': 'Coming Soon',
+  
   // Sereus screen
-  'sereus.title': 'Sereus',
+  'sereus.title': 'Sereus Connections',
   'sereus.cadreNodes': 'My Nodes',
   'sereus.guestNodes': 'Guest Nodes',
   'sereus.addNode': 'Add node',
   'sereus.removeNode': 'Remove node',
   'sereus.scanQR': 'Scan QR code',
   'sereus.emptyNodes': 'No nodes yet',
+  
+  // Reminders screen
+  'reminders.title': 'Reminders',
+  'reminders.interval': 'Remind me if I haven\'t logged anything in:',
+  'reminders.off': 'Off',
+  'reminders.hours': '{count} hours',
   
   // SelectionList component
   'selectionList.filterPlaceholder': 'Filter...',

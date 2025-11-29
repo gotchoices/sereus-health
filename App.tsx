@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import LogHistory from './src/screens/LogHistory';
+import Graphs from './src/screens/Graphs';
+import Settings from './src/screens/Settings';
+import SereusConnections from './src/screens/SereusConnections';
+import Reminders from './src/screens/Reminders';
 
-type Screen = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog' | 'Graphs' | 'SereusConnections';
+type Screen = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog' | 'Graphs' | 'Settings' | 'SereusConnections' | 'Reminders';
 type Tab = 'home' | 'catalog' | 'settings';
 
 interface EditParams {
@@ -48,9 +52,17 @@ function App(): React.JSX.Element {
         setCurrentScreen('ConfigureCatalog');
         break;
       case 'settings':
-        setCurrentScreen('SereusConnections');
+        setCurrentScreen('Settings');
         break;
     }
+  };
+
+  const handleOpenSereus = () => {
+    setCurrentScreen('SereusConnections');
+  };
+
+  const handleOpenReminders = () => {
+    setCurrentScreen('Reminders');
   };
 
   const handleBack = () => {
@@ -63,7 +75,7 @@ function App(): React.JSX.Element {
         setCurrentScreen('ConfigureCatalog');
         break;
       case 'settings':
-        setCurrentScreen('SereusConnections');
+        setCurrentScreen('Settings');
         break;
     }
   };
@@ -83,15 +95,29 @@ function App(): React.JSX.Element {
           />
         );
       
-      // TODO: Implement other screens
+      case 'Graphs':
+        return <Graphs onBack={handleBack} />;
+      
+      case 'Settings':
+        return (
+          <Settings
+            onNavigateTab={handleNavigateTab}
+            onOpenSereus={handleOpenSereus}
+            onOpenReminders={handleOpenReminders}
+          />
+        );
+      
+      case 'SereusConnections':
+        return <SereusConnections onBack={handleBack} />;
+      
+      case 'Reminders':
+        return <Reminders onBack={handleBack} />;
+      
+      // TODO: Implement remaining screens
       // case 'EditEntry':
       //   return <EditEntry {...editParams} onBack={handleBack} />;
       // case 'ConfigureCatalog':
-      //   return <ConfigureCatalog onBack={handleBack} />;
-      // case 'Graphs':
-      //   return <Graphs onBack={handleBack} />;
-      // case 'SereusConnections':
-      //   return <SereusConnections onBack={handleBack} />;
+      //   return <ConfigureCatalog onBack={handleBack} onNavigateTab={handleNavigateTab} />;
       
       default:
         return (
