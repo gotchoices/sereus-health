@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import LogHistory from './src/screens/LogHistory';
+import { EditEntry } from './src/screens/EditEntry';
 import ConfigureCatalog from './src/screens/ConfigureCatalog';
 import Graphs from './src/screens/Graphs';
 import Settings from './src/screens/Settings';
@@ -117,9 +118,14 @@ function App(): React.JSX.Element {
       case 'ConfigureCatalog':
         return <ConfigureCatalog onBack={handleBack} />;
       
-      // TODO: Implement remaining screens
-      // case 'EditEntry':
-      //   return <EditEntry {...editParams} onBack={handleBack} />;
+      case 'EditEntry':
+        return (
+          <EditEntry
+            mode={editParams?.mode ?? 'new'}
+            entryId={editParams?.entryId}
+            onBack={handleBack}
+          />
+        );
       
       default:
         return (
