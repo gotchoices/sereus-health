@@ -1,0 +1,11 @@
+{
+  "route": "ConfigureCatalog",
+  "variants": ["happy", "empty", "error"],
+  "files": {
+    "happy": "configure-catalog.happy.json",
+    "empty": "configure-catalog.empty.json",
+    "error": "configure-catalog.error.json"
+  }
+}
+
+

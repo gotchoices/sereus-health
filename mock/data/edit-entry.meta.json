@@ -1,0 +1,10 @@
+{
+  "route": "EditEntry",
+  "variants": ["happy", "error"],
+  "files": {
+    "happy": "edit-entry.happy.json",
+    "error": "edit-entry.error.json"
+  }
+}
+
+

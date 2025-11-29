@@ -1,0 +1,13 @@
+{
+  "id": "1",
+  "mode": "edit",
+  "type": "Activity",
+  "title": "Breakfast: omelette, toast, orange juice",
+  "timestamp": "2025-01-01T08:00:00.000Z",
+  "comment": "Felt good after this breakfast.",
+  "quantifiers": [
+    { "label": "Portion size", "value": 2, "units": "plates" }
+  ]
+}
+
+

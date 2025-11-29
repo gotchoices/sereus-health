@@ -4,11 +4,19 @@ import { getLogHistoryMock, LogEntry } from '../data/logHistory';
 import { useT } from '../i18n/useT';
 
 type Props = {
-  // Navigation props will be injected by the navigator in real app; kept loose for now
+  // Navigation props will be injected by a navigator in the future.
   navigation?: any;
+  onAddNew?: () => void;
+  onClone?: (entryId: string) => void;
+  onOpenCatalog?: () => void;
 };
 
-export const LogHistory: React.FC<Props> = ({ navigation }) => {
+export const LogHistory: React.FC<Props> = ({
+  navigation,
+  onAddNew,
+  onClone,
+  onOpenCatalog,
+}) => {
   const t = useT();
   // For now we always use the "happy" mock variant; later this will be wired
   // to a mock/variant context and deep links per Appeus guidance.
@@ -16,11 +24,19 @@ export const LogHistory: React.FC<Props> = ({ navigation }) => {
   const hasEntries = entries.length > 0;
 
   const handleAdd = () => {
-    navigation?.navigate?.('EditEntry');
+    if (onAddNew) {
+      onAddNew();
+    } else {
+      navigation?.navigate?.('EditEntry');
+    }
   };
 
   const handleClone = (entry: LogEntry) => {
-    navigation?.navigate?.('EditEntry', { mode: 'clone', entryId: entry.id });
+    if (onClone) {
+      onClone(entry.id);
+    } else {
+      navigation?.navigate?.('EditEntry', { mode: 'clone', entryId: entry.id });
+    }
   };
 
   const renderItem = ({ item }: { item: LogEntry }) => {
@@ -41,9 +57,19 @@ export const LogHistory: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t('logHistory.header.title')}</Text>
-        <TouchableOpacity style={styles.addButton} onPress={handleAdd}>
-          <Text style={styles.addButtonText}>{t('logHistory.header.add')}</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.catalogButton}
+            onPress={onOpenCatalog}
+            disabled={!onOpenCatalog}>
+            <Text style={styles.catalogButtonText}>
+              {t('logHistory.header.catalog')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.addButton} onPress={handleAdd}>
+            <Text style={styles.addButtonText}>{t('logHistory.header.add')}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {hasEntries ? (
@@ -75,14 +101,25 @@ const styles = StyleSheet.create({
     paddingTop: 54,
     paddingHorizontal: 20,
     paddingBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
   headerTitle: {
     color: '#ffffff',
     fontSize: 24,
     fontWeight: '600',
+  },
+  headerActions: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  catalogButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  catalogButtonText: {
+    color: '#9ca3af',
+    fontSize: 13,
   },
   addButton: {
     paddingHorizontal: 16,

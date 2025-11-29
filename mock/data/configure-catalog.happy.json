@@ -1,0 +1,25 @@
+{
+  "items": [
+    { "id": "item-carrots", "name": "Carrots", "type": "Activity", "category": "Eating" },
+    { "id": "item-lettuce", "name": "Lettuce", "type": "Activity", "category": "Eating" },
+    { "id": "item-bacon", "name": "Bacon", "type": "Activity", "category": "Eating" },
+    { "id": "item-tomato", "name": "Tomato", "type": "Activity", "category": "Eating" },
+    { "id": "item-bread", "name": "Bread", "type": "Activity", "category": "Eating" },
+    { "id": "item-mayo", "name": "Mayonnaise", "type": "Activity", "category": "Eating" }
+  ],
+  "groups": [
+    {
+      "id": "group-blt",
+      "name": "BLT",
+      "itemIds": [
+        "item-bacon",
+        "item-lettuce",
+        "item-tomato",
+        "item-bread",
+        "item-mayo"
+      ]
+    }
+  ]
+}
+
+
