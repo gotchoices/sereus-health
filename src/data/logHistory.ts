@@ -1,25 +1,67 @@
-import happyJson from '../../mock/data/log-history.happy.json';
-import emptyJson from '../../mock/data/log-history.empty.json';
+/**
+ * Data adapter for LogHistory screen
+ * Provides typed interface to mock data and (future) real data sources
+ */
 
-export type LogEntry = {
+// Static imports for Metro bundler (doesn't support dynamic require)
+import happyData from '../../mock/data/log-history.happy.json';
+import emptyData from '../../mock/data/log-history.empty.json';
+import errorData from '../../mock/data/log-history.error.json';
+
+export interface LogEntryItem {
   id: string;
-  type: string;
-  title: string;
-  timestamp: string; // ISO string in UTC
-};
-
-// In a fuller implementation we would respect a mock/variant context and engine APIs.
-// For now, this adapter reads from static mock JSON files under mock/data.
-const happyData = happyJson as LogEntry[];
-const emptyData = emptyJson as LogEntry[];
-
-export type LogHistoryVariant = 'happy' | 'empty';
-
-export function getLogHistoryMock(variant: LogHistoryVariant = 'happy'): LogEntry[] {
-  if (variant === 'empty') {
-    return emptyData;
-  }
-  return happyData;
+  name: string;
+  categoryPath: string[];
 }
 
+export interface LogEntryGroup {
+  id: string;
+  name: string;
+}
 
+export interface LogEntryQuantifier {
+  itemId: string;
+  name: string;
+  value: number;
+  units?: string;
+}
+
+export interface LogEntry {
+  id: string;
+  timestamp: string;  // ISO 8601 UTC
+  type: string;       // e.g., 'Activity', 'Condition', 'Outcome'
+  items: LogEntryItem[];
+  groups: LogEntryGroup[];
+  quantifiers: LogEntryQuantifier[];
+  comment: string | null;
+}
+
+export interface LogHistoryModel {
+  entries: LogEntry[];
+  error?: string;
+}
+
+const mockVariants: Record<string, any> = {
+  happy: happyData,
+  empty: emptyData,
+  error: errorData,
+};
+
+/**
+ * Load mock data for LogHistory screen
+ * @param variant - One of: happy, empty, error
+ */
+export async function getLogHistoryMock(variant: string = 'happy'): Promise<LogHistoryModel> {
+  const data = mockVariants[variant] || mockVariants.happy;
+  
+  if (data._error) {
+    return {
+      entries: [],
+      error: data._error,
+    };
+  }
+  
+  return {
+    entries: data.entries || [],
+  };
+}

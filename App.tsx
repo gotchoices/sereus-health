@@ -1,82 +1,117 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
 import React, { useState } from 'react';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { LogHistory } from './src/screens/LogHistory';
-import { EditEntry } from './src/screens/EditEntry';
-import { ConfigureCatalog } from './src/screens/ConfigureCatalog';
-import { Graphs } from './src/screens/Graphs';
-import { SereusConnections } from './src/screens/SereusConnections';
+import { StyleSheet } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import LogHistory from './src/screens/LogHistory';
 
-type ScreenKey = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog' | 'Graphs' | 'SereusConnections';
+type Screen = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog' | 'Graphs' | 'SereusConnections';
+type Tab = 'home' | 'catalog' | 'settings';
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
-  const [currentScreen, setCurrentScreen] = useState<ScreenKey>('LogHistory');
-  const [editParams, setEditParams] = useState<{
-    mode: 'new' | 'edit' | 'clone';
-    entryId?: string;
-  } | null>(null);
+interface EditParams {
+  mode: 'new' | 'edit' | 'clone';
+  entryId?: string;
+}
 
-  const goToHistory = () => {
-    setCurrentScreen('LogHistory');
-  };
+function App(): React.JSX.Element {
+  const [currentTab, setCurrentTab] = useState<Tab>('home');
+  const [currentScreen, setCurrentScreen] = useState<Screen>('LogHistory');
+  const [editParams, setEditParams] = useState<EditParams | null>(null);
 
-  const goToEdit = (mode: 'new' | 'edit' | 'clone', entryId?: string) => {
-    setEditParams({ mode, entryId });
+  // Navigation handlers
+  const handleAddNew = () => {
+    setEditParams({ mode: 'new' });
     setCurrentScreen('EditEntry');
   };
 
-  const goToCatalog = () => {
-    setCurrentScreen('ConfigureCatalog');
+  const handleClone = (entryId: string) => {
+    setEditParams({ mode: 'clone', entryId });
+    setCurrentScreen('EditEntry');
   };
 
-  const goToGraphs = () => {
+  const handleEdit = (entryId: string) => {
+    setEditParams({ mode: 'edit', entryId });
+    setCurrentScreen('EditEntry');
+  };
+
+  const handleOpenGraphs = () => {
     setCurrentScreen('Graphs');
   };
 
-  const goToSereus = () => {
-    setCurrentScreen('SereusConnections');
+  const handleNavigateTab = (tab: Tab) => {
+    setCurrentTab(tab);
+    
+    // Map tabs to root screens
+    switch (tab) {
+      case 'home':
+        setCurrentScreen('LogHistory');
+        break;
+      case 'catalog':
+        setCurrentScreen('ConfigureCatalog');
+        break;
+      case 'settings':
+        setCurrentScreen('SereusConnections');
+        break;
+    }
   };
 
-  let content: React.ReactNode;
-  if (currentScreen === 'LogHistory') {
-    content = (
-      <LogHistory
-        onAddNew={() => goToEdit('new')}
-        onClone={(entryId) => goToEdit('clone', entryId)}
-        onOpenCatalog={goToCatalog}
-        onOpenGraphs={goToGraphs}
-        onOpenSereus={goToSereus}
-      />
-    );
-  } else if (currentScreen === 'EditEntry') {
-    content = (
-      <EditEntry
-        navigation={{ goBack: goToHistory }}
-        route={{ params: editParams ?? { mode: 'new' } }}
-      />
-    );
-  } else if (currentScreen === 'ConfigureCatalog') {
-    content = <ConfigureCatalog onBack={goToHistory} />;
-  } else if (currentScreen === 'Graphs') {
-    content = <Graphs onBack={goToHistory} />;
-  } else {
-    content = <SereusConnections onBack={goToHistory} />;
-  }
+  const handleBack = () => {
+    // Simple back navigation: return to tab root
+    switch (currentTab) {
+      case 'home':
+        setCurrentScreen('LogHistory');
+        break;
+      case 'catalog':
+        setCurrentScreen('ConfigureCatalog');
+        break;
+      case 'settings':
+        setCurrentScreen('SereusConnections');
+        break;
+    }
+  };
+
+  // Render current screen
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case 'LogHistory':
+        return (
+          <LogHistory
+            variant="happy"
+            onAddNew={handleAddNew}
+            onClone={handleClone}
+            onEdit={handleEdit}
+            onOpenGraphs={handleOpenGraphs}
+            onNavigateTab={handleNavigateTab}
+          />
+        );
+      
+      // TODO: Implement other screens
+      // case 'EditEntry':
+      //   return <EditEntry {...editParams} onBack={handleBack} />;
+      // case 'ConfigureCatalog':
+      //   return <ConfigureCatalog onBack={handleBack} />;
+      // case 'Graphs':
+      //   return <Graphs onBack={handleBack} />;
+      // case 'SereusConnections':
+      //   return <SereusConnections onBack={handleBack} />;
+      
+      default:
+        return (
+          <LogHistory
+            variant="happy"
+            onAddNew={handleAddNew}
+            onClone={handleClone}
+            onEdit={handleEdit}
+            onOpenGraphs={handleOpenGraphs}
+            onNavigateTab={handleNavigateTab}
+          />
+        );
+    }
+  };
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <View style={styles.container}>
-        {content}
-      </View>
+      <SafeAreaView style={styles.container}>
+        {renderScreen()}
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 }

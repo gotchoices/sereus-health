@@ -1,16 +1,400 @@
-[
-  {
-    "id": "1",
-    "type": "Activity",
-    "title": "Breakfast: omelette, toast, orange juice",
-    "timestamp": "2025-01-01T08:00:00.000Z"
-  },
-  {
-    "id": "2",
-    "type": "Outcome",
-    "title": "Stomach pain (Intensity 7)",
-    "timestamp": "2025-01-01T12:00:00.000Z"
-  }
-]
-
-
+{
+  "entries": [
+    {
+      "id": "entry-15",
+      "timestamp": "2025-11-29T18:30:00Z",
+      "type": "Condition",
+      "items": [
+        {
+          "id": "item-stress",
+          "name": "Stress",
+          "categoryPath": ["Condition", "Mental"]
+        }
+      ],
+      "groups": [],
+      "quantifiers": [
+        {
+          "itemId": "item-stress",
+          "name": "Intensity",
+          "value": 8,
+          "units": "1-10"
+        }
+      ],
+      "comment": "Lawsuit is occupying all my thoughts"
+    },
+    {
+      "id": "entry-14",
+      "timestamp": "2025-11-29T14:00:00Z",
+      "type": "Outcome",
+      "items": [
+        {
+          "id": "item-stomach-pain",
+          "name": "Stomach Pain",
+          "categoryPath": ["Outcome", "Pain"]
+        }
+      ],
+      "groups": [],
+      "quantifiers": [
+        {
+          "itemId": "item-stomach-pain",
+          "name": "Intensity",
+          "value": 7,
+          "units": "1-10"
+        }
+      ],
+      "comment": null
+    },
+    {
+      "id": "entry-13",
+      "timestamp": "2025-11-29T12:00:00Z",
+      "type": "Activity",
+      "items": [
+        {
+          "id": "item-milk",
+          "name": "Milk",
+          "categoryPath": ["Activity", "Eating", "Dairy"]
+        }
+      ],
+      "groups": [
+        {
+          "id": "group-blt",
+          "name": "BLT"
+        }
+      ],
+      "quantifiers": [
+        {
+          "itemId": "item-milk",
+          "name": "Amount",
+          "value": 1,
+          "units": "glasses"
+        }
+      ],
+      "comment": null
+    },
+    {
+      "id": "entry-12",
+      "timestamp": "2025-11-29T09:00:00Z",
+      "type": "Activity",
+      "items": [
+        {
+          "id": "item-pushups",
+          "name": "Pushups",
+          "categoryPath": ["Activity", "Exercise", "Strength"]
+        },
+        {
+          "id": "item-pullups",
+          "name": "Pullups",
+          "categoryPath": ["Activity", "Exercise", "Strength"]
+        },
+        {
+          "id": "item-situps",
+          "name": "Situps",
+          "categoryPath": ["Activity", "Exercise", "Core"]
+        },
+        {
+          "id": "item-jogging",
+          "name": "Jogging",
+          "categoryPath": ["Activity", "Exercise", "Cardio"]
+        }
+      ],
+      "groups": [],
+      "quantifiers": [
+        {
+          "itemId": "item-pushups",
+          "name": "Reps",
+          "value": 20,
+          "units": "reps"
+        },
+        {
+          "itemId": "item-pullups",
+          "name": "Reps",
+          "value": 15,
+          "units": "reps"
+        },
+        {
+          "itemId": "item-situps",
+          "name": "Reps",
+          "value": 40,
+          "units": "reps"
+        },
+        {
+          "itemId": "item-jogging",
+          "name": "Distance",
+          "value": 2,
+          "units": "miles"
+        },
+        {
+          "itemId": "item-jogging",
+          "name": "Duration",
+          "value": 30,
+          "units": "minutes"
+        }
+      ],
+      "comment": "Morning workout felt great"
+    },
+    {
+      "id": "entry-11",
+      "timestamp": "2025-11-29T08:00:00Z",
+      "type": "Activity",
+      "items": [
+        {
+          "id": "item-omelette",
+          "name": "Omelette",
+          "categoryPath": ["Activity", "Eating", "Breakfast"]
+        },
+        {
+          "id": "item-toast",
+          "name": "Toast",
+          "categoryPath": ["Activity", "Eating", "Breakfast"]
+        },
+        {
+          "id": "item-orange-juice",
+          "name": "Orange Juice",
+          "categoryPath": ["Activity", "Eating", "Beverage"]
+        }
+      ],
+      "groups": [],
+      "quantifiers": [],
+      "comment": null
+    },
+    {
+      "id": "entry-10",
+      "timestamp": "2025-11-28T19:00:00Z",
+      "type": "Activity",
+      "items": [
+        {
+          "id": "item-peas",
+          "name": "Peas",
+          "categoryPath": ["Activity", "Eating", "Vegetables"]
+        },
+        {
+          "id": "item-eggs",
+          "name": "Fried Eggs",
+          "categoryPath": ["Activity", "Eating", "Protein"]
+        },
+        {
+          "id": "item-cheese",
+          "name": "Cheese",
+          "categoryPath": ["Activity", "Eating", "Dairy"]
+        },
+        {
+          "id": "item-avocado",
+          "name": "Avocado",
+          "categoryPath": ["Activity", "Eating", "Vegetables"]
+        }
+      ],
+      "groups": [],
+      "quantifiers": [
+        {
+          "itemId": "item-peas",
+          "name": "Amount",
+          "value": 1,
+          "units": "bowl"
+        },
+        {
+          "itemId": "item-eggs",
+          "name": "Amount",
+          "value": 2,
+          "units": "eggs"
+        }
+      ],
+      "comment": "Big version of my usual breakfast"
+    },
+    {
+      "id": "entry-09",
+      "timestamp": "2025-11-28T14:00:00Z",
+      "type": "Outcome",
+      "items": [
+        {
+          "id": "item-headache",
+          "name": "Headache",
+          "categoryPath": ["Outcome", "Pain"]
+        }
+      ],
+      "groups": [],
+      "quantifiers": [
+        {
+          "itemId": "item-headache",
+          "name": "Intensity",
+          "value": 6,
+          "units": "1-10"
+        },
+        {
+          "itemId": "item-headache",
+          "name": "Duration",
+          "value": 120,
+          "units": "minutes"
+        }
+      ],
+      "comment": null
+    },
+    {
+      "id": "entry-08",
+      "timestamp": "2025-11-28T12:30:00Z",
+      "type": "Activity",
+      "items": [
+        {
+          "id": "item-peanuts",
+          "name": "Peanuts",
+          "categoryPath": ["Activity", "Eating", "Snacks"]
+        }
+      ],
+      "groups": [],
+      "quantifiers": [
+        {
+          "itemId": "item-peanuts",
+          "name": "Amount",
+          "value": 1,
+          "units": "handful"
+        }
+      ],
+      "comment": null
+    },
+    {
+      "id": "entry-07",
+      "timestamp": "2025-11-27T20:00:00Z",
+      "type": "Activity",
+      "items": [
+        {
+          "id": "item-chocolate",
+          "name": "Chocolate",
+          "categoryPath": ["Activity", "Eating", "Desserts"]
+        }
+      ],
+      "groups": [],
+      "quantifiers": [
+        {
+          "itemId": "item-chocolate",
+          "name": "Amount",
+          "value": 3,
+          "units": "pieces"
+        }
+      ],
+      "comment": "Dark chocolate, 70%"
+    },
+    {
+      "id": "entry-06",
+      "timestamp": "2025-11-27T18:00:00Z",
+      "type": "Condition",
+      "items": [
+        {
+          "id": "item-weather-rainy",
+          "name": "Rainy",
+          "categoryPath": ["Condition", "Weather"]
+        }
+      ],
+      "groups": [],
+      "quantifiers": [],
+      "comment": "All day rain"
+    },
+    {
+      "id": "entry-05",
+      "timestamp": "2025-11-27T09:30:00Z",
+      "type": "Activity",
+      "items": [
+        {
+          "id": "item-yoga",
+          "name": "Yoga",
+          "categoryPath": ["Activity", "Exercise", "Flexibility"]
+        }
+      ],
+      "groups": [],
+      "quantifiers": [
+        {
+          "itemId": "item-yoga",
+          "name": "Duration",
+          "value": 45,
+          "units": "minutes"
+        }
+      ],
+      "comment": "Morning flow sequence"
+    },
+    {
+      "id": "entry-04",
+      "timestamp": "2025-11-27T08:15:00Z",
+      "type": "Activity",
+      "items": [
+        {
+          "id": "item-coffee",
+          "name": "Coffee",
+          "categoryPath": ["Activity", "Eating", "Beverage"]
+        }
+      ],
+      "groups": [],
+      "quantifiers": [
+        {
+          "itemId": "item-coffee",
+          "name": "Amount",
+          "value": 2,
+          "units": "cups"
+        }
+      ],
+      "comment": null
+    },
+    {
+      "id": "entry-03",
+      "timestamp": "2025-11-26T21:00:00Z",
+      "type": "Outcome",
+      "items": [
+        {
+          "id": "item-sleep-quality",
+          "name": "Sleep Quality",
+          "categoryPath": ["Outcome", "Wellness"]
+        }
+      ],
+      "groups": [],
+      "quantifiers": [
+        {
+          "itemId": "item-sleep-quality",
+          "name": "Quality",
+          "value": 8,
+          "units": "1-10"
+        },
+        {
+          "itemId": "item-sleep-quality",
+          "name": "Duration",
+          "value": 7.5,
+          "units": "hours"
+        }
+      ],
+      "comment": "Woke up refreshed"
+    },
+    {
+      "id": "entry-02",
+      "timestamp": "2025-11-26T13:00:00Z",
+      "type": "Activity",
+      "items": [
+        {
+          "id": "item-salad",
+          "name": "Salad",
+          "categoryPath": ["Activity", "Eating", "Lunch"]
+        }
+      ],
+      "groups": [],
+      "quantifiers": [],
+      "comment": "Caesar salad with grilled chicken"
+    },
+    {
+      "id": "entry-01",
+      "timestamp": "2025-11-26T10:00:00Z",
+      "type": "Condition",
+      "items": [
+        {
+          "id": "item-energy-level",
+          "name": "Energy Level",
+          "categoryPath": ["Condition", "Physical"]
+        }
+      ],
+      "groups": [],
+      "quantifiers": [
+        {
+          "itemId": "item-energy-level",
+          "name": "Level",
+          "value": 9,
+          "units": "1-10"
+        }
+      ],
+      "comment": "Feeling great today!"
+    }
+  ]
+}

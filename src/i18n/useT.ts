@@ -1,58 +1,219 @@
-// Minimal translation hook for Diario.
-// For now this is a simple key → English string map so that UI components
-// do not hard-code literals. Later this can be swapped for a full i18n library.
+/**
+ * i18n hook for Diario
+ * Based on design/specs/global/general.md: all UI strings via translation mechanism
+ * 
+ * For MVP, returns English strings directly.
+ * Future: integrate with react-i18next or similar for multi-locale support.
+ */
 
-import { useMemo } from 'react';
+type TranslationKey = 
+  // App-wide
+  | 'app.title'
+  
+  // Navigation
+  | 'navigation.home'
+  | 'navigation.catalog'
+  | 'navigation.settings'
+  | 'navigation.back'
+  
+  // LogHistory screen
+  | 'logHistory.title'
+  | 'logHistory.addNew'
+  | 'logHistory.openGraphs'
+  | 'logHistory.filter'
+  | 'logHistory.clearFilter'
+  | 'logHistory.clone'
+  | 'logHistory.emptyTitle'
+  | 'logHistory.emptyMessage'
+  | 'logHistory.errorLoading'
+  | 'logHistory.retry'
+  | 'logHistory.itemsMore'
+  | 'logHistory.typeActivity'
+  | 'logHistory.typeCondition'
+  | 'logHistory.typeOutcome'
+  
+  // EditEntry screen
+  | 'editEntry.titleNew'
+  | 'editEntry.titleEdit'
+  | 'editEntry.titleClone'
+  | 'editEntry.selectType'
+  | 'editEntry.selectCategory'
+  | 'editEntry.selectItems'
+  | 'editEntry.timestamp'
+  | 'editEntry.comment'
+  | 'editEntry.commentPlaceholder'
+  | 'editEntry.quantifiers'
+  | 'editEntry.addQuantifier'
+  | 'editEntry.save'
+  | 'editEntry.cancel'
+  | 'editEntry.delete'
+  
+  // ConfigureCatalog screen
+  | 'catalog.title'
+  | 'catalog.categories'
+  | 'catalog.items'
+  | 'catalog.groups'
+  | 'catalog.addCategory'
+  | 'catalog.addItem'
+  | 'catalog.addGroup'
+  | 'catalog.editCategory'
+  | 'catalog.editItem'
+  | 'catalog.editGroup'
+  | 'catalog.emptyCategories'
+  | 'catalog.emptyItems'
+  | 'catalog.emptyGroups'
+  
+  // Graphs screen
+  | 'graphs.title'
+  | 'graphs.selectItems'
+  | 'graphs.dateRange'
+  | 'graphs.generate'
+  | 'graphs.save'
+  | 'graphs.share'
+  | 'graphs.close'
+  | 'graphs.emptyGraphs'
+  | 'graphs.noItemsSelected'
+  
+  // Sereus screen
+  | 'sereus.title'
+  | 'sereus.cadreNodes'
+  | 'sereus.guestNodes'
+  | 'sereus.addNode'
+  | 'sereus.removeNode'
+  | 'sereus.scanQR'
+  | 'sereus.emptyNodes'
+  
+  // SelectionList component
+  | 'selectionList.filterPlaceholder'
+  | 'selectionList.clearFilter'
+  | 'selectionList.empty'
+  | 'selectionList.emptyFiltered'
+  
+  // Common
+  | 'common.save'
+  | 'common.cancel'
+  | 'common.delete'
+  | 'common.edit'
+  | 'common.add'
+  | 'common.back'
+  | 'common.close'
+  | 'common.confirm'
+  | 'common.retry'
+  | 'common.loading'
+  | 'common.error';
 
-const en = {
-  'logHistory.header.title': 'History',
-  'logHistory.empty.title': 'No entries yet',
-  'logHistory.empty.body':
-    'Start by adding your first activity, condition, or outcome so Diario can help you spot patterns over time.',
-  'logHistory.empty.cta': 'Add first entry',
-  'logHistory.row.cloneHint': 'Tap to clone this entry',
-  'logHistory.header.add': '+', // icon-like label; may later be replaced by a real icon
-  'logHistory.header.catalog': 'Catalog',
-  'logHistory.header.graphs': 'Graphs',
-  'logHistory.header.sereus': 'Sereus',
-  'logHistory.filter.placeholder': 'Filter by type or title…',
-  'editEntry.header.new': 'New entry',
-  'editEntry.header.edit': 'Edit entry',
-  'editEntry.header.clone': 'Clone entry',
-  'editEntry.label.type': 'Type',
-  'editEntry.label.title': 'Title',
-  'editEntry.label.timestamp': 'Time',
-  'editEntry.label.comment': 'Comment',
-  'editEntry.label.quantifiers': 'Quantifiers',
-  'editEntry.placeholder.type': 'Activity, Condition, Outcome…',
-  'editEntry.placeholder.title': 'Short description (e.g., Breakfast)',
-  'editEntry.placeholder.comment': 'Anything you want to remember about this entry…',
-  'editEntry.button.cancel': 'Cancel',
-  'editEntry.button.save': 'Save',
-  'configureCatalog.header.title': 'Catalog',
-  'configureCatalog.help.items':
-    'Add and manage the items and groups you will use when logging your activities.',
-  'configureCatalog.empty.items': 'No items yet. Start by adding some.',
-  'configureCatalog.label.groupsContainingSelection': 'Groups containing all selected items',
-  'graphs.header.title': 'Graphs',
-  'graphs.body.placeholder':
-    'This is where you will be able to create and view graphs of selected items over time.',
-  'sereus.header.title': 'Sereus connections',
-  'sereus.body.placeholder':
-    'This is where you will be able to view and manage your Sereus cadre and guest nodes.',
-  'navigation.backToHistory': 'Back to history',
-} as const;
+const translations: Record<TranslationKey, string> = {
+  // App-wide
+  'app.title': 'Diario',
+  
+  // Navigation
+  'navigation.home': 'Home',
+  'navigation.catalog': 'Catalog',
+  'navigation.settings': 'Settings',
+  'navigation.back': 'Back',
+  
+  // LogHistory screen
+  'logHistory.title': 'History',
+  'logHistory.addNew': 'Add new entry',
+  'logHistory.openGraphs': 'Open graphs',
+  'logHistory.filter': 'Filter entries...',
+  'logHistory.clearFilter': 'Clear filter',
+  'logHistory.clone': 'Clone entry',
+  'logHistory.emptyTitle': 'No entries yet',
+  'logHistory.emptyMessage': 'Tap + to log your first activity, condition, or outcome',
+  'logHistory.errorLoading': 'Failed to load entries',
+  'logHistory.retry': 'Retry',
+  'logHistory.itemsMore': '+{count} more',
+  'logHistory.typeActivity': 'Activity',
+  'logHistory.typeCondition': 'Condition',
+  'logHistory.typeOutcome': 'Outcome',
+  
+  // EditEntry screen
+  'editEntry.titleNew': 'New Entry',
+  'editEntry.titleEdit': 'Edit Entry',
+  'editEntry.titleClone': 'Clone Entry',
+  'editEntry.selectType': 'Select Type',
+  'editEntry.selectCategory': 'Select Category',
+  'editEntry.selectItems': 'Select Items',
+  'editEntry.timestamp': 'Date & Time',
+  'editEntry.comment': 'Comment',
+  'editEntry.commentPlaceholder': 'Add a note (optional)...',
+  'editEntry.quantifiers': 'Quantifiers',
+  'editEntry.addQuantifier': 'Add quantifier',
+  'editEntry.save': 'Save',
+  'editEntry.cancel': 'Cancel',
+  'editEntry.delete': 'Delete',
+  
+  // ConfigureCatalog screen
+  'catalog.title': 'Catalog',
+  'catalog.categories': 'Categories',
+  'catalog.items': 'Items',
+  'catalog.groups': 'Groups',
+  'catalog.addCategory': 'Add category',
+  'catalog.addItem': 'Add item',
+  'catalog.addGroup': 'Add group',
+  'catalog.editCategory': 'Edit category',
+  'catalog.editItem': 'Edit item',
+  'catalog.editGroup': 'Edit group',
+  'catalog.emptyCategories': 'No categories yet',
+  'catalog.emptyItems': 'No items yet',
+  'catalog.emptyGroups': 'No groups yet',
+  
+  // Graphs screen
+  'graphs.title': 'Graphs',
+  'graphs.selectItems': 'Select items to graph',
+  'graphs.dateRange': 'Date range',
+  'graphs.generate': 'Generate graph',
+  'graphs.save': 'Save graph',
+  'graphs.share': 'Share',
+  'graphs.close': 'Close graph',
+  'graphs.emptyGraphs': 'No graphs yet',
+  'graphs.noItemsSelected': 'Select at least one item to generate a graph',
+  
+  // Sereus screen
+  'sereus.title': 'Sereus',
+  'sereus.cadreNodes': 'My Nodes',
+  'sereus.guestNodes': 'Guest Nodes',
+  'sereus.addNode': 'Add node',
+  'sereus.removeNode': 'Remove node',
+  'sereus.scanQR': 'Scan QR code',
+  'sereus.emptyNodes': 'No nodes yet',
+  
+  // SelectionList component
+  'selectionList.filterPlaceholder': 'Filter...',
+  'selectionList.clearFilter': 'Clear filter',
+  'selectionList.empty': 'No items',
+  'selectionList.emptyFiltered': 'No items match your filter',
+  
+  // Common
+  'common.save': 'Save',
+  'common.cancel': 'Cancel',
+  'common.delete': 'Delete',
+  'common.edit': 'Edit',
+  'common.add': 'Add',
+  'common.back': 'Back',
+  'common.close': 'Close',
+  'common.confirm': 'Confirm',
+  'common.retry': 'Retry',
+  'common.loading': 'Loading...',
+  'common.error': 'Error',
+};
 
-type TranslationKey = keyof typeof en;
-
+/**
+ * Translation hook
+ * Returns a function that translates keys to localized strings
+ * Supports simple interpolation: t('logHistory.itemsMore', { count: 5 }) → "+5 more"
+ */
 export function useT() {
-  return useMemo(
-    () =>
-      (key: TranslationKey): string => {
-        return en[key] ?? key;
-      },
-    [],
-  );
+  return function t(key: TranslationKey, params?: Record<string, string | number>): string {
+    let text = translations[key] || key;
+    
+    if (params) {
+      Object.entries(params).forEach(([paramKey, value]) => {
+        text = text.replace(`{${paramKey}}`, String(value));
+      });
+    }
+    
+    return text;
+  };
 }
-
-
