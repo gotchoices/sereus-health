@@ -91,4 +91,19 @@ These are cross-cutting behaviors and assumptions that apply across multiple scr
   - Confirmation dialogs, alerts, and transient notifications (toasts/snackbars) should be implemented as **shared components/styles** and reused across screens.  
   - Individual screens may trigger these shared components but should not introduce one-off, screen-specific dialog or toast implementations.
 
+### Theming
+
+- Diario should **default to the device’s system appearance settings** (light/dark) and follow them where possible, rather than forcing a theme globally.  
+- Screen layouts and colors should be implemented so they remain legible and pleasant in both light and dark modes; any deviations from system theme should be called out explicitly in screen specs.
+
+### Internationalization and Iconography
+
+- **Internationalization (i18n)**  
+  - From the onset, all user-facing UI strings (button labels, headings, helper text, errors) should be provided via a translation mechanism (e.g., a `useT()` / `t()` hook) rather than hard-coded English literals in components.  
+  - Mock data (sample item names, example foods, comments) can remain in English for now, but UI chrome and feature labels should be locale-sensitive.
+
+- **Icons vs text**  
+  - Where an icon is **self-explanatory** (e.g., a prominent “+” for adding a new entry), prefer the icon over text-only buttons to reduce language dependence.  
+  - When an icon might be ambiguous, pair it with a translatable label or accessible description so the intent remains clear across locales.
+
 

@@ -1,0 +1,26 @@
+{
+  "outputs": [
+    {
+      "route": "LogHistory",
+      "output": "src/screens/LogHistory.tsx",
+      "dependsOn": [
+        "design/generated/screens/LogHistory.md",
+        "design/specs/screens/index.md",
+        "design/specs/navigation.md",
+        "design/specs/global/general.md",
+        "design/stories/01-exploring.md",
+        "design/stories/02-daily.md",
+        "design/stories/05-cloning.md"
+      ],
+      "depHashes": {
+        "design/generated/screens/LogHistory.md": "d842635c348ddfe51590d4d2c34def5e235e9a42a6dd7a667fc59348c9933500",
+        "design/specs/screens/index.md": "ff6fc227c2e5c78b2bcc7aec1ec6f026bf5ed756a0dab7dab4db23727e9dd670",
+        "design/specs/navigation.md": "d30a757e76d7882662dbbe4bf49fc5581b3adadf65525ce31a3649ef78002981",
+        "design/specs/global/general.md": "0a0ba3afd93fc41d502dbc0595949edfe738673d6877069fbb16c33e7e0c7467",
+        "design/stories/01-exploring.md": "19eb22a2d3ebd072ba1254e182faf36cc3876ba8565511068a412dc191002223",
+        "design/stories/02-daily.md": "bda851aa6b8b7c0315cb50292e727be5fa27e3bf4b959c5ec2bfe0429e6541e9",
+        "design/stories/05-cloning.md": "ce9c6b5b18c7ed281d2b3c52f6d48565a05a9113f7b48cdd954a966b19802b8e"
+      }
+    }
+  ]
+}

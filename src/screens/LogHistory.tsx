@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { getLogHistoryMock, LogEntry } from '../data/logHistory';
+import { useT } from '../i18n/useT';
 
 type Props = {
   // Navigation props will be injected by the navigator in real app; kept loose for now
@@ -8,6 +9,7 @@ type Props = {
 };
 
 export const LogHistory: React.FC<Props> = ({ navigation }) => {
+  const t = useT();
   // For now we always use the "happy" mock variant; later this will be wired
   // to a mock/variant context and deep links per Appeus guidance.
   const entries = getLogHistoryMock('happy');
@@ -30,7 +32,7 @@ export const LogHistory: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.time}>{localTime}</Text>
         </View>
         <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.cloneHint}>Tap to clone this entry</Text>
+        <Text style={styles.cloneHint}>{t('logHistory.row.cloneHint')}</Text>
       </TouchableOpacity>
     );
   };
@@ -38,9 +40,9 @@ export const LogHistory: React.FC<Props> = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>History</Text>
+        <Text style={styles.headerTitle}>{t('logHistory.header.title')}</Text>
         <TouchableOpacity style={styles.addButton} onPress={handleAdd}>
-          <Text style={styles.addButtonText}>＋ Add</Text>
+          <Text style={styles.addButtonText}>{t('logHistory.header.add')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -53,13 +55,10 @@ export const LogHistory: React.FC<Props> = ({ navigation }) => {
         />
       ) : (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No entries yet</Text>
-          <Text style={styles.emptyBody}>
-            Start by adding your first activity, condition, or outcome so Diario can help
-            you spot patterns over time.
-          </Text>
+          <Text style={styles.emptyTitle}>{t('logHistory.empty.title')}</Text>
+          <Text style={styles.emptyBody}>{t('logHistory.empty.body')}</Text>
           <TouchableOpacity style={styles.primaryCta} onPress={handleAdd}>
-            <Text style={styles.primaryCtaText}>Add first entry</Text>
+            <Text style={styles.primaryCtaText}>{t('logHistory.empty.cta')}</Text>
           </TouchableOpacity>
         </View>
       )}
