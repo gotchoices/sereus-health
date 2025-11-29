@@ -12,7 +12,7 @@ This file tracks open design questions for Diario so they can be resolved one at
 - [x] **Scope & sharing of definitions**: Determine whether items, groups, and categories are per-user only or whether there are global/shared templates or presets, and how ownership/visibility works.
 - [x] **Quantifier types & constraints**: Enumerate supported quantifier types, allowed ranges/validation, and defaults for newly created quantifiers.
 - [x] **Quantifier attachment model**: Confirm whether quantifiers are defined per-item, per-category, or both.
-- [ ] **Logging flow structure**: Decide whether adding a log entry is a single screen with sections or a multi-step wizard (type → category → items → quantifiers → time/comment), and how “back”/cancel should behave.
+- [x] **EditEntry flow structure**: Decided: Single screen with modal pickers (Option C). Next: Create `specs/screens/EditEntry.md` detailing the modal picker pattern, field layout, validation, and behavior for new/edit/clone modes.
 - [ ] **Comment/notes support**: Specify where free-form comments are allowed (per-entry vs per-item within an entry) and any length or formatting constraints.
 - [ ] **Bulk configuration UX**: Clarify how bulk creation/editing of items is exposed (e.g., dedicated “Manage Items” / “Manage Groups” screens vs inline modals within the logging flow).
 - [ ] **Search & filtering behavior in pickers**: Define how search/filter behaves when selecting items/groups (case sensitivity, ranking, matching fields, empty-state behavior).
@@ -26,10 +26,14 @@ This file tracks open design questions for Diario so they can be resolved one at
   - Answered in stories: Bob manually selects items to graph, then sees a simple configuration view where he can adjust basic settings such as date range before generating the graph.
 - [x] **Graph limits & labeling**: Clarify how many graphs can be open at once and how they are labeled or identified within the UI.  
   - Answered in stories: graphs are named by Bob as he creates them and are listed by name so he can move between them. Stories do not impose a hard numeric limit; implementation can choose reasonable limits based on performance.
-- [ ] **Graph output & sharing**: Select a React Native graphing/chart library and, based on its capabilities, define which export formats (e.g., PNG, PDF, SVG) are exposed and how sharing should work, including what metadata (titles, legends, date ranges) must travel with the export.
+- [ ] **Graph library selection & GraphView spec**: Select a React Native graphing/chart library and create `specs/screens/GraphView.md` detailing: display/interaction (zoom, pan, legend), graph types (line/bar/scatter), export formats available, and sharing workflow.
+- [ ] **GraphCreate screen spec**: Create `specs/screens/GraphCreate.md` detailing: item picker UI (reuse SelectionList?), date range picker, graph name input, and generate flow.
+- [ ] **Notification/reminder system spec**: Create `specs/screens/Reminders.md` or add to `specs/global/general.md`: notification permissions, scheduling logic, deep link handling when tapping notification, background task requirements.
 - [x] **Sereus node permissions model**: Specify what data each type of node (cadre vs guest) can read/write, and whether Bob can scope which parts of his history or configuration are shared with which nodes.  
   - Answered (initial model): Bob, as owner of his database, ultimately controls permissions on his own data. By default, guest nodes such as his doctor’s node are allowed to **read** his data so they can review his progress; stories do not rely on guests writing to Bob’s data. Finer-grained read/write controls can be added later via schema-level permissions without changing current stories.
-- [ ] **Node management UX**: Decide how Bob manages nodes in the settings page (renaming nodes, viewing their status/last sync, removing nodes individually or by cohort).
+- [x] **Settings screen structure**: Decided: `Settings` root screen with list of sections (Sereus, Reminders, future: AI/Preferences/About). Each section pushes to dedicated screen. Next: Update `specs/navigation.md` and create screen specs.
+- [ ] **Settings screen spec**: Create `specs/screens/Settings.md` detailing: section list layout, future extensibility (AI, Preferences, Data Management, About).
+- [ ] **SereusConnections screen spec**: Create `specs/screens/SereusConnections.md` detailing: QR scanning flow, node list display (cadre vs guest), node management (rename, status, remove), and add-node prompts.
 - [x] **Sync & conflict resolution**: Describe how real-time sync behaves when multiple nodes update the same data (e.g., tie-breaking strategy, eventual consistency expectations, offline edits).
 
 ### Possible Future Enhancements (Post-MVP)

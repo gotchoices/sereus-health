@@ -14,10 +14,14 @@ Screens
 | Screen Name        | Route             | Purpose                                              | Variants            |
 |--------------------|-------------------|------------------------------------------------------|---------------------|
 | LogHistory         | LogHistory        | Main log history: list of entries with add/clone    | happy, empty        |
-| EditEntry          | EditEntry         | Add/edit/clone a single log entry                   | happy, error        |
+| EditEntry          | EditEntry         | Add/edit/clone a single log entry (modal pickers)   | happy, error        |
 | ConfigureCatalog   | ConfigureCatalog  | Manage categories, items, groups, quantifiers       | happy, empty, error |
-| Graphs             | Graphs            | Create and browse named graphs over selected items  | happy, empty        |
+| Graphs             | Graphs            | Browse saved/named graphs                            | happy, empty        |
+| GraphCreate        | GraphCreate       | Select items + date range, generate new graph       | happy              |
+| GraphView          | GraphView         | Display and share a specific graph                   | happy              |
+| Settings           | Settings          | List of settings sections (Sereus, Reminders, etc.) | happy              |
 | SereusConnections  | SereusConnections | View and manage Sereus cadre and guest nodes        | happy, empty, error |
+| Reminders          | Reminders         | Configure reminder notification interval             | happy              |
 
 Notes
 - Add/remove rows as needed. You can refine names later, but avoiding churn helps.
