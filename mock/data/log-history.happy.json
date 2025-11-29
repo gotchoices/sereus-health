@@ -1,0 +1,16 @@
+[
+  {
+    "id": "1",
+    "type": "Activity",
+    "title": "Breakfast: omelette, toast, orange juice",
+    "timestamp": "2025-01-01T08:00:00.000Z"
+  },
+  {
+    "id": "2",
+    "type": "Outcome",
+    "title": "Stomach pain (Intensity 7)",
+    "timestamp": "2025-01-01T12:00:00.000Z"
+  }
+]
+
+

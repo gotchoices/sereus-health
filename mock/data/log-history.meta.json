@@ -1,0 +1,10 @@
+{
+  "route": "LogHistory",
+  "variants": ["happy", "empty"],
+  "files": {
+    "happy": "log-history.happy.json",
+    "empty": "log-history.empty.json"
+  }
+}
+
+
