@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { getLogHistoryMock, LogEntry } from '../data/logHistory';
 import { useT } from '../i18n/useT';
+import { useTheme } from '../theme/useTheme';
 
 type Props = {
   // Navigation props will be injected by a navigator in the future.
@@ -9,6 +10,8 @@ type Props = {
   onAddNew?: () => void;
   onClone?: (entryId: string) => void;
   onOpenCatalog?: () => void;
+  onOpenGraphs?: () => void;
+  onOpenSereus?: () => void;
 };
 
 export const LogHistory: React.FC<Props> = ({
@@ -16,12 +19,28 @@ export const LogHistory: React.FC<Props> = ({
   onAddNew,
   onClone,
   onOpenCatalog,
+  onOpenGraphs,
+  onOpenSereus,
 }) => {
   const t = useT();
+  const theme = useTheme();
   // For now we always use the "happy" mock variant; later this will be wired
   // to a mock/variant context and deep links per Appeus guidance.
   const entries = getLogHistoryMock('happy');
-  const hasEntries = entries.length > 0;
+  const [filter, setFilter] = useState('');
+
+  const filteredEntries = useMemo(() => {
+    const query = filter.trim().toLowerCase();
+    if (!query) {
+      return entries;
+    }
+    return entries.filter((entry) => {
+      const haystack = `${entry.type} ${entry.title}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [entries, filter]);
+
+  const hasEntries = filteredEntries.length > 0;
 
   const handleAdd = () => {
     if (onAddNew) {
@@ -54,15 +73,33 @@ export const LogHistory: React.FC<Props> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('logHistory.header.title')}</Text>
+        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
+          {t('logHistory.header.title')}
+        </Text>
         <View style={styles.headerActions}>
           <TouchableOpacity
-            style={styles.catalogButton}
+            style={styles.textButton}
+            onPress={onOpenGraphs}
+            disabled={!onOpenGraphs}>
+            <Text style={[styles.textButtonLabel, { color: theme.textSecondary }]}>
+              {t('logHistory.header.graphs')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.textButton}
+            onPress={onOpenSereus}
+            disabled={!onOpenSereus}>
+            <Text style={[styles.textButtonLabel, { color: theme.textSecondary }]}>
+              {t('logHistory.header.sereus')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.textButton}
             onPress={onOpenCatalog}
             disabled={!onOpenCatalog}>
-            <Text style={styles.catalogButtonText}>
+            <Text style={[styles.textButtonLabel, { color: theme.textSecondary }]}>
               {t('logHistory.header.catalog')}
             </Text>
           </TouchableOpacity>
@@ -72,17 +109,32 @@ export const LogHistory: React.FC<Props> = ({
         </View>
       </View>
 
+      <View style={styles.filterRow}>
+        <TextInput
+          style={[styles.filterInput, { backgroundColor: theme.surface, color: theme.textPrimary }]}
+          value={filter}
+          onChangeText={setFilter}
+          placeholder={t('logHistory.filter.placeholder')}
+          placeholderTextColor={theme.textSecondary}
+        />
+      </View>
+
       {hasEntries ? (
         <FlatList
-          data={entries}
+          data={filteredEntries}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
+          ItemSeparatorComponent={() => <View style={[styles.separator, { borderBottomColor: theme.border }]} />}
         />
       ) : (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>{t('logHistory.empty.title')}</Text>
-          <Text style={styles.emptyBody}>{t('logHistory.empty.body')}</Text>
+          <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
+            {t('logHistory.empty.title')}
+          </Text>
+          <Text style={[styles.emptyBody, { color: theme.textSecondary }]}>
+            {t('logHistory.empty.body')}
+          </Text>
           <TouchableOpacity style={styles.primaryCta} onPress={handleAdd}>
             <Text style={styles.primaryCtaText}>{t('logHistory.empty.cta')}</Text>
           </TouchableOpacity>
@@ -95,7 +147,6 @@ export const LogHistory: React.FC<Props> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0b0c10',
   },
   header: {
     paddingTop: 54,
@@ -113,12 +164,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  catalogButton: {
-    paddingHorizontal: 8,
+  textButton: {
+    paddingHorizontal: 6,
     paddingVertical: 4,
   },
-  catalogButtonText: {
-    color: '#9ca3af',
+  textButtonLabel: {
     fontSize: 13,
   },
   addButton: {
@@ -136,8 +186,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 24,
   },
+  filterRow: {
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  filterInput: {
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    fontSize: 14,
+  },
   row: {
-    backgroundColor: '#111827',
     borderRadius: 12,
     padding: 12,
     marginBottom: 10,
@@ -148,22 +207,22 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   type: {
-    color: '#9ca3af',
     fontSize: 12,
     fontWeight: '500',
   },
   time: {
-    color: '#6b7280',
     fontSize: 12,
   },
   title: {
-    color: '#e5e7eb',
     fontSize: 14,
     marginBottom: 4,
   },
   cloneHint: {
-    color: '#4b5563',
     fontSize: 12,
+  },
+  separator: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginHorizontal: 16,
   },
   emptyState: {
     flex: 1,

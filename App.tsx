@@ -11,8 +11,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LogHistory } from './src/screens/LogHistory';
 import { EditEntry } from './src/screens/EditEntry';
 import { ConfigureCatalog } from './src/screens/ConfigureCatalog';
+import { Graphs } from './src/screens/Graphs';
+import { SereusConnections } from './src/screens/SereusConnections';
 
-type ScreenKey = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog';
+type ScreenKey = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog' | 'Graphs' | 'SereusConnections';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -35,6 +37,14 @@ function App() {
     setCurrentScreen('ConfigureCatalog');
   };
 
+  const goToGraphs = () => {
+    setCurrentScreen('Graphs');
+  };
+
+  const goToSereus = () => {
+    setCurrentScreen('SereusConnections');
+  };
+
   let content: React.ReactNode;
   if (currentScreen === 'LogHistory') {
     content = (
@@ -42,6 +52,8 @@ function App() {
         onAddNew={() => goToEdit('new')}
         onClone={(entryId) => goToEdit('clone', entryId)}
         onOpenCatalog={goToCatalog}
+        onOpenGraphs={goToGraphs}
+        onOpenSereus={goToSereus}
       />
     );
   } else if (currentScreen === 'EditEntry') {
@@ -51,8 +63,12 @@ function App() {
         route={{ params: editParams ?? { mode: 'new' } }}
       />
     );
+  } else if (currentScreen === 'ConfigureCatalog') {
+    content = <ConfigureCatalog onBack={goToHistory} />;
+  } else if (currentScreen === 'Graphs') {
+    content = <Graphs onBack={goToHistory} />;
   } else {
-    content = <ConfigureCatalog />;
+    content = <SereusConnections onBack={goToHistory} />;
   }
 
   return (

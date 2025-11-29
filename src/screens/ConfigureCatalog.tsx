@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { getConfigureCatalogMock } from '../data/configureCatalog';
 import { useT } from '../i18n/useT';
 import { SelectionList, SelectionListItem } from '../components/SelectionList';
+import { useTheme } from '../theme/useTheme';
 
 type Props = {
   navigation?: any;
+  onBack?: () => void;
 };
 
-export const ConfigureCatalog: React.FC<Props> = () => {
+export const ConfigureCatalog: React.FC<Props> = ({ navigation, onBack }) => {
   const t = useT();
+  const theme = useTheme();
   const catalog = getConfigureCatalogMock('happy');
 
   const [filter, setFilter] = useState('');
@@ -32,10 +35,21 @@ export const ConfigureCatalog: React.FC<Props> = () => {
     .map((g) => g.name);
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.header}>{t('configureCatalog.header.title')}</Text>
-        <Text style={styles.helpText}>{t('configureCatalog.help.items')}</Text>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={styles.content}>
+        <View style={styles.headerRow}>
+          <Text style={[styles.header, { color: theme.textPrimary }]}>
+            {t('configureCatalog.header.title')}
+          </Text>
+          <Text
+            style={[styles.backLink, { color: theme.textSecondary }]}
+            onPress={() => (onBack ? onBack() : navigation?.goBack?.())}>
+            {t('navigation.backToHistory')}
+          </Text>
+        </View>
+        <Text style={[styles.helpText, { color: theme.textSecondary }]}>
+          {t('configureCatalog.help.items')}
+        </Text>
 
         <SelectionList
           items={itemOptions}
@@ -49,17 +63,19 @@ export const ConfigureCatalog: React.FC<Props> = () => {
 
         {selectedGroupNames.length > 0 && (
           <View style={styles.groupsSummary}>
-            <Text style={styles.groupsLabel}>
+            <Text style={[styles.groupsLabel, { color: theme.textSecondary }]}>
               {t('configureCatalog.label.groupsContainingSelection')}
             </Text>
             {selectedGroupNames.map((name) => (
-              <Text key={name} style={styles.groupsName}>
+              <Text
+                key={name}
+                style={[styles.groupsName, { color: theme.textPrimary }]}>
                 • {name}
               </Text>
             ))}
           </View>
         )}
-      </ScrollView>
+      </View>
     </View>
   );
 };
@@ -67,21 +83,26 @@ export const ConfigureCatalog: React.FC<Props> = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0b0c10',
   },
   content: {
     paddingTop: 54,
     paddingHorizontal: 20,
     paddingBottom: 24,
   },
-  header: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: '600',
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 8,
   },
+  header: {
+    fontSize: 24,
+    fontWeight: '600',
+  },
+  backLink: {
+    fontSize: 13,
+  },
   helpText: {
-    color: '#9ca3af',
     fontSize: 13,
     marginBottom: 8,
   },
@@ -89,12 +110,10 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   groupsLabel: {
-    color: '#9ca3af',
     fontSize: 13,
     marginBottom: 4,
   },
   groupsName: {
-    color: '#e5e7eb',
     fontSize: 13,
   },
 });

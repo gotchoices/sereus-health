@@ -13,6 +13,9 @@ const en = {
   'logHistory.row.cloneHint': 'Tap to clone this entry',
   'logHistory.header.add': '+', // icon-like label; may later be replaced by a real icon
   'logHistory.header.catalog': 'Catalog',
+  'logHistory.header.graphs': 'Graphs',
+  'logHistory.header.sereus': 'Sereus',
+  'logHistory.filter.placeholder': 'Filter by type or title…',
   'editEntry.header.new': 'New entry',
   'editEntry.header.edit': 'Edit entry',
   'editEntry.header.clone': 'Clone entry',
@@ -31,6 +34,13 @@ const en = {
     'Add and manage the items and groups you will use when logging your activities.',
   'configureCatalog.empty.items': 'No items yet. Start by adding some.',
   'configureCatalog.label.groupsContainingSelection': 'Groups containing all selected items',
+  'graphs.header.title': 'Graphs',
+  'graphs.body.placeholder':
+    'This is where you will be able to create and view graphs of selected items over time.',
+  'sereus.header.title': 'Sereus connections',
+  'sereus.body.placeholder':
+    'This is where you will be able to view and manage your Sereus cadre and guest nodes.',
+  'navigation.backToHistory': 'Back to history',
 } as const;
 
 type TranslationKey = keyof typeof en;
