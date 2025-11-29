@@ -9,17 +9,17 @@ Instructions
 - Add a proposed route (used for deep links and navigation).
 - Optional: note variants to support early (happy, empty, error).
 
-Template
+Screens
 
-| Screen Name        | Route            | Purpose                                 | Variants                |
-|--------------------|------------------|-----------------------------------------|-------------------------|
-| ConnectionsList    | ConnectionsList  | Home list of connections/threads        | happy, empty, error     |
-| ChatInterface      | ChatInterface    | Thread conversation view                | happy, empty, error     |
-| ProfileSetup       | ProfileSetup     | Setup/edit profile                      | happy, error            |
-| MediaPicker        | MediaPicker      | Select or capture media                 | happy, empty, error     |
+| Screen Name        | Route             | Purpose                                              | Variants            |
+|--------------------|-------------------|------------------------------------------------------|---------------------|
+| LogHistory         | LogHistory        | Main log history: list of entries with add/clone    | happy, empty        |
+| EditEntry          | EditEntry         | Add/edit/clone a single log entry                   | happy, error        |
+| ConfigureCatalog   | ConfigureCatalog  | Manage categories, items, groups, quantifiers       | happy, empty, error |
+| Graphs             | Graphs            | Create and browse named graphs over selected items  | happy, empty        |
+| SereusConnections  | SereusConnections | View and manage Sereus cadre and guest nodes        | happy, empty, error |
 
 Notes
 - Add/remove rows as needed. You can refine names later, but avoiding churn helps.
 - Screen-specific requirements go in `design/specs/screens/<screen-id>.md`.
-
 

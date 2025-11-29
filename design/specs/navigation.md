@@ -1,26 +1,34 @@
 # Navigation Spec
 
 Purpose
-- Define app-wide navigation structure, deep links, and route options.
+- Define app-wide navigation structure, deep links, and route options for Diario.
 
-Sitemap (example)
+Sitemap
 - HOME Tab
-  - ConnectionsList (root)
-  - ChatInterface (push from ConnectionsList)
+  - LogHistory (root) — main log history showing Bob’s entries and an action to add/clone.
+  - EditEntry (push from LogHistory) — focused flow for adding/editing/cloning a single entry.
+  - Graphs (push from LogHistory or other entry points) — list of graphs and individual graph view.
+- CATALOG Tab
+  - ConfigureCatalog (root) — manage categories, items, groups, and quantifiers.
 - SETTINGS Tab
-  - ProfileSetup (push)
+  - SereusConnections (push) — view and manage Sereus cadre and guest nodes.
 
 Deep Links
-- Scheme: myapp://
+- Scheme: diario://
 - Patterns:
-  - myapp://screen/ConnectionsList
-  - myapp://screen/ChatInterface?variant=empty
+  - diario://screen/LogHistory
+  - diario://screen/EditEntry
+  - diario://screen/Graphs
+  - diario://screen/ConfigureCatalog
+  - diario://screen/SereusConnections
 
 Route Options
-- ChatInterface: title "Chat", headerLarge=true
-- ConnectionsList: title "Connections"
+- LogHistory: title "History"
+- EditEntry: title "Edit Entry"
+- Graphs: title "Graphs"
+- ConfigureCatalog: title "Catalog"
+- SereusConnections: title "Sereus"
 
 Notes
-- Human spec overrides any AI-generated navigation consolidation.
-
+- Human navigation spec overrides any AI-generated navigation consolidation.
 
