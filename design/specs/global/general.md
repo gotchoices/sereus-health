@@ -6,7 +6,7 @@ These are cross-cutting behaviors and assumptions that apply across multiple scr
 
 - **Sereus fabric and SQL**  
   - Diario runs on top of Sereus fabric; user data is stored in an SQL database built on the user’s cadre of Sereus nodes.  
-  - Application data such as log entries, taxonomy (types, categories, items, groups), quantifier definitions, and app settings should be modeled in this SQL layer so that it can be synced across nodes.
+  - Application data such as log entries, taxonomy (types, categories, items, bundles), quantifier definitions, and app settings should be modeled in this SQL layer so that it can be synced across nodes.
   - In-app state management (e.g., React/React Native state, optional Redux) should treat Sereus/SQL as the source of truth for persisted data, with local state acting as a cache/interaction layer.
 
 - **Ownership and permissions (initial model)**  
@@ -16,20 +16,22 @@ These are cross-cutting behaviors and assumptions that apply across multiple scr
 
 ### Scope and Sharing of Definitions
 
-- All taxonomy definitions (types, categories, items, groups, quantifiers) and configuration live in a **single-user database** that serves only Bob.  
+- All taxonomy definitions (types, categories, items, bundles, quantifiers) and configuration live in a **single-user database** that serves only Bob.  
 - There are no global or cross-user template catalogs in the initial design; any presets or frequently used items exist within Bob’s own data.  
 - Sharing via Sereus nodes operates at the level of Bob’s database being replicated to his cadre/guest nodes, not at the level of shared definition libraries across users.
 
-### Categories, Items, and Groups
+### Categories, Items, and Bundles
 
-- **Category hierarchy**  
+- **Category structure**  
   - Each **item** belongs to exactly **one category**.  
-  - Categories can optionally have a **parent category**, forming a hierarchy (tree) under a given top-level type (e.g., `Activity` → `Exercise` → `Strength Training`).  
-  - For the initial implementation, a simple parent-pointer model is sufficient; deeper schema details can be refined when designing the actual tables.
+  - Categories are **flat** (no hierarchy in MVP): each category belongs to one type.
+  - Types → Categories → Items (2-level structure).
+  - See `specs/api/schema.md` for details.
 
-- **Groups**  
-  - Groups are named collections that can contain **items and other groups**, allowing nested groupings where helpful (e.g., a “Breakfast” group that includes other meal groups and individual items).  
-  - The precise storage schema for nested groups can be decided during schema design (e.g., adjacency list vs. join table), but the behavior should assume that nesting is allowed.
+- **Bundles**  
+  - Bundles are named collections that can contain **items and other bundles**, allowing nested groupings where helpful (e.g., a "Breakfast" bundle that includes other meal bundles and individual items).  
+  - **Expansion at log time**: When logging a bundle, it expands to individual items and stores those items (immutable snapshot).
+  - See `specs/api/schema.md` for storage details and rationale.
 
 ### Quantifiers
 
@@ -46,7 +48,7 @@ These are cross-cutting behaviors and assumptions that apply across multiple scr
 ### Taxonomy Lifecycle (Initial Behavior)
 
 - **Editing existing definitions**  
-  - When Bob edits a taxonomy element that is already referenced by log entries (such as an item, group, category name, or one of its quantifiers), the app should treat this as a potentially breaking change.  
+  - When Bob edits a taxonomy element that is already referenced by log entries (such as an item, bundle, category name, or one of its quantifiers), the app should treat this as a potentially breaking change.  
   - The preferred behavior is to **ask Bob whether the change should apply to all existing entries or only to future entries** that use this definition.
   - If Bob chooses to apply the change **only to future entries**, the system should effectively create a new definition (e.g., a new item record) and route future log entries to that new definition, leaving historical entries attached to the original definition.
   - If Bob chooses to apply the change to **all entries**, the system is allowed to update the existing definition in place; historical entries referencing it will now reflect the updated definition.
@@ -85,7 +87,7 @@ These are cross-cutting behaviors and assumptions that apply across multiple scr
     - Displaying a scrollable list of items.  
     - An optional **filter input** to narrow visible rows.  
     - Configurable **selection mode**: single-select or multi-select (e.g., via checkboxes or row highlighting).  
-  - The same widget (or its small variants) is reused wherever Bob needs to pick from lists: main history list selection (e.g., for cloning), choosing categories/items/groups, composing groups, etc., rather than inventing bespoke list UIs per screen.
+  - The same widget (or its small variants) is reused wherever Bob needs to pick from lists: main history list selection (e.g., for cloning), choosing categories/items/bundles, composing bundles, etc., rather than inventing bespoke list UIs per screen.
 
 - **Dialogs, popups, and toasts**  
   - Confirmation dialogs, alerts, and transient notifications (toasts/snackbars) should be implemented as **shared components/styles** and reused across screens.  

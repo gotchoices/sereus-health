@@ -14,7 +14,7 @@ export interface LogEntryItem {
   categoryPath: string[];
 }
 
-export interface LogEntryGroup {
+export interface LogEntryBundle {
   id: string;
   name: string;
 }
@@ -31,7 +31,7 @@ export interface LogEntry {
   timestamp: string;  // ISO 8601 UTC
   type: string;       // e.g., 'Activity', 'Condition', 'Outcome'
   items: LogEntryItem[];
-  groups: LogEntryGroup[];
+  bundles: LogEntryBundle[];
   quantifiers: LogEntryQuantifier[];
   comment: string | null;
 }

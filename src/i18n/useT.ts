@@ -28,6 +28,7 @@ type TranslationKey =
   | 'logHistory.errorLoading'
   | 'logHistory.retry'
   | 'logHistory.itemsMore'
+  | 'logHistory.note'
   | 'logHistory.typeActivity'
   | 'logHistory.typeCondition'
   | 'logHistory.typeOutcome'
@@ -49,19 +50,23 @@ type TranslationKey =
   | 'editEntry.delete'
   
   // ConfigureCatalog screen
+  | 'configureCatalog.header.title'
+  | 'configureCatalog.help.items'
+  | 'configureCatalog.empty.items'
+  | 'configureCatalog.label.bundlesContainingSelection'
   | 'catalog.title'
   | 'catalog.categories'
   | 'catalog.items'
-  | 'catalog.groups'
+  | 'catalog.bundles'
   | 'catalog.addCategory'
   | 'catalog.addItem'
-  | 'catalog.addGroup'
+  | 'catalog.addBundle'
   | 'catalog.editCategory'
   | 'catalog.editItem'
-  | 'catalog.editGroup'
+  | 'catalog.editBundle'
   | 'catalog.emptyCategories'
   | 'catalog.emptyItems'
-  | 'catalog.emptyGroups'
+  | 'catalog.emptyBundles'
   
   // Graphs screen
   | 'graphs.title'
@@ -136,6 +141,7 @@ const translations: Record<TranslationKey, string> = {
   'logHistory.errorLoading': 'Failed to load entries',
   'logHistory.retry': 'Retry',
   'logHistory.itemsMore': '+{count} more',
+  'logHistory.note': 'Note',
   'logHistory.typeActivity': 'Activity',
   'logHistory.typeCondition': 'Condition',
   'logHistory.typeOutcome': 'Outcome',
@@ -157,19 +163,23 @@ const translations: Record<TranslationKey, string> = {
   'editEntry.delete': 'Delete',
   
   // ConfigureCatalog screen
+  'configureCatalog.header.title': 'Configure Catalog',
+  'configureCatalog.help.items': 'Select items to see which bundles contain them',
+  'configureCatalog.empty.items': 'No items yet',
+  'configureCatalog.label.bundlesContainingSelection': 'Bundles containing selected items:',
   'catalog.title': 'Catalog',
   'catalog.categories': 'Categories',
   'catalog.items': 'Items',
-  'catalog.groups': 'Groups',
+  'catalog.bundles': 'Bundles',
   'catalog.addCategory': 'Add category',
   'catalog.addItem': 'Add item',
-  'catalog.addGroup': 'Add group',
+  'catalog.addBundle': 'Add bundle',
   'catalog.editCategory': 'Edit category',
   'catalog.editItem': 'Edit item',
-  'catalog.editGroup': 'Edit group',
+  'catalog.editBundle': 'Edit bundle',
   'catalog.emptyCategories': 'No categories yet',
   'catalog.emptyItems': 'No items yet',
-  'catalog.emptyGroups': 'No groups yet',
+  'catalog.emptyBundles': 'No bundles yet',
   
   // Graphs screen
   'graphs.title': 'Graphs',

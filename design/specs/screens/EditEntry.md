@@ -25,7 +25,7 @@ Single-screen form for adding, editing, or cloning log entries. Uses modal picke
 
 ### Clone Mode
 - Load entry by `entryId`
-- Copy all fields: type, items, groups, quantifiers, comment
+- Copy all fields: type, items, bundles, quantifiers, comment
 - Timestamp: **current time** (not copied)
 - Title: "Clone Entry"
 - User can adjust any field before committing
@@ -51,12 +51,13 @@ Single-screen form for adding, editing, or cloning log entries. Uses modal picke
    - Single-select
    - After selection, Items selector becomes enabled
 
-3. **Items Selector** (required)
-   - Shows: Chip list of selected item names + groups OR "Select Items" placeholder
+3. **Items Selector** (optional - can skip for note entries)
+   - Shows: Chip list of selected item names + bundles OR "Select Items" placeholder
    - Tap → Opens modal with SelectionList (multi-select)
-   - Modal shows items filtered by category + all groups
+   - Modal shows items filtered by category + all bundles
    - Filter enabled (story 03: "bac" → bacon)
-   - Can select multiple items and/or groups
+   - Can select multiple items and/or bundles
+   - Can skip entirely for comment-only note entries
 
 4. **Quantifiers Section** (conditional, shows if any selected item has quantifiers defined)
    - For each selected item that has quantifiers:
@@ -116,10 +117,10 @@ Single-screen form for adding, editing, or cloning log entries. Uses modal picke
 ## Validation
 
 ### On Save
-- **Required**: type, category, at least one item
+- **Required**: type, timestamp
+- **Items**: Optional (can be 0 for note entries); if items selected, category is required
 - **Quantifiers**: If item has quantifiers defined, values are optional (can log item without quantifying)
-- **Timestamp**: Required, defaults to now
-- **Comment**: Optional
+- **Comment**: Optional (but typically present for note entries with 0 items)
 
 ### Error Display
 - Show error banner at top if validation fails
@@ -133,10 +134,11 @@ Single-screen form for adding, editing, or cloning log entries. Uses modal picke
   - Bob must cancel EditEntry → go to Catalog → add item → return and start EditEntry again
   - OR (future): "Add New Item" link in Items Picker modal that navigates to Catalog with deep link back
 
-### Groups (story 03)
-- Groups appear in Items Picker alongside individual items
-- Selecting a group logs all items in that group
-- Group contents shown as "(BLT: bacon, lettuce, tomato, ...)" or similar in modal
+### Bundles (story 03)
+- Bundles appear in Items Picker alongside individual items
+- Selecting a bundle expands to all items in that bundle at save time (immutable snapshot)
+- Bundle contents shown as "(BLT: bacon, lettuce, tomato, ...)" or similar in modal
+- Quantifier inputs shown for bundle members if defined on those items (all optional)
 
 ### Quantifier Display
 - If item has 0 quantifiers → no quantifier section shown for that item

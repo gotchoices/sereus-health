@@ -9,7 +9,7 @@ export type CatalogItem = {
   category: string;
 };
 
-export type CatalogGroup = {
+export type CatalogBundle = {
   id: string;
   name: string;
   itemIds: string[];
@@ -17,7 +17,7 @@ export type CatalogGroup = {
 
 export type ConfigureCatalogModel = {
   items: CatalogItem[];
-  groups: CatalogGroup[];
+  bundles: CatalogBundle[];
   error?: string;
 };
 

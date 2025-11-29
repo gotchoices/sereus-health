@@ -15,7 +15,7 @@ Screens
 |--------------------|-------------------|------------------------------------------------------|---------------------|
 | LogHistory         | LogHistory        | Main log history: list of entries with add/clone    | happy, empty        |
 | EditEntry          | EditEntry         | Add/edit/clone a single log entry (modal pickers)   | happy, error        |
-| ConfigureCatalog   | ConfigureCatalog  | Manage categories, items, groups, quantifiers       | happy, empty, error |
+| ConfigureCatalog   | ConfigureCatalog  | Manage categories, items, bundles, quantifiers      | happy, empty, error |
 | Graphs             | Graphs            | Browse saved/named graphs                            | happy, empty        |
 | GraphCreate        | GraphCreate       | Select items + date range, generate new graph       | happy              |
 | GraphView          | GraphView         | Display and share a specific graph                   | happy              |

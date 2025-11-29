@@ -66,9 +66,9 @@ export default function LogHistory({
         item.name.toLowerCase().includes(query)
       );
       
-      // Search in groups
-      const groupMatch = entry.groups.some((group) =>
-        group.name.toLowerCase().includes(query)
+      // Search in bundles
+      const bundleMatch = entry.bundles.some((bundle) =>
+        bundle.name.toLowerCase().includes(query)
       );
       
       // Search in comment
@@ -80,7 +80,7 @@ export default function LogHistory({
       // Search in formatted date (basic)
       const dateMatch = entry.timestamp.includes(query);
       
-      return itemMatch || groupMatch || commentMatch || typeMatch || dateMatch;
+      return itemMatch || bundleMatch || commentMatch || typeMatch || dateMatch;
     });
   }, [entries, filterText]);
   
@@ -113,13 +113,14 @@ export default function LogHistory({
   
   // Render entry card
   const renderEntry = ({ item }: { item: LogEntry }) => {
-    // Combine items and groups for display
+    // Combine items and bundles for display
     const displayItems = [
       ...item.items.map((i) => i.name),
-      ...item.groups.map((g) => g.name),
+      ...item.bundles.map((b) => b.name),
     ];
     
-    const primaryDisplay = displayItems.slice(0, 3).join(', ');
+    const isNoteEntry = displayItems.length === 0;
+    const primaryDisplay = isNoteEntry ? item.comment || t('logHistory.note') : displayItems.slice(0, 3).join(', ');
     const moreCount = displayItems.length - 3;
     
     // Get first quantifier for summary

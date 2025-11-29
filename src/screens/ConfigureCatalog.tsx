@@ -30,9 +30,9 @@ export const ConfigureCatalog: React.FC<Props> = ({ navigation, onBack }) => {
     );
   };
 
-  const selectedGroupNames = catalog.groups
-    .filter((g) => g.itemIds.every((id) => selectedItemIds.includes(id)))
-    .map((g) => g.name);
+  const selectedBundleNames = catalog.bundles
+    .filter((b) => b.itemIds.every((id) => selectedItemIds.includes(id)))
+    .map((b) => b.name);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -61,15 +61,15 @@ export const ConfigureCatalog: React.FC<Props> = ({ navigation, onBack }) => {
           emptyLabel={t('configureCatalog.empty.items')}
         />
 
-        {selectedGroupNames.length > 0 && (
-          <View style={styles.groupsSummary}>
-            <Text style={[styles.groupsLabel, { color: theme.textSecondary }]}>
-              {t('configureCatalog.label.groupsContainingSelection')}
+        {selectedBundleNames.length > 0 && (
+          <View style={styles.bundlesSummary}>
+            <Text style={[styles.bundlesLabel, { color: theme.textSecondary }]}>
+              {t('configureCatalog.label.bundlesContainingSelection')}
             </Text>
-            {selectedGroupNames.map((name) => (
+            {selectedBundleNames.map((name) => (
               <Text
                 key={name}
-                style={[styles.groupsName, { color: theme.textPrimary }]}>
+                style={[styles.bundlesName, { color: theme.textPrimary }]}>
                 • {name}
               </Text>
             ))}
@@ -106,14 +106,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 8,
   },
-  groupsSummary: {
+  bundlesSummary: {
     marginTop: 16,
   },
-  groupsLabel: {
+  bundlesLabel: {
     fontSize: 13,
     marginBottom: 4,
   },
-  groupsName: {
+  bundlesName: {
     fontSize: 13,
   },
 });

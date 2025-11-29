@@ -12,7 +12,8 @@ Outline the schema for Diario's core data model: log entries, taxonomy (types, c
 5. **Immutable history**: Bundles expand to items at log time, creating historical snapshot
 6. **Bundles for convenience**: Bundles trade detail (quantifiers) for speed; expand at save, not query
 7. **Single-type entries**: Each log entry contains items of only one type (Activity OR Condition OR Outcome)
-8. **Sereus sync**: All tables distributed across Bob's cadre and guest nodes
+8. **Items optional**: Entries may have 0 items (comment-only entries for notes/observations); type still required
+9. **Sereus sync**: All tables distributed across Bob's cadre and guest nodes
 
 ## Key Design Decisions
 
@@ -173,8 +174,6 @@ Top-level classification for log entries (Activity, Condition, Outcome, user-def
 - `id` (UUID, PK)
 - `name` (TEXT, NOT NULL, UNIQUE)
   - Examples: "Activity", "Condition", "Outcome", "Medication"
-- `display_order` (INTEGER, default 0)
-  - For UI ordering
 
 **Constraints:**
 - Primary key: `id`
@@ -183,6 +182,7 @@ Top-level classification for log entries (Activity, Condition, Outcome, user-def
 **Notes:**
 - Story 02:11 says types are editable by user
 - Initial seed: Activity, Condition, Outcome
+- UI ordering: Hardcoded in application (Activity, Condition, Outcome) or alphabetical
 - Updates trigger taxonomy lifecycle logic (general.md)
 
 ---
@@ -194,7 +194,6 @@ Flat categories organized under types (e.g., Activity → Eating, Exercise). No 
 - `id` (UUID, PK)
 - `type_id` (UUID, FK → types.id, NOT NULL)
 - `name` (TEXT, NOT NULL)
-- `display_order` (INTEGER, default 0)
 
 **Constraints:**
 - Primary key: `id`
@@ -206,6 +205,8 @@ Flat categories organized under types (e.g., Activity → Eating, Exercise). No 
 - Story 02:13: "Health, Welfare, Pain" under Outcome type (flat list)
 - Story 02:25: "Weather, Stress, Environment" under Condition type
 - No `parent_category_id` for MVP (flat structure); can add later if needed
+- **UI ordering**: Alphabetical by name (predictable, no management burden)
+  - Alternative: Usage-based (most logged categories first) - future enhancement
 - Deletion restricted if referenced by items or log entries
 
 **Migration path:** If hierarchy needed later, add `parent_category_id UUID REFERENCES categories(id)` column.
@@ -221,7 +222,6 @@ Individual loggable items (foods, exercises, symptoms, etc.).
 - `name` (TEXT, NOT NULL)
 - `description` (TEXT, NULL)
   - Optional user notes
-- `display_order` (INTEGER, default 0)
 
 **Constraints:**
 - Primary key: `id`
@@ -233,7 +233,10 @@ Individual loggable items (foods, exercises, symptoms, etc.).
 - Story 01:26: "Pushups, pullups, situps, jogging"
 - Story 02:15: "stomach pain"
 - Each item belongs to exactly one category (general.md)
-- Deletion restricted if referenced by groups or log entries
+- **UI ordering**: Alphabetical by name + filter/search (Story 03:17: "bac" → bacon)
+  - Story 03 emphasizes filter over scrolling long lists
+  - Alternative: Recently used / most frequent first - future enhancement
+- Deletion restricted if referenced by bundles or log entries
 
 ---
 
@@ -254,7 +257,6 @@ Quantifier definitions attached to specific items (e.g., headache has "Intensity
   - Optional maximum (e.g., 10 for 1-10 scale)
 - `units` (TEXT, NULL)
   - Display string: "1-10", "reps", "minutes", "miles", "glasses"
-- `display_order` (INTEGER, default 0)
 
 **Constraints:**
 - Primary key: `id`
@@ -266,6 +268,9 @@ Quantifier definitions attached to specific items (e.g., headache has "Intensity
 - Story 02:16-17: Bob adds "Intensity" quantifier (1-10 scale) to "stomach pain" item
 - Story 01:27: Jogging has "Distance" (2 miles) and "Duration" (30 minutes)
 - general.md: Quantifiers are defined per item, 0-N per item
+- **UI ordering**: Definition order (first quantifier defined appears first in UI)
+  - Items typically have 1-3 quantifiers, so order not critical
+  - Alternative: Alphabetical by name
 - Deleting item cascades to delete its quantifiers (can't orphan quantifier definitions)
 
 ---
@@ -301,6 +306,9 @@ Many-to-many relationship: bundles can contain items and/or other bundles.
 - `member_bundle_id` (UUID, FK → bundles.id, NULL)
   - If this bundle member is another bundle (nested)
 - `display_order` (INTEGER, default 0)
+  - **Functional purpose**: Bundle members have semantic order (BLT = Bacon-Lettuce-Tomato, not alphabetical)
+  - UI: Drag-to-reorder when composing bundle
+  - Reasonable burden: infrequent (bundle creation), small lists (5-10 items)
 
 **Constraints:**
 - Primary key: `id`
@@ -351,9 +359,11 @@ Individual log records created by Bob. Each entry contains items of only ONE typ
 ```
 
 **Notes:**
+- Story 01:9: Welcome message is an entry with 0 items, just comment (e.g., type=Condition, items=[], comment="Welcome...")
 - Story 01:19: "now he can see his new item in the list"
 - Story 02:21: "commits the item"
-- EditEntry flow enforces single type: user chooses type first, then selects items within that type
+- EditEntry flow: user chooses type first, then selects items (optional - can skip for comment-only entries)
+- **Items optional**: Entries with 0 items valid for notes/observations (comment typically present)
 - Deletion allowed (Bob can delete log entries)
 - Editing entries: update timestamp, comment, or linked items/quantifiers
 
@@ -553,18 +563,18 @@ When Bob edits/deletes taxonomy in use:
 
 ### Initial Seed Data
 ```sql
--- Seed types
-INSERT INTO types (id, name, display_order) VALUES
-  (uuid(), 'Activity', 1),
-  (uuid(), 'Condition', 2),
-  (uuid(), 'Outcome', 3);
+-- Seed types (order handled in UI, not DB)
+INSERT INTO types (id, name) VALUES
+  (uuid(), 'Activity'),
+  (uuid(), 'Condition'),
+  (uuid(), 'Outcome');
 
--- Seed top-level categories (examples from stories)
-INSERT INTO categories (id, type_id, name, display_order) VALUES
-  (uuid(), (SELECT id FROM types WHERE name='Activity'), 'Eating', 1),
-  (uuid(), (SELECT id FROM types WHERE name='Activity'), 'Exercise', 2),
-  (uuid(), (SELECT id FROM types WHERE name='Condition'), 'Weather', 1),
-  (uuid(), (SELECT id FROM types WHERE name='Outcome'), 'Pain', 1);
+-- Seed top-level categories (examples from stories, will display alphabetically)
+INSERT INTO categories (id, type_id, name) VALUES
+  (uuid(), (SELECT id FROM types WHERE name='Activity'), 'Eating'),
+  (uuid(), (SELECT id FROM types WHERE name='Activity'), 'Exercise'),
+  (uuid(), (SELECT id FROM types WHERE name='Condition'), 'Weather'),
+  (uuid(), (SELECT id FROM types WHERE name='Outcome'), 'Pain');
 
 -- Seed example items (from stories)
 INSERT INTO items (id, category_id, name) VALUES

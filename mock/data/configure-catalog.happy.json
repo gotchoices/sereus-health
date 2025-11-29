@@ -7,9 +7,9 @@
     { "id": "item-bread", "name": "Bread", "type": "Activity", "category": "Eating" },
     { "id": "item-mayo", "name": "Mayonnaise", "type": "Activity", "category": "Eating" }
   ],
-  "groups": [
+  "bundles": [
     {
-      "id": "group-blt",
+      "id": "bundle-blt",
       "name": "BLT",
       "itemIds": [
         "item-bacon",

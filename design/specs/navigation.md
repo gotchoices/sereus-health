@@ -30,7 +30,7 @@ Sitemap (high-level)
 
 - CATALOG Tab (stack)
   - `ConfigureCatalog` (root)  
-    - Manage categories, items, groups, and quantifiers.
+    - Manage categories, items, bundles, and quantifiers.
 
 - SETTINGS Tab (stack)
   - `Settings` (root)  

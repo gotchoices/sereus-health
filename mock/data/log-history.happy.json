@@ -11,7 +11,7 @@
           "categoryPath": ["Condition", "Mental"]
         }
       ],
-      "groups": [],
+      "bundles": [],
       "quantifiers": [
         {
           "itemId": "item-stress",
@@ -33,7 +33,7 @@
           "categoryPath": ["Outcome", "Pain"]
         }
       ],
-      "groups": [],
+      "bundles": [],
       "quantifiers": [
         {
           "itemId": "item-stomach-pain",
@@ -55,9 +55,9 @@
           "categoryPath": ["Activity", "Eating", "Dairy"]
         }
       ],
-      "groups": [
+      "bundles": [
         {
-          "id": "group-blt",
+          "id": "bundle-blt",
           "name": "BLT"
         }
       ],
@@ -97,7 +97,7 @@
           "categoryPath": ["Activity", "Exercise", "Cardio"]
         }
       ],
-      "groups": [],
+      "bundles": [],
       "quantifiers": [
         {
           "itemId": "item-pushups",
@@ -153,7 +153,7 @@
           "categoryPath": ["Activity", "Eating", "Beverage"]
         }
       ],
-      "groups": [],
+      "bundles": [],
       "quantifiers": [],
       "comment": null
     },
@@ -183,7 +183,7 @@
           "categoryPath": ["Activity", "Eating", "Vegetables"]
         }
       ],
-      "groups": [],
+      "bundles": [],
       "quantifiers": [
         {
           "itemId": "item-peas",
@@ -211,7 +211,7 @@
           "categoryPath": ["Outcome", "Pain"]
         }
       ],
-      "groups": [],
+      "bundles": [],
       "quantifiers": [
         {
           "itemId": "item-headache",
@@ -239,7 +239,7 @@
           "categoryPath": ["Activity", "Eating", "Snacks"]
         }
       ],
-      "groups": [],
+      "bundles": [],
       "quantifiers": [
         {
           "itemId": "item-peanuts",
@@ -261,7 +261,7 @@
           "categoryPath": ["Activity", "Eating", "Desserts"]
         }
       ],
-      "groups": [],
+      "bundles": [],
       "quantifiers": [
         {
           "itemId": "item-chocolate",
@@ -283,7 +283,7 @@
           "categoryPath": ["Condition", "Weather"]
         }
       ],
-      "groups": [],
+      "bundles": [],
       "quantifiers": [],
       "comment": "All day rain"
     },
@@ -298,7 +298,7 @@
           "categoryPath": ["Activity", "Exercise", "Flexibility"]
         }
       ],
-      "groups": [],
+      "bundles": [],
       "quantifiers": [
         {
           "itemId": "item-yoga",
@@ -320,7 +320,7 @@
           "categoryPath": ["Activity", "Eating", "Beverage"]
         }
       ],
-      "groups": [],
+      "bundles": [],
       "quantifiers": [
         {
           "itemId": "item-coffee",
@@ -342,7 +342,7 @@
           "categoryPath": ["Outcome", "Wellness"]
         }
       ],
-      "groups": [],
+      "bundles": [],
       "quantifiers": [
         {
           "itemId": "item-sleep-quality",
@@ -370,7 +370,7 @@
           "categoryPath": ["Activity", "Eating", "Lunch"]
         }
       ],
-      "groups": [],
+      "bundles": [],
       "quantifiers": [],
       "comment": "Caesar salad with grilled chicken"
     },
@@ -385,7 +385,7 @@
           "categoryPath": ["Condition", "Physical"]
         }
       ],
-      "groups": [],
+      "bundles": [],
       "quantifiers": [
         {
           "itemId": "item-energy-level",
