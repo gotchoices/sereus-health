@@ -6,15 +6,27 @@ Purpose
 Sitemap (high-level)
 - HOME Tab (stack)
   - `LogHistory` (root)  
-    - Main log history showing Bob’s entries in chronological order.  
+    - Main log history showing Bob's entries in chronological order.  
     - Actions:
       - Add: start a brand new entry (navigates to `EditEntry` in `new` mode).
       - Clone: clone a selected entry (navigates to `EditEntry` in `clone` mode with the source entryId).
-      - Catalog: optional shortcut to `ConfigureCatalog`.
+      - Graph icon: navigate to `Graphs` screen.
   - `EditEntry` (push from `LogHistory`)  
     - Focused flow for adding/editing/cloning a single entry.
-  - `Graphs` (push from `LogHistory` or future entry points)  
-    - List of graphs and individual graph views.
+    - Internal progression: Type selection → Category selection → Item selection → Quantifiers/Comment.
+  - `Graphs` (push from `LogHistory`)  
+    - List of saved/named graphs Bob has created.
+    - Actions:
+      - Tap graph: navigate to `GraphView` to view/share that graph.
+      - "Create Graph" button: navigate to `GraphCreate`.
+  - `GraphCreate` (push from `Graphs`)  
+    - Item picker (multi-select from all loggable items).
+    - Date range configuration.
+    - Graph name input.
+    - "Generate" button: navigate to `GraphView` with new graph.
+  - `GraphView` (push from `Graphs` or `GraphCreate`)  
+    - Display generated graph.
+    - Share action to export graph image.
 
 - CATALOG Tab (stack)
   - `ConfigureCatalog` (root)  
@@ -30,6 +42,8 @@ Deep Links
   - `diario://screen/LogHistory`
   - `diario://screen/EditEntry`
   - `diario://screen/Graphs`
+  - `diario://screen/GraphCreate`
+  - `diario://screen/GraphView`
   - `diario://screen/ConfigureCatalog`
   - `diario://screen/SereusConnections`
 
@@ -41,20 +55,32 @@ Deep Links
       - `mode`: one of `new`, `edit`, `clone`.  
       - `entryId`: optional ID of the entry to edit/clone.
     - `Graphs`:  
-      - `graphId`: optional identifier for a specific graph to open.
+      - No additional params (shows list of all saved graphs).
+    - `GraphCreate`:  
+      - `preselectedItems`: optional comma-separated list of item IDs to pre-select.
+    - `GraphView`:  
+      - `graphId`: identifier for a specific saved graph to display.
 
 Route Options
 - LogHistory: title "History"
-- EditEntry: title "Edit Entry"
+- EditEntry: title "New Entry" | "Edit Entry" | "Clone Entry" (based on mode)
 - Graphs: title "Graphs"
+- GraphCreate: title "Create Graph"
+- GraphView: title "{Graph Name}" (dynamic based on graph)
 - ConfigureCatalog: title "Catalog"
 - SereusConnections: title "Sereus"
 
 Back Navigation
-- Within each tab’s stack, the “back” affordance (header back button or system back) should move to the previous screen in that stack.  
-- From `EditEntry`, back returns to `LogHistory`.  
-- From `ConfigureCatalog`, `Graphs`, and `SereusConnections`, back returns to `LogHistory` in the current MVP (until tabbed navigation is fully wired).  
-- On Android, the hardware back button should be wired (via the navigator) to the same back behavior: pop within the current stack; if already at the root `LogHistory`, exit the app.
+- Within each tab's stack, the "back" affordance (header back button or system back) should pop to the previous screen in that stack.  
+- HOME tab stack:
+  - From `EditEntry` → back to `LogHistory`
+  - From `Graphs` → back to `LogHistory`
+  - From `GraphCreate` → back to `Graphs`
+  - From `GraphView` → back to `Graphs` (if from list) or `GraphCreate` (if just generated)
+- CATALOG and SETTINGS tabs:
+  - Each tab root has no back action (already at root).
+- At any tab root, Android hardware back button exits the app.
+- Cross-tab navigation (tapping bottom tab) switches context; no "back" between tabs.
 
 Notes
 - Human navigation spec overrides any AI-generated navigation consolidation.
