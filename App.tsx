@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import LogHistory from './src/screens/LogHistory';
+import ConfigureCatalog from './src/screens/ConfigureCatalog';
 import Graphs from './src/screens/Graphs';
 import Settings from './src/screens/Settings';
 import SereusConnections from './src/screens/SereusConnections';
@@ -113,11 +114,12 @@ function App(): React.JSX.Element {
       case 'Reminders':
         return <Reminders onBack={handleBack} />;
       
+      case 'ConfigureCatalog':
+        return <ConfigureCatalog onBack={handleBack} />;
+      
       // TODO: Implement remaining screens
       // case 'EditEntry':
       //   return <EditEntry {...editParams} onBack={handleBack} />;
-      // case 'ConfigureCatalog':
-      //   return <ConfigureCatalog onBack={handleBack} onNavigateTab={handleNavigateTab} />;
       
       default:
         return (

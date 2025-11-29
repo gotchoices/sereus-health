@@ -14,7 +14,8 @@ This file tracks open design questions for Diario so they can be resolved one at
 - [x] **Quantifier attachment model**: Confirm whether quantifiers are defined per-item, per-category, or both.
 - [x] **EditEntry flow structure**: Decided: Single screen with modal pickers (Option C). Next: Create `specs/screens/EditEntry.md` detailing the modal picker pattern, field layout, validation, and behavior for new/edit/clone modes.
 - [ ] **Comment/notes support**: Specify where free-form comments are allowed (per-entry vs per-item within an entry) and any length or formatting constraints.
-- [ ] **Bulk configuration UX**: Clarify how bulk creation/editing of items is exposed (e.g., dedicated “Manage Items” / “Manage Groups” screens vs inline modals within the logging flow).
+- [ ] **Catalog screen purpose & scope**: Stories show all item/group creation happening inline during EditEntry flow. Decide: (A) Keep ConfigureCatalog as separate bulk manager, (B) Make it read-only browser, or (C) Remove Catalog tab entirely and do everything inline. Update navigation.md accordingly.
+- [ ] **Inline taxonomy creation in EditEntry**: Stories 01, 02, 03 show Bob adding items/groups while logging. Specify how "Add new item" / "Create group" links/buttons work within EditEntry's modal pickers (inline forms, nested modals, navigation to Catalog?).
 - [ ] **Search & filtering behavior in pickers**: Define how search/filter behaves when selecting items/groups (case sensitivity, ranking, matching fields, empty-state behavior).
 - [ ] **History list presentation**: Specify how log entries are summarized in the main history list (what fields are shown, grouping by day, handling long entries with many items).
 - [x] **Time & timezone rules**: Decide how timestamps are captured (device time vs selectable date/time), whether timezone differences matter, and how edits to the timestamp are handled.
@@ -35,6 +36,16 @@ This file tracks open design questions for Diario so they can be resolved one at
 - [ ] **Settings screen spec**: Create `specs/screens/Settings.md` detailing: section list layout, future extensibility (AI, Preferences, Data Management, About).
 - [ ] **SereusConnections screen spec**: Create `specs/screens/SereusConnections.md` detailing: QR scanning flow, node list display (cadre vs guest), node management (rename, status, remove), and add-node prompts.
 - [x] **Sync & conflict resolution**: Describe how real-time sync behaves when multiple nodes update the same data (e.g., tie-breaking strategy, eventual consistency expectations, offline edits).
+
+### Schema & Data Model
+
+- [x] **Database schema design**: Updated `specs/api/schema.md` with refined design:
+  - Flat categories (no hierarchy for MVP)
+  - Groups expand to items at log time (immutable historical snapshot)
+  - Quantifiers only for individually-selected items (not group members)
+  - Single-type entries (validated)
+  - 9 tables with detailed examples, constraints, and rationale
+  - Ready for Quereus implementation
 
 ### Possible Future Enhancements (Post-MVP)
 
