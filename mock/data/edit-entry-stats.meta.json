@@ -1,0 +1,14 @@
+{
+  "namespace": "edit-entry-stats",
+  "description": "Usage statistics for types, categories, and items to support smart defaults and ordering in EditEntry screen",
+  "variants": {
+    "happy": "Realistic usage counts - Activity most common (100), Eating most common category (80), Omelette most common item (50)",
+    "empty": "No usage data - all counts zero, simulates first-time user"
+  },
+  "schema": {
+    "typeStats": "Array<{id: string, name: string, usageCount: number}>",
+    "categoryStats": "Record<typeId, Array<{id: string, name: string, usageCount: number}>>",
+    "itemStats": "Record<categoryId, Array<{id: string, name: string, usageCount: number, isBundle: boolean}>>"
+  }
+}
+

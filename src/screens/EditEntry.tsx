@@ -2,15 +2,19 @@
  * EditEntry Screen
  * 
  * Single-screen form for adding, editing, or cloning log entries.
- * Uses modal pickers for type/category/item selection.
+ * Features:
+ * - Smart defaults (auto-select most common type/category in new mode)
+ * - Usage-based ordering (most logged items appear first)
+ * - Search filters in all pickers
+ * - Modal pickers for type/category/item selection
  * 
  * AppeusMeta:
  *   route: EditEntry
  *   dependsOn: design/specs/screens/EditEntry.md, design/generated/screens/EditEntry.md
- *   provides: Entry creation/editing UI with modal pickers
+ *   provides: Entry creation/editing UI with smart defaults and search
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -23,30 +27,38 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
+import {
+  getTypeStats,
+  getCategoryStats,
+  getItemStats,
+  getMostCommonType,
+  getMostCommonCategory,
+  type TypeStat,
+  type CategoryStat,
+  type ItemStat,
+} from '../data/editEntryStats';
 
 interface EditEntryProps {
   mode?: 'new' | 'edit' | 'clone';
   entryId?: string;
   onBack: () => void;
+  variant?: string;
   // For future React Navigation compatibility
   navigation?: any;
   route?: {
     params?: {
       mode?: 'new' | 'edit' | 'clone';
       entryId?: string;
+      variant?: string;
     };
   };
-}
-
-interface SelectOption {
-  id: string;
-  label: string;
 }
 
 export const EditEntry: React.FC<EditEntryProps> = ({
   mode: modeProp,
   entryId: entryIdProp,
   onBack,
+  variant: variantProp,
   navigation,
   route,
 }) => {
@@ -56,11 +68,12 @@ export const EditEntry: React.FC<EditEntryProps> = ({
   // Support both direct props and route params
   const mode = modeProp ?? route?.params?.mode ?? 'new';
   const entryId = entryIdProp ?? route?.params?.entryId;
+  const variant = variantProp ?? route?.params?.variant ?? 'happy';
 
   // Form state
-  const [selectedType, setSelectedType] = useState<SelectOption | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<SelectOption | null>(null);
-  const [selectedItems, setSelectedItems] = useState<SelectOption[]>([]);
+  const [selectedType, setSelectedType] = useState<TypeStat | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryStat | null>(null);
+  const [selectedItems, setSelectedItems] = useState<ItemStat[]>([]);
   const [comment, setComment] = useState('');
   const [timestamp, setTimestamp] = useState(new Date());
   
@@ -68,85 +81,119 @@ export const EditEntry: React.FC<EditEntryProps> = ({
   const [typeModalVisible, setTypeModalVisible] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [itemsModalVisible, setItemsModalVisible] = useState(false);
+  
+  // Search filter state
+  const [typeFilter, setTypeFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [itemsFilter, setItemsFilter] = useState('');
 
-  // Mock data for pickers
-  const typeOptions: SelectOption[] = [
-    { id: 'activity', label: 'Activity' },
-    { id: 'condition', label: 'Condition' },
-    { id: 'outcome', label: 'Outcome' },
-  ];
+  // Load stats data (sorted by usage)
+  const allTypes = useMemo(() => getTypeStats(variant), [variant]);
+  const allCategories = useMemo(
+    () => (selectedType ? getCategoryStats(selectedType.id, variant) : []),
+    [selectedType, variant]
+  );
+  const allItems = useMemo(
+    () => (selectedCategory ? getItemStats(selectedCategory.id, variant) : []),
+    [selectedCategory, variant]
+  );
 
-  const categoryOptions: SelectOption[] = selectedType
-    ? selectedType.id === 'activity'
-      ? [
-          { id: 'eating', label: 'Eating' },
-          { id: 'exercise', label: 'Exercise' },
-          { id: 'recreation', label: 'Recreation' },
-        ]
-      : selectedType.id === 'condition'
-      ? [
-          { id: 'weather', label: 'Weather' },
-          { id: 'stress', label: 'Stress' },
-          { id: 'environment', label: 'Environment' },
-        ]
-      : [
-          { id: 'health', label: 'Health' },
-          { id: 'pain', label: 'Pain' },
-          { id: 'wellbeing', label: 'Well-being' },
-        ]
-    : [];
+  // Filtered data for pickers
+  const filteredTypes = useMemo(() => {
+    if (!typeFilter.trim()) return allTypes;
+    const query = typeFilter.toLowerCase();
+    return allTypes.filter(type => type.name.toLowerCase().includes(query));
+  }, [allTypes, typeFilter]);
 
-  const itemOptions: SelectOption[] = selectedCategory
-    ? selectedCategory.id === 'eating'
-      ? [
-          { id: 'omelette', label: 'Omelette' },
-          { id: 'toast', label: 'Toast' },
-          { id: 'orange-juice', label: 'Orange Juice' },
-          { id: 'blt-bundle', label: 'BLT (bundle)' },
-        ]
-      : [
-          { id: 'item1', label: 'Sample Item 1' },
-          { id: 'item2', label: 'Sample Item 2' },
-        ]
-    : [];
+  const filteredCategories = useMemo(() => {
+    if (!categoryFilter.trim()) return allCategories;
+    const query = categoryFilter.toLowerCase();
+    return allCategories.filter(cat => cat.name.toLowerCase().includes(query));
+  }, [allCategories, categoryFilter]);
+
+  const filteredItems = useMemo(() => {
+    if (!itemsFilter.trim()) return allItems;
+    const query = itemsFilter.toLowerCase();
+    return allItems.filter(item => item.name.toLowerCase().includes(query));
+  }, [allItems, itemsFilter]);
+
+  // Smart defaults (new mode only)
+  useEffect(() => {
+    if (mode === 'new') {
+      // Auto-select most common type
+      const commonType = getMostCommonType(variant);
+      if (commonType) {
+        setSelectedType(commonType);
+        
+        // Auto-select most common category for that type
+        const commonCategory = getMostCommonCategory(commonType.id, variant);
+        if (commonCategory) {
+          setSelectedCategory(commonCategory);
+        }
+      }
+    }
+    // For edit/clone modes, data would be loaded from entryId
+    // TODO: Load existing entry data
+  }, [mode, variant]);
 
   // Handlers
-  const handleTypeSelect = (option: SelectOption) => {
-    setSelectedType(option);
+  const handleTypeSelect = (type: TypeStat) => {
+    setSelectedType(type);
     setTypeModalVisible(false);
+    setTypeFilter('');
+    
     // Reset dependent selections
     setSelectedCategory(null);
     setSelectedItems([]);
+    
+    // Auto-select most common category for new type
+    const commonCategory = getMostCommonCategory(type.id, variant);
+    if (commonCategory) {
+      setSelectedCategory(commonCategory);
+    }
   };
 
-  const handleCategorySelect = (option: SelectOption) => {
-    setSelectedCategory(option);
+  const handleCategorySelect = (category: CategoryStat) => {
+    setSelectedCategory(category);
     setCategoryModalVisible(false);
-    // Reset dependent selections
+    setCategoryFilter('');
+    
+    // Reset items
     setSelectedItems([]);
   };
 
-  const toggleItemSelection = (option: SelectOption) => {
+  const toggleItemSelection = (item: ItemStat) => {
     setSelectedItems(prev => {
-      const isSelected = prev.some(item => item.id === option.id);
+      const isSelected = prev.some(i => i.id === item.id);
       if (isSelected) {
-        return prev.filter(item => item.id !== option.id);
+        return prev.filter(i => i.id !== item.id);
       } else {
-        return [...prev, option];
+        return [...prev, item];
       }
     });
+  };
+
+  const handleItemsDone = () => {
+    setItemsModalVisible(false);
+    setItemsFilter('');
   };
 
   const handleSave = () => {
     // Validation
     if (!selectedType) {
-      // Show error - type required
+      // TODO: Show error - type required
       return;
     }
     
     // For note entries (0 items), category not required
     if (selectedItems.length > 0 && !selectedCategory) {
-      // Show error - category required when items selected
+      // TODO: Show error - category required when items selected
+      return;
+    }
+
+    // At least one of items or comment required
+    if (selectedItems.length === 0 && comment.trim().length === 0) {
+      // TODO: Show error
       return;
     }
 
@@ -161,29 +208,17 @@ export const EditEntry: React.FC<EditEntryProps> = ({
     });
 
     // Navigate back
-    if (onBack) {
-      onBack();
-    } else {
-      navigation?.goBack?.();
-    }
+    onBack();
   };
 
   const handleCancel = () => {
     // TODO: Show unsaved changes warning if applicable
-    if (onBack) {
-      onBack();
-    } else {
-      navigation?.goBack?.();
-    }
+    onBack();
   };
 
   const handleDelete = () => {
     // TODO: Show confirmation dialog
-    if (onBack) {
-      onBack();
-    } else {
-      navigation?.goBack?.();
-    }
+    onBack();
   };
 
   // Title based on mode
@@ -261,7 +296,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
                 { color: selectedType ? theme.textPrimary : theme.textSecondary },
               ]}
             >
-              {selectedType ? selectedType.label : t('editEntry.selectType')}
+              {selectedType ? selectedType.name : t('editEntry.selectType')}
             </Text>
             <Ionicons
               name="chevron-forward"
@@ -293,7 +328,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
                 { color: selectedCategory ? theme.textPrimary : theme.textSecondary },
               ]}
             >
-              {selectedCategory ? selectedCategory.label : t('editEntry.selectCategory')}
+              {selectedCategory ? selectedCategory.name : t('editEntry.selectCategory')}
             </Text>
             <Ionicons
               name="chevron-forward"
@@ -325,10 +360,16 @@ export const EditEntry: React.FC<EditEntryProps> = ({
                   {selectedItems.map(item => (
                     <View
                       key={item.id}
-                      style={[styles.chip, { backgroundColor: theme.accentPrimary + '20' }]}
+                      style={[
+                        styles.chip,
+                        { backgroundColor: theme.accentPrimary + '20', borderColor: theme.accentPrimary + '40' },
+                      ]}
                     >
+                      {item.isBundle && (
+                        <Ionicons name="cube-outline" size={12} color={theme.accentPrimary} style={{ marginRight: 4 }} />
+                      )}
                       <Text style={[styles.chipText, { color: theme.accentPrimary }]}>
-                        {item.label}
+                        {item.name}
                       </Text>
                     </View>
                   ))}
@@ -430,29 +471,55 @@ export const EditEntry: React.FC<EditEntryProps> = ({
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
               Select Type
             </Text>
-            <TouchableOpacity onPress={() => setTypeModalVisible(false)}>
+            <TouchableOpacity onPress={() => { setTypeModalVisible(false); setTypeFilter(''); }}>
               <Ionicons name="close" size={28} color={theme.textPrimary} />
             </TouchableOpacity>
           </View>
-          <ScrollView style={styles.modalContent}>
-            {typeOptions.map(option => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.modalOption,
-                  { backgroundColor: theme.surface, borderBottomColor: theme.border },
-                ]}
-                onPress={() => handleTypeSelect(option)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.modalOptionText, { color: theme.textPrimary }]}>
-                  {option.label}
-                </Text>
-                {selectedType?.id === option.id && (
-                  <Ionicons name="checkmark" size={24} color={theme.accentPrimary} />
-                )}
+          
+          {/* Search Filter */}
+          <View style={[styles.searchContainer, { backgroundColor: theme.background, borderBottomColor: theme.border }]}>
+            <Ionicons name="search" size={20} color={theme.textSecondary} style={{ marginRight: spacing[2] }} />
+            <TextInput
+              style={[styles.searchInput, { color: theme.textPrimary }]}
+              placeholder="Search types..."
+              placeholderTextColor={theme.textSecondary}
+              value={typeFilter}
+              onChangeText={setTypeFilter}
+            />
+            {typeFilter.length > 0 && (
+              <TouchableOpacity onPress={() => setTypeFilter('')}>
+                <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
-            ))}
+            )}
+          </View>
+          
+          <ScrollView style={styles.modalContent}>
+            {filteredTypes.length > 0 ? (
+              filteredTypes.map(type => (
+                <TouchableOpacity
+                  key={type.id}
+                  style={[
+                    styles.modalOption,
+                    { backgroundColor: theme.surface, borderBottomColor: theme.border },
+                  ]}
+                  onPress={() => handleTypeSelect(type)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.modalOptionText, { color: theme.textPrimary }]}>
+                    {type.name}
+                  </Text>
+                  {selectedType?.id === type.id && (
+                    <Ionicons name="checkmark" size={24} color={theme.accentPrimary} />
+                  )}
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
+                  No results found
+                </Text>
+              </View>
+            )}
           </ScrollView>
         </View>
       </Modal>
@@ -469,29 +536,55 @@ export const EditEntry: React.FC<EditEntryProps> = ({
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
               Select Category
             </Text>
-            <TouchableOpacity onPress={() => setCategoryModalVisible(false)}>
+            <TouchableOpacity onPress={() => { setCategoryModalVisible(false); setCategoryFilter(''); }}>
               <Ionicons name="close" size={28} color={theme.textPrimary} />
             </TouchableOpacity>
           </View>
-          <ScrollView style={styles.modalContent}>
-            {categoryOptions.map(option => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.modalOption,
-                  { backgroundColor: theme.surface, borderBottomColor: theme.border },
-                ]}
-                onPress={() => handleCategorySelect(option)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.modalOptionText, { color: theme.textPrimary }]}>
-                  {option.label}
-                </Text>
-                {selectedCategory?.id === option.id && (
-                  <Ionicons name="checkmark" size={24} color={theme.accentPrimary} />
-                )}
+          
+          {/* Search Filter */}
+          <View style={[styles.searchContainer, { backgroundColor: theme.background, borderBottomColor: theme.border }]}>
+            <Ionicons name="search" size={20} color={theme.textSecondary} style={{ marginRight: spacing[2] }} />
+            <TextInput
+              style={[styles.searchInput, { color: theme.textPrimary }]}
+              placeholder="Search categories..."
+              placeholderTextColor={theme.textSecondary}
+              value={categoryFilter}
+              onChangeText={setCategoryFilter}
+            />
+            {categoryFilter.length > 0 && (
+              <TouchableOpacity onPress={() => setCategoryFilter('')}>
+                <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
-            ))}
+            )}
+          </View>
+          
+          <ScrollView style={styles.modalContent}>
+            {filteredCategories.length > 0 ? (
+              filteredCategories.map(category => (
+                <TouchableOpacity
+                  key={category.id}
+                  style={[
+                    styles.modalOption,
+                    { backgroundColor: theme.surface, borderBottomColor: theme.border },
+                  ]}
+                  onPress={() => handleCategorySelect(category)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.modalOptionText, { color: theme.textPrimary }]}>
+                    {category.name}
+                  </Text>
+                  {selectedCategory?.id === category.id && (
+                    <Ionicons name="checkmark" size={24} color={theme.accentPrimary} />
+                  )}
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
+                  No results found
+                </Text>
+              </View>
+            )}
           </ScrollView>
         </View>
       </Modal>
@@ -508,44 +601,85 @@ export const EditEntry: React.FC<EditEntryProps> = ({
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
               Select Items
             </Text>
-            <TouchableOpacity onPress={() => setItemsModalVisible(false)}>
+            <TouchableOpacity onPress={handleItemsDone}>
               <Text style={[styles.doneButton, { color: theme.accentPrimary }]}>
                 Done
               </Text>
             </TouchableOpacity>
           </View>
+          
+          {/* Search Filter */}
+          <View style={[styles.searchContainer, { backgroundColor: theme.background, borderBottomColor: theme.border }]}>
+            <Ionicons name="search" size={20} color={theme.textSecondary} style={{ marginRight: spacing[2] }} />
+            <TextInput
+              style={[styles.searchInput, { color: theme.textPrimary }]}
+              placeholder="Search items..."
+              placeholderTextColor={theme.textSecondary}
+              value={itemsFilter}
+              onChangeText={setItemsFilter}
+            />
+            {itemsFilter.length > 0 && (
+              <TouchableOpacity onPress={() => setItemsFilter('')}>
+                <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
+          
           <ScrollView style={styles.modalContent}>
-            {itemOptions.map(option => {
-              const isSelected = selectedItems.some(item => item.id === option.id);
-              return (
-                <TouchableOpacity
-                  key={option.id}
-                  style={[
-                    styles.modalOption,
-                    { backgroundColor: theme.surface, borderBottomColor: theme.border },
-                  ]}
-                  onPress={() => toggleItemSelection(option)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.checkboxContainer}>
-                    <View
-                      style={[
-                        styles.checkbox,
-                        { borderColor: theme.border },
-                        isSelected && { backgroundColor: theme.accentPrimary, borderColor: theme.accentPrimary },
-                      ]}
-                    >
-                      {isSelected && (
-                        <Ionicons name="checkmark" size={18} color="#ffffff" />
-                      )}
+            {filteredItems.length > 0 ? (
+              filteredItems.map(item => {
+                const isSelected = selectedItems.some(i => i.id === item.id);
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.modalOption,
+                      { backgroundColor: theme.surface, borderBottomColor: theme.border },
+                    ]}
+                    onPress={() => toggleItemSelection(item)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.checkboxContainer}>
+                      <View
+                        style={[
+                          styles.checkbox,
+                          { borderColor: theme.border },
+                          isSelected && { backgroundColor: theme.accentPrimary, borderColor: theme.accentPrimary },
+                        ]}
+                      >
+                        {isSelected && (
+                          <Ionicons name="checkmark" size={18} color="#ffffff" />
+                        )}
+                      </View>
+                      <View style={styles.itemNameContainer}>
+                        {item.isBundle && (
+                          <Ionicons 
+                            name="cube-outline" 
+                            size={16} 
+                            color={theme.accentPrimary} 
+                            style={{ marginRight: spacing[1] }} 
+                          />
+                        )}
+                        <Text style={[styles.modalOptionText, { color: theme.textPrimary }]}>
+                          {item.name}
+                        </Text>
+                        {item.isBundle && (
+                          <Text style={[styles.bundleBadge, { color: theme.textSecondary }]}>
+                            {' '}Bundle
+                          </Text>
+                        )}
+                      </View>
                     </View>
-                    <Text style={[styles.modalOptionText, { color: theme.textPrimary }]}>
-                      {option.label}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+                  </TouchableOpacity>
+                );
+              })
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
+                  No results found
+                </Text>
+              </View>
+            )}
           </ScrollView>
         </View>
       </Modal>
@@ -612,9 +746,12 @@ const styles = StyleSheet.create({
     gap: spacing[1],
   },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: spacing[2],
     paddingVertical: spacing[1],
     borderRadius: 12,
+    borderWidth: 1,
   },
   chipText: {
     ...typography.small,
@@ -661,6 +798,18 @@ const styles = StyleSheet.create({
     ...typography.body,
     fontWeight: '700',
   },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderBottomWidth: 1,
+  },
+  searchInput: {
+    ...typography.body,
+    flex: 1,
+    paddingVertical: spacing[1],
+  },
   modalContent: {
     flex: 1,
   },
@@ -688,6 +837,22 @@ const styles = StyleSheet.create({
     marginRight: spacing[2],
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  itemNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  bundleBadge: {
+    ...typography.small,
+    fontSize: 11,
+  },
+  emptyState: {
+    paddingVertical: spacing[5],
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    ...typography.body,
   },
 });
 

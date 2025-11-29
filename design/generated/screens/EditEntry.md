@@ -224,6 +224,20 @@ Per spec (specs/screens/EditEntry.md), single scrolling form with modal pickers.
 ## Data Requirements (API/Engine Stubs)
 
 ### Read Operations
+
+**Stats APIs (for smart defaults and usage-based ordering)**:
+- `getTypeStats(variant?)` → Array<{id, name, usageCount}>
+  - Returns all types with usage counts from log history
+  - Used for: Auto-select most common type, order type picker
+- `getCategoryStats(typeId, variant?)` → Array<{id, name, usageCount}>
+  - Returns categories for given type with usage counts
+  - Used for: Auto-select most common category, order category picker
+- `getItemStats(categoryId, variant?)` → Array<{id, name, usageCount, isBundle}>
+  - Returns items for given category with usage counts
+  - Includes both individual items and bundles
+  - Used for: Order items picker by frequency
+
+**Entity APIs (for full data)**:
 - `getTypes(variant?)` → Array<{id, name}>
 - `getCategories(typeId, variant?)` → Array<{id, name, typeId}>
 - `getItems(categoryId, variant?)` → Array<{id, name, categoryId, quantifiers[]}>
@@ -236,9 +250,10 @@ Per spec (specs/screens/EditEntry.md), single scrolling form with modal pickers.
 - `deleteLogEntry(entryId)` → {success}
 
 ### Mock Variants
-- **happy**: Typical entry with items, quantifiers, comment
-- **empty**: New entry, no pre-filled data (except seed types/categories)
-- **bundle**: Entry with bundle (e.g., BLT)
+- **happy**: Realistic usage stats (Activity=100, Condition=50, Outcome=30; Eating=80, Exercise=40; Omelette=50, BLT=30)
+- **empty**: No usage data (all counts = 0, defaults to first alphabetically)
+- **bundle**: Include bundles in item stats with usage counts
+- **balanced**: Equal usage across all types/categories (test tie-breaking)
 - **quantifiers**: Entry with multiple quantifiers (headache: intensity + duration)
 - **note**: Entry with 0 items, just comment (schema allows)
 
@@ -251,8 +266,14 @@ Per spec (specs/screens/EditEntry.md), single scrolling form with modal pickers.
 ## UI/UX Best Practices
 - **Speed** (story 02: "not be a distraction", story 05:7 "That was fast")
   - Single screen (no multi-step wizard)
+  - **Smart defaults**: Auto-select most common type/category (new mode)
+  - **Usage-based ordering**: Most logged items appear first
   - Quick access to common actions
   - Clone for rapid re-entry
+- **Efficiency**:
+  - **Search filters**: All pickers include live search (story 03:9 "bac" → bacon)
+  - Case-insensitive substring matching
+  - "No results found" empty state
 - **Clarity**: Modal pickers keep context visible (user sees main form behind modal)
 - **Validation**: Immediate feedback, clear error messages
 - **Accessibility**: Touch targets ≥44px, high contrast, semantic labels

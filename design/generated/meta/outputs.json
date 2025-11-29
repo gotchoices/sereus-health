@@ -36,7 +36,7 @@
         "design/stories/05-cloning.md"
       ],
       "depHashes": {
-        "design/generated/screens/EditEntry.md": "549b78399301ec8503b0594f0da2f727f97b3c66910919e024e31b91bd4343c1",
+        "design/generated/screens/EditEntry.md": "49601fd385e340c5cba0279e0cf5e150e6f170b9f7c9cfa03d8960be63381447",
         "design/specs/screens/index.md": "7948b13ac54ae3d364929133f1985e7ba1d8307bcaebda50442f61438d48365b",
         "design/specs/navigation.md": "06e5b8894ad7a2821b22795f473c2c0d3c7a5cc02ff75cd67279897859ec39fb",
         "design/specs/global/general.md": "08a8137448a1a55a900823d432a57a00bf2460f9684feb5c5fee73bc6c8a43f6",
