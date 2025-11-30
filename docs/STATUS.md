@@ -41,11 +41,23 @@ This file tracks open design questions for Diario so they can be resolved one at
 
 - [x] **Database schema design**: Updated `specs/api/schema.md` with refined design:
   - Flat categories (no hierarchy for MVP)
-  - Groups expand to items at log time (immutable historical snapshot)
-  - Quantifiers only for individually-selected items (not group members)
+  - Bundles expand to items at log time (immutable historical snapshot)
+  - Quantifiers are properties of item definitions (shown for all selected items)
   - Single-type entries (validated)
   - 9 tables with detailed examples, constraints, and rationale
   - Ready for Quereus implementation
+
+### Quereus Integration (In Progress)
+
+- [ ] **Add Quereus dependency**: Install `quereus` package via yarn
+- [ ] **Create database initialization**: `src/db/index.ts` with Database instance, MemoryTableModule registration, and default pragma setup
+- [ ] **Translate schema to declarative SQL**: Convert `design/specs/api/schema.md` to Quereus declarative schema format in `src/db/schema.ts`
+- [ ] **Apply schema with seed data**: Execute `declare schema` and `apply schema main with seed` on app initialization
+- [ ] **Replace EditEntry stats adapters**: Update `getTypeStats`, `getCategoryStats`, `getItemStats` to use SQL queries instead of static JSON
+- [ ] **Implement CRUD for log entries**: Create `createLogEntry`, `updateLogEntry`, `deleteLogEntry` functions using SQL INSERT/UPDATE/DELETE
+- [ ] **Update LogHistory adapter**: Replace mock JSON reads with SQL queries (`SELECT * FROM log_entries`)
+- [ ] **Test full flow**: Add entry → Save → View in history → Edit → Delete
+- [ ] **Verify constraints**: Test FK constraints, unique constraints, CHECK constraints work as expected
 
 ### Possible Future Enhancements (Post-MVP)
 
