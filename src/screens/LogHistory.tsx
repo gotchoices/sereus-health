@@ -11,7 +11,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
-import { getLogHistoryMock, LogEntry } from '../data/logHistory';
+import { getLogHistory, LogEntry } from '../data/logHistory';
 
 interface LogHistoryProps {
   variant?: string;
@@ -39,21 +39,22 @@ export default function LogHistory({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Load data
+  // Load data from SQL database
   useEffect(() => {
     setLoading(true);
-    getLogHistoryMock(variant)
+    getLogHistory()
       .then((data) => {
-        setEntries(data.entries);
-        setError(data.error || null);
+        setEntries(data);
+        setError(null);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('Failed to load log history:', err);
         setError(t('logHistory.errorLoading'));
       })
       .finally(() => {
         setLoading(false);
       });
-  }, [variant, t]);
+  }, [t]);
   
   // Filter entries
   const filteredEntries = useMemo(() => {
@@ -61,15 +62,15 @@ export default function LogHistory({
     
     const query = filterText.toLowerCase();
     return entries.filter((entry) => {
-      // Search in items
+      // Search in items (now string arrays)
       const itemMatch = entry.items.some((item) =>
-        item.name.toLowerCase().includes(query)
+        item.toLowerCase().includes(query)
       );
       
-      // Search in bundles
-      const bundleMatch = entry.bundles.some((bundle) =>
-        bundle.name.toLowerCase().includes(query)
-      );
+      // Search in bundles (now string arrays)
+      const bundleMatch = entry.bundles?.some((bundle) =>
+        bundle.toLowerCase().includes(query)
+      ) || false;
       
       // Search in comment
       const commentMatch = entry.comment?.toLowerCase().includes(query);
@@ -113,18 +114,15 @@ export default function LogHistory({
   
   // Render entry card
   const renderEntry = ({ item }: { item: LogEntry }) => {
-    // Combine items and bundles for display
+    // Combine items and bundles for display (now both are string arrays)
     const displayItems = [
-      ...item.items.map((i) => i.name),
-      ...item.bundles.map((b) => b.name),
+      ...item.items,
+      ...(item.bundles || []),
     ];
     
     const isNoteEntry = displayItems.length === 0;
     const primaryDisplay = isNoteEntry ? item.comment || t('logHistory.note') : displayItems.slice(0, 3).join(', ');
     const moreCount = displayItems.length - 3;
-    
-    // Get first quantifier for summary
-    const firstQuantifier = item.quantifiers[0];
     
     return (
       <TouchableOpacity
@@ -150,13 +148,6 @@ export default function LogHistory({
             </Text>
           )}
         </Text>
-        
-        {firstQuantifier && (
-          <Text style={[styles.entryQuantifier, { color: theme.textSecondary }]}>
-            {firstQuantifier.name}: {firstQuantifier.value}
-            {firstQuantifier.units ? ` ${firstQuantifier.units}` : ''}
-          </Text>
-        )}
         
         {item.comment && (
           <Text
@@ -207,11 +198,18 @@ export default function LogHistory({
             onPress={() => {
               setError(null);
               setLoading(true);
-              getLogHistoryMock(variant).then((data) => {
-                setEntries(data.entries);
-                setError(data.error || null);
-                setLoading(false);
-              });
+              getLogHistory()
+                .then((data) => {
+                  setEntries(data);
+                  setError(null);
+                })
+                .catch((err) => {
+                  console.error('Failed to load log history:', err);
+                  setError(t('logHistory.errorLoading'));
+                })
+                .finally(() => {
+                  setLoading(false);
+                });
             }}
           >
             <Text style={[styles.retryButtonText, { color: '#ffffff' }]}>

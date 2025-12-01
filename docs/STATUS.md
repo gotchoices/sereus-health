@@ -47,17 +47,23 @@ This file tracks open design questions for Diario so they can be resolved one at
   - 9 tables with detailed examples, constraints, and rationale
   - Ready for Quereus implementation
 
-### Quereus Integration (In Progress)
+### Quereus Integration (Completed - Basic Read/Write)
 
-- [ ] **Add Quereus dependency**: Install `quereus` package via yarn
-- [ ] **Create database initialization**: `src/db/index.ts` with Database instance, MemoryTableModule registration, and default pragma setup
-- [ ] **Translate schema to declarative SQL**: Convert `design/specs/api/schema.md` to Quereus declarative schema format in `src/db/schema.ts`
-- [ ] **Apply schema with seed data**: Execute `declare schema` and `apply schema main with seed` on app initialization
-- [ ] **Replace EditEntry stats adapters**: Update `getTypeStats`, `getCategoryStats`, `getItemStats` to use SQL queries instead of static JSON
-- [ ] **Implement CRUD for log entries**: Create `createLogEntry`, `updateLogEntry`, `deleteLogEntry` functions using SQL INSERT/UPDATE/DELETE
-- [ ] **Update LogHistory adapter**: Replace mock JSON reads with SQL queries (`SELECT * FROM log_entries`)
-- [ ] **Test full flow**: Add entry → Save → View in history → Edit → Delete
-- [ ] **Verify constraints**: Test FK constraints, unique constraints, CHECK constraints work as expected
+- [x] **Add Quereus dependency**: Installed `@quereus/quereus@^0.4.11`
+- [x] **Create database initialization**: `src/db/index.ts` with Database instance, MemoryTableModule registration, and default pragmas
+- [x] **Translate schema to declarative SQL**: Created `src/db/schema.ts` with full declarative schema matching `design/specs/api/schema.md`
+- [x] **Apply schema with seed data**: App initializes DB on startup with seed data (types, categories, items, quantifiers, bundles, welcome note)
+- [x] **Replace EditEntry stats adapters**: Created `src/db/stats.ts` with SQL-based `getTypeStats`, `getCategoryStats`, `getItemStats`, `getMostCommonType`, `getMostCommonCategory`
+- [x] **Implement CRUD for log entries**: Created `src/db/logEntries.ts` with `createLogEntry`, `updateLogEntry`, `deleteLogEntry`, `getAllLogEntries`, `getLogEntryById`
+- [x] **Update LogHistory adapter**: Updated `src/data/logHistory.ts` to use SQL queries via `getAllLogEntries()`
+- [ ] **Test full flow**: Add entry → Save → View in history → Edit → Delete (ready for manual testing)
+- [ ] **Verify constraints**: Test FK constraints, unique constraints, CHECK constraints work as expected (ready for manual testing)
+
+**Next Steps:**
+- Manual testing of full CRUD flow
+- Wire up EditEntry save functionality to use `createLogEntry`/`updateLogEntry`
+- Test constraint validation (e.g., single-type entries, FK integrity)
+- Consider AsyncStorage persistence (post-testing)
 
 ### Possible Future Enhancements (Post-MVP)
 

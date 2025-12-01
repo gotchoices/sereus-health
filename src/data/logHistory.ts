@@ -1,67 +1,59 @@
 /**
- * Data adapter for LogHistory screen
- * Provides typed interface to mock data and (future) real data sources
+ * Log History Data Adapter
+ * 
+ * Provides data for LogHistory screen using SQL database.
+ * 
+ * NOTE: This adapter now wraps the SQL database functions
+ * but maintains the same interface for the screen component.
  */
 
-// Static imports for Metro bundler (doesn't support dynamic require)
-import happyData from '../../mock/data/log-history.happy.json';
-import emptyData from '../../mock/data/log-history.empty.json';
-import errorData from '../../mock/data/log-history.error.json';
+import { getAllLogEntries, type LogEntry as DbLogEntry } from '../db/logEntries';
 
-export interface LogEntryItem {
-  id: string;
-  name: string;
-  categoryPath: string[];
-}
-
-export interface LogEntryBundle {
-  id: string;
-  name: string;
-}
-
-export interface LogEntryQuantifier {
-  itemId: string;
-  name: string;
-  value: number;
-  units?: string;
-}
-
+// Legacy interface for screen compatibility
 export interface LogEntry {
-  id: string;
-  timestamp: string;  // ISO 8601 UTC
-  type: string;       // e.g., 'Activity', 'Condition', 'Outcome'
-  items: LogEntryItem[];
-  bundles: LogEntryBundle[];
-  quantifiers: LogEntryQuantifier[];
-  comment: string | null;
+	id: string;
+	timestamp: string;
+	type: string;
+	items: string[];
+	bundles?: string[];
+	comment?: string;
 }
-
-export interface LogHistoryModel {
-  entries: LogEntry[];
-  error?: string;
-}
-
-const mockVariants: Record<string, any> = {
-  happy: happyData,
-  empty: emptyData,
-  error: errorData,
-};
 
 /**
- * Load mock data for LogHistory screen
- * @param variant - One of: happy, empty, error
+ * Get log history from SQL database
+ * Transforms DB format to screen-expected format
  */
-export async function getLogHistoryMock(variant: string = 'happy'): Promise<LogHistoryModel> {
-  const data = mockVariants[variant] || mockVariants.happy;
-  
-  if (data._error) {
-    return {
-      entries: [],
-      error: data._error,
-    };
-  }
-  
-  return {
-    entries: data.entries || [],
-  };
+export async function getLogHistory(): Promise<LogEntry[]> {
+	const dbEntries = await getAllLogEntries();
+	
+	return dbEntries.map(entry => {
+		// Extract item names and bundle names
+		const itemNames: string[] = [];
+		const bundleNames: Set<string> = new Set();
+		
+		for (const item of entry.items) {
+			itemNames.push(item.name);
+			if (item.sourceBundleName) {
+				bundleNames.add(item.sourceBundleName);
+			}
+		}
+		
+		return {
+			id: entry.id,
+			timestamp: entry.timestamp,
+			type: entry.typeName,
+			items: itemNames,
+			bundles: bundleNames.size > 0 ? Array.from(bundleNames) : undefined,
+			comment: entry.comment || undefined,
+		};
+	});
+}
+
+/**
+ * Legacy mock-based function - now deprecated
+ * Kept for backward compatibility but always uses SQL
+ */
+export async function getLogHistoryMock(variant?: string): Promise<LogEntry[]> {
+	// Ignore variant, always use SQL now
+	return getLogHistory();
 }

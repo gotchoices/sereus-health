@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, ActivityIndicator, View, Text } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import LogHistory from './src/screens/LogHistory';
 import { EditEntry } from './src/screens/EditEntry';
@@ -8,6 +8,8 @@ import Graphs from './src/screens/Graphs';
 import Settings from './src/screens/Settings';
 import SereusConnections from './src/screens/SereusConnections';
 import Reminders from './src/screens/Reminders';
+import { getDatabase } from './src/db/index';
+import { applySchema } from './src/db/schema';
 
 type Screen = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog' | 'Graphs' | 'Settings' | 'SereusConnections' | 'Reminders';
 type Tab = 'home' | 'catalog' | 'settings';
@@ -21,6 +23,25 @@ function App(): React.JSX.Element {
   const [currentTab, setCurrentTab] = useState<Tab>('home');
   const [currentScreen, setCurrentScreen] = useState<Screen>('LogHistory');
   const [editParams, setEditParams] = useState<EditParams | null>(null);
+  const [dbReady, setDbReady] = useState(false);
+  const [dbError, setDbError] = useState<string | null>(null);
+
+  // Initialize database on app start
+  useEffect(() => {
+    const initDb = async () => {
+      try {
+        const db = await getDatabase();
+        await applySchema(db, true); // Apply with seed data
+        setDbReady(true);
+        console.log('Database initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize database:', error);
+        setDbError(error instanceof Error ? error.message : 'Unknown error');
+      }
+    };
+
+    void initDb();
+  }, []);
 
   // Navigation handlers
   const handleAddNew = () => {
@@ -141,6 +162,29 @@ function App(): React.JSX.Element {
     }
   };
 
+  // Show loading screen while DB initializes
+  if (!dbReady) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.loadingContainer}>
+            {dbError ? (
+              <>
+                <Text style={styles.errorText}>Database Error</Text>
+                <Text style={styles.errorDetail}>{dbError}</Text>
+              </>
+            ) : (
+              <>
+                <ActivityIndicator size="large" color="#007AFF" />
+                <Text style={styles.loadingText}>Initializing database...</Text>
+              </>
+            )}
+          </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
@@ -153,6 +197,28 @@ function App(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FF3B30',
+    marginBottom: 8,
+  },
+  errorDetail: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
 });
 

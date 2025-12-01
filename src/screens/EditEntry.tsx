@@ -36,7 +36,7 @@ import {
   type TypeStat,
   type CategoryStat,
   type ItemStat,
-} from '../data/editEntryStats';
+} from '../db/stats';
 
 interface EditEntryProps {
   mode?: 'new' | 'edit' | 'clone';
@@ -87,16 +87,33 @@ export const EditEntry: React.FC<EditEntryProps> = ({
   const [categoryFilter, setCategoryFilter] = useState('');
   const [itemsFilter, setItemsFilter] = useState('');
 
-  // Load stats data (sorted by usage)
-  const allTypes = useMemo(() => getTypeStats(variant), [variant]);
-  const allCategories = useMemo(
-    () => (selectedType ? getCategoryStats(selectedType.id, variant) : []),
-    [selectedType, variant]
-  );
-  const allItems = useMemo(
-    () => (selectedCategory ? getItemStats(selectedCategory.id, variant) : []),
-    [selectedCategory, variant]
-  );
+  // Load stats data (sorted by usage) - now async from SQL
+  const [allTypes, setAllTypes] = useState<TypeStat[]>([]);
+  const [allCategories, setAllCategories] = useState<CategoryStat[]>([]);
+  const [allItems, setAllItems] = useState<ItemStat[]>([]);
+
+  // Load types on mount
+  useEffect(() => {
+    getTypeStats().then(setAllTypes).catch(console.error);
+  }, []);
+
+  // Load categories when type changes
+  useEffect(() => {
+    if (selectedType) {
+      getCategoryStats(selectedType.id).then(setAllCategories).catch(console.error);
+    } else {
+      setAllCategories([]);
+    }
+  }, [selectedType]);
+
+  // Load items when category changes
+  useEffect(() => {
+    if (selectedCategory) {
+      getItemStats(selectedCategory.id).then(setAllItems).catch(console.error);
+    } else {
+      setAllItems([]);
+    }
+  }, [selectedCategory]);
 
   // Filtered data for pickers
   const filteredTypes = useMemo(() => {
@@ -117,24 +134,30 @@ export const EditEntry: React.FC<EditEntryProps> = ({
     return allItems.filter(item => item.name.toLowerCase().includes(query));
   }, [allItems, itemsFilter]);
 
-  // Smart defaults (new mode only)
+  // Smart defaults (new mode only) - async now
   useEffect(() => {
     if (mode === 'new') {
       // Auto-select most common type
-      const commonType = getMostCommonType(variant);
-      if (commonType) {
-        setSelectedType(commonType);
-        
-        // Auto-select most common category for that type
-        const commonCategory = getMostCommonCategory(commonType.id, variant);
-        if (commonCategory) {
-          setSelectedCategory(commonCategory);
-        }
-      }
+      getMostCommonType()
+        .then(commonType => {
+          if (commonType) {
+            setSelectedType(commonType);
+            
+            // Auto-select most common category for that type
+            return getMostCommonCategory(commonType.id);
+          }
+          return null;
+        })
+        .then(commonCategory => {
+          if (commonCategory) {
+            setSelectedCategory(commonCategory);
+          }
+        })
+        .catch(console.error);
     }
     // For edit/clone modes, data would be loaded from entryId
     // TODO: Load existing entry data
-  }, [mode, variant]);
+  }, [mode]);
 
   // Handlers
   const handleTypeSelect = (type: TypeStat) => {
