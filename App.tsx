@@ -8,6 +8,7 @@ import Graphs from './src/screens/Graphs';
 import Settings from './src/screens/Settings';
 import SereusConnections from './src/screens/SereusConnections';
 import Reminders from './src/screens/Reminders';
+import { USE_QUEREUS } from './src/db/config';
 import { getDatabase } from './src/db/index';
 import { applySchema } from './src/db/schema';
 
@@ -26,16 +27,23 @@ function App(): React.JSX.Element {
   const [dbReady, setDbReady] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
 
-  // Initialize database on app start
+  // Initialize database on app start (only if using Quereus)
   useEffect(() => {
     const initDb = async () => {
+      if (!USE_QUEREUS) {
+        // Skip Quereus initialization, use mock data
+        setDbReady(true);
+        console.log('Using mock data (USE_QUEREUS = false)');
+        return;
+      }
+      
       try {
         const db = await getDatabase();
         await applySchema(db, true); // Apply with seed data
         setDbReady(true);
-        console.log('Database initialized successfully');
+        console.log('Quereus database initialized successfully');
       } catch (error) {
-        console.error('Failed to initialize database:', error);
+        console.error('Failed to initialize Quereus database:', error);
         setDbError(error instanceof Error ? error.message : 'Unknown error');
       }
     };

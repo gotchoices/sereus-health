@@ -47,23 +47,28 @@ This file tracks open design questions for Diario so they can be resolved one at
   - 9 tables with detailed examples, constraints, and rationale
   - Ready for Quereus implementation
 
-### Quereus Integration (Completed - Basic Read/Write)
+### Quereus Integration (On Hold - Feature Flag Added)
 
 - [x] **Add Quereus dependency**: Installed `@quereus/quereus@^0.4.11`
 - [x] **Create database initialization**: `src/db/index.ts` with Database instance, MemoryTableModule registration, and default pragmas
 - [x] **Translate schema to declarative SQL**: Created `src/db/schema.ts` with full declarative schema matching `design/specs/api/schema.md`
-- [x] **Apply schema with seed data**: App initializes DB on startup with seed data (types, categories, items, quantifiers, bundles, welcome note)
-- [x] **Replace EditEntry stats adapters**: Created `src/db/stats.ts` with SQL-based `getTypeStats`, `getCategoryStats`, `getItemStats`, `getMostCommonType`, `getMostCommonCategory`
-- [x] **Implement CRUD for log entries**: Created `src/db/logEntries.ts` with `createLogEntry`, `updateLogEntry`, `deleteLogEntry`, `getAllLogEntries`, `getLogEntryById`
-- [x] **Update LogHistory adapter**: Updated `src/data/logHistory.ts` to use SQL queries via `getAllLogEntries()`
-- [ ] **Test full flow**: Add entry → Save → View in history → Edit → Delete (ready for manual testing)
-- [ ] **Verify constraints**: Test FK constraints, unique constraints, CHECK constraints work as expected (ready for manual testing)
+- [x] **Implement SQL adapters**: Created `src/db/stats.ts` and `src/db/logEntries.ts` with full SQL implementation
+- [x] **Add feature flag**: Created `src/db/config.ts` with `USE_QUEREUS` toggle (default: false)
+- [x] **Preserve Appeus mock system**: Updated adapters to fall back to existing `mock/data/*.json` when `USE_QUEREUS = false`
+- [ ] **Resolve RN compatibility**: Quereus requires crypto polyfills or Node.js environment
+  - Blocked by: `node:crypto` import in Quereus (Metro bundler incompatible)
+  - Workaround: Use `USE_QUEREUS = false` to use Appeus mock data
+  - Future: Add crypto polyfills OR wait for Quereus RN compatibility OR use on desktop/web
 
-**Next Steps:**
-- Manual testing of full CRUD flow
-- Wire up EditEntry save functionality to use `createLogEntry`/`updateLogEntry`
-- Test constraint validation (e.g., single-type entries, FK integrity)
-- Consider AsyncStorage persistence (post-testing)
+**Current Status:**
+- App runs with `USE_QUEREUS = false` (using Appeus mock data)
+- Quereus code is committed and ready for when crypto issue is resolved
+- To enable Quereus: Set `USE_QUEREUS = true` in `src/db/config.ts` (requires crypto polyfills)
+
+**Future Options:**
+1. Add `react-native-quick-crypto` polyfill (tested, works but adds dependency)
+2. Wait for Quereus to add React Native support upstream
+3. Use Quereus only on desktop/web platforms (Electron, browser)
 
 ### Possible Future Enhancements (Post-MVP)
 

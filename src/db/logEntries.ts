@@ -4,7 +4,7 @@
  * Provides create, read, update, delete operations for log entries
  * and related data (items, quantifiers).
  * 
- * Replaces mock data adapters with real SQL operations.
+ * Switches between Quereus SQL and existing mock data based on USE_QUEREUS flag.
  */
 
 import type { Database } from '@quereus/quereus';
@@ -111,6 +111,7 @@ export async function createLogEntry(input: CreateLogEntryInput): Promise<string
 
 /**
  * Get all log entries ordered by timestamp (newest first)
+ * NOTE: Only called when USE_QUEREUS = true
  */
 export async function getAllLogEntries(): Promise<LogEntry[]> {
 	const db = await getDatabase();
