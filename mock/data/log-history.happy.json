@@ -8,7 +8,7 @@
         {
           "id": "item-stress",
           "name": "Stress",
-          "categoryPath": ["Condition", "Mental"]
+          "category": "Stress"
         }
       ],
       "bundles": [],
@@ -17,7 +17,7 @@
           "itemId": "item-stress",
           "name": "Intensity",
           "value": 8,
-          "units": "1-10"
+          "units": "scale"
         }
       ],
       "comment": "Lawsuit is occupying all my thoughts"
@@ -30,7 +30,7 @@
         {
           "id": "item-stomach-pain",
           "name": "Stomach Pain",
-          "categoryPath": ["Outcome", "Pain"]
+          "category": "Pain"
         }
       ],
       "bundles": [],
@@ -39,7 +39,7 @@
           "itemId": "item-stomach-pain",
           "name": "Intensity",
           "value": 7,
-          "units": "1-10"
+          "units": "scale"
         }
       ],
       "comment": null
@@ -52,7 +52,7 @@
         {
           "id": "item-milk",
           "name": "Milk",
-          "categoryPath": ["Activity", "Eating", "Dairy"]
+          "category": "Eating"
         }
       ],
       "bundles": [
@@ -79,22 +79,22 @@
         {
           "id": "item-pushups",
           "name": "Pushups",
-          "categoryPath": ["Activity", "Exercise", "Strength"]
+          "category": "Exercise"
         },
         {
           "id": "item-pullups",
           "name": "Pullups",
-          "categoryPath": ["Activity", "Exercise", "Strength"]
+          "category": "Exercise"
         },
         {
           "id": "item-situps",
           "name": "Situps",
-          "categoryPath": ["Activity", "Exercise", "Core"]
+          "category": "Exercise"
         },
         {
           "id": "item-jogging",
           "name": "Jogging",
-          "categoryPath": ["Activity", "Exercise", "Cardio"]
+          "category": "Exercise"
         }
       ],
       "bundles": [],
@@ -140,17 +140,17 @@
         {
           "id": "item-omelette",
           "name": "Omelette",
-          "categoryPath": ["Activity", "Eating", "Breakfast"]
+          "category": "Eating"
         },
         {
           "id": "item-toast",
           "name": "Toast",
-          "categoryPath": ["Activity", "Eating", "Breakfast"]
+          "category": "Eating"
         },
         {
           "id": "item-orange-juice",
           "name": "Orange Juice",
-          "categoryPath": ["Activity", "Eating", "Beverage"]
+          "category": "Eating"
         }
       ],
       "bundles": [],
@@ -165,22 +165,22 @@
         {
           "id": "item-peas",
           "name": "Peas",
-          "categoryPath": ["Activity", "Eating", "Vegetables"]
+          "category": "Eating"
         },
         {
           "id": "item-eggs",
           "name": "Fried Eggs",
-          "categoryPath": ["Activity", "Eating", "Protein"]
+          "category": "Eating"
         },
         {
           "id": "item-cheese",
           "name": "Cheese",
-          "categoryPath": ["Activity", "Eating", "Dairy"]
+          "category": "Eating"
         },
         {
           "id": "item-avocado",
           "name": "Avocado",
-          "categoryPath": ["Activity", "Eating", "Vegetables"]
+          "category": "Eating"
         }
       ],
       "bundles": [],
@@ -208,7 +208,7 @@
         {
           "id": "item-headache",
           "name": "Headache",
-          "categoryPath": ["Outcome", "Pain"]
+          "category": "Pain"
         }
       ],
       "bundles": [],
@@ -217,7 +217,7 @@
           "itemId": "item-headache",
           "name": "Intensity",
           "value": 6,
-          "units": "1-10"
+          "units": "scale"
         },
         {
           "itemId": "item-headache",
@@ -236,7 +236,7 @@
         {
           "id": "item-peanuts",
           "name": "Peanuts",
-          "categoryPath": ["Activity", "Eating", "Snacks"]
+          "category": "Eating"
         }
       ],
       "bundles": [],
@@ -258,7 +258,7 @@
         {
           "id": "item-chocolate",
           "name": "Chocolate",
-          "categoryPath": ["Activity", "Eating", "Desserts"]
+          "category": "Eating"
         }
       ],
       "bundles": [],
@@ -280,7 +280,7 @@
         {
           "id": "item-weather-rainy",
           "name": "Rainy",
-          "categoryPath": ["Condition", "Weather"]
+          "category": "Weather"
         }
       ],
       "bundles": [],
@@ -295,7 +295,7 @@
         {
           "id": "item-yoga",
           "name": "Yoga",
-          "categoryPath": ["Activity", "Exercise", "Flexibility"]
+          "category": "Exercise"
         }
       ],
       "bundles": [],
@@ -317,7 +317,7 @@
         {
           "id": "item-coffee",
           "name": "Coffee",
-          "categoryPath": ["Activity", "Eating", "Beverage"]
+          "category": "Eating"
         }
       ],
       "bundles": [],
@@ -339,7 +339,7 @@
         {
           "id": "item-sleep-quality",
           "name": "Sleep Quality",
-          "categoryPath": ["Outcome", "Wellness"]
+          "category": "Health"
         }
       ],
       "bundles": [],
@@ -348,7 +348,7 @@
           "itemId": "item-sleep-quality",
           "name": "Quality",
           "value": 8,
-          "units": "1-10"
+          "units": "scale"
         },
         {
           "itemId": "item-sleep-quality",
@@ -367,7 +367,7 @@
         {
           "id": "item-salad",
           "name": "Salad",
-          "categoryPath": ["Activity", "Eating", "Lunch"]
+          "category": "Eating"
         }
       ],
       "bundles": [],
@@ -382,7 +382,7 @@
         {
           "id": "item-energy-level",
           "name": "Energy Level",
-          "categoryPath": ["Condition", "Physical"]
+          "category": "Environment"
         }
       ],
       "bundles": [],
@@ -391,7 +391,7 @@
           "itemId": "item-energy-level",
           "name": "Level",
           "value": 9,
-          "units": "1-10"
+          "units": "scale"
         }
       ],
       "comment": "Feeling great today!"

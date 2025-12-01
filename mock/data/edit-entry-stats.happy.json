@@ -1,46 +1,45 @@
 {
   "typeStats": [
-    { "id": "activity", "name": "Activity", "usageCount": 100 },
-    { "id": "condition", "name": "Condition", "usageCount": 50 },
-    { "id": "outcome", "name": "Outcome", "usageCount": 30 }
+    { "id": "type-activity", "name": "Activity", "usageCount": 100 },
+    { "id": "type-condition", "name": "Condition", "usageCount": 50 },
+    { "id": "type-outcome", "name": "Outcome", "usageCount": 30 }
   ],
   "categoryStats": {
-    "activity": [
-      { "id": "eating", "name": "Eating", "usageCount": 80 },
-      { "id": "exercise", "name": "Exercise", "usageCount": 40 },
-      { "id": "recreation", "name": "Recreation", "usageCount": 15 }
+    "type-activity": [
+      { "id": "cat-eating", "name": "Eating", "usageCount": 80 },
+      { "id": "cat-exercise", "name": "Exercise", "usageCount": 40 },
+      { "id": "cat-recreation", "name": "Recreation", "usageCount": 15 }
     ],
-    "condition": [
-      { "id": "stress", "name": "Stress", "usageCount": 30 },
-      { "id": "weather", "name": "Weather", "usageCount": 20 },
-      { "id": "environment", "name": "Environment", "usageCount": 10 }
+    "type-condition": [
+      { "id": "cat-stress", "name": "Stress", "usageCount": 30 },
+      { "id": "cat-weather", "name": "Weather", "usageCount": 20 },
+      { "id": "cat-environment", "name": "Environment", "usageCount": 10 }
     ],
-    "outcome": [
-      { "id": "pain", "name": "Pain", "usageCount": 25 },
-      { "id": "health", "name": "Health", "usageCount": 15 },
-      { "id": "wellbeing", "name": "Well-being", "usageCount": 10 }
+    "type-outcome": [
+      { "id": "cat-pain", "name": "Pain", "usageCount": 25 },
+      { "id": "cat-health", "name": "Health", "usageCount": 15 },
+      { "id": "cat-wellbeing", "name": "Well-being", "usageCount": 10 }
     ]
   },
   "itemStats": {
-    "eating": [
-      { "id": "omelette", "name": "Omelette", "usageCount": 50, "isBundle": false },
-      { "id": "blt-bundle", "name": "BLT", "usageCount": 30, "isBundle": true },
-      { "id": "toast", "name": "Toast", "usageCount": 25, "isBundle": false },
-      { "id": "orange-juice", "name": "Orange Juice", "usageCount": 20, "isBundle": false },
-      { "id": "bacon", "name": "Bacon", "usageCount": 15, "isBundle": false },
-      { "id": "lettuce", "name": "Lettuce", "usageCount": 10, "isBundle": false },
-      { "id": "tomato", "name": "Tomato", "usageCount": 8, "isBundle": false }
+    "cat-eating": [
+      { "id": "item-omelette", "name": "Omelette", "usageCount": 50, "isBundle": false },
+      { "id": "bundle-blt", "name": "BLT", "usageCount": 30, "isBundle": true },
+      { "id": "item-toast", "name": "Toast", "usageCount": 25, "isBundle": false },
+      { "id": "item-orange-juice", "name": "Orange Juice", "usageCount": 20, "isBundle": false },
+      { "id": "item-bacon", "name": "Bacon", "usageCount": 15, "isBundle": false },
+      { "id": "item-lettuce", "name": "Lettuce", "usageCount": 10, "isBundle": false },
+      { "id": "item-tomato", "name": "Tomato", "usageCount": 8, "isBundle": false }
     ],
-    "exercise": [
-      { "id": "running", "name": "Running", "usageCount": 25, "isBundle": false },
-      { "id": "weights", "name": "Weights", "usageCount": 20, "isBundle": false },
-      { "id": "yoga", "name": "Yoga", "usageCount": 15, "isBundle": false }
+    "cat-exercise": [
+      { "id": "item-running", "name": "Running", "usageCount": 25, "isBundle": false },
+      { "id": "item-weights", "name": "Weights", "usageCount": 20, "isBundle": false },
+      { "id": "item-yoga", "name": "Yoga", "usageCount": 15, "isBundle": false }
     ],
-    "pain": [
-      { "id": "headache", "name": "Headache", "usageCount": 20, "isBundle": false },
-      { "id": "stomach-pain", "name": "Stomach Pain", "usageCount": 15, "isBundle": false },
-      { "id": "joint-pain", "name": "Joint Pain", "usageCount": 10, "isBundle": false }
+    "cat-pain": [
+      { "id": "item-headache", "name": "Headache", "usageCount": 20, "isBundle": false },
+      { "id": "item-stomach-pain", "name": "Stomach Pain", "usageCount": 15, "isBundle": false },
+      { "id": "item-joint-pain", "name": "Joint Pain", "usageCount": 10, "isBundle": false }
     ]
   }
 }
-

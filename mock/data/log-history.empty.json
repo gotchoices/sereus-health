@@ -1,7 +1,7 @@
 {
   "entries": [
     {
-      "id": "welcome-note",
+      "id": "entry-welcome",
       "timestamp": "2025-11-26T09:00:00Z",
       "type": "Condition",
       "items": [],

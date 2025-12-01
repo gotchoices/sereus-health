@@ -36,7 +36,7 @@ import {
   type TypeStat,
   type CategoryStat,
   type ItemStat,
-} from '../db/stats';
+} from '../data/editEntryStats';
 
 interface EditEntryProps {
   mode?: 'new' | 'edit' | 'clone';

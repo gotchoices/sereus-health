@@ -1,39 +1,41 @@
 {
   "typeStats": [
-    { "id": "activity", "name": "Activity", "usageCount": 0 },
-    { "id": "condition", "name": "Condition", "usageCount": 0 },
-    { "id": "outcome", "name": "Outcome", "usageCount": 0 }
+    { "id": "type-activity", "name": "Activity", "usageCount": 0 },
+    { "id": "type-condition", "name": "Condition", "usageCount": 0 },
+    { "id": "type-outcome", "name": "Outcome", "usageCount": 0 }
   ],
   "categoryStats": {
-    "activity": [
-      { "id": "eating", "name": "Eating", "usageCount": 0 },
-      { "id": "exercise", "name": "Exercise", "usageCount": 0 },
-      { "id": "recreation", "name": "Recreation", "usageCount": 0 }
+    "type-activity": [
+      { "id": "cat-eating", "name": "Eating", "usageCount": 0 },
+      { "id": "cat-exercise", "name": "Exercise", "usageCount": 0 },
+      { "id": "cat-recreation", "name": "Recreation", "usageCount": 0 }
     ],
-    "condition": [
-      { "id": "stress", "name": "Stress", "usageCount": 0 },
-      { "id": "weather", "name": "Weather", "usageCount": 0 },
-      { "id": "environment", "name": "Environment", "usageCount": 0 }
+    "type-condition": [
+      { "id": "cat-stress", "name": "Stress", "usageCount": 0 },
+      { "id": "cat-weather", "name": "Weather", "usageCount": 0 },
+      { "id": "cat-environment", "name": "Environment", "usageCount": 0 }
     ],
-    "outcome": [
-      { "id": "pain", "name": "Pain", "usageCount": 0 },
-      { "id": "health", "name": "Health", "usageCount": 0 },
-      { "id": "wellbeing", "name": "Well-being", "usageCount": 0 }
+    "type-outcome": [
+      { "id": "cat-pain", "name": "Pain", "usageCount": 0 },
+      { "id": "cat-health", "name": "Health", "usageCount": 0 },
+      { "id": "cat-wellbeing", "name": "Well-being", "usageCount": 0 }
     ]
   },
   "itemStats": {
-    "eating": [
-      { "id": "omelette", "name": "Omelette", "usageCount": 0, "isBundle": false },
-      { "id": "toast", "name": "Toast", "usageCount": 0, "isBundle": false },
-      { "id": "orange-juice", "name": "Orange Juice", "usageCount": 0, "isBundle": false }
+    "cat-eating": [
+      { "id": "item-omelette", "name": "Omelette", "usageCount": 0, "isBundle": false },
+      { "id": "bundle-blt", "name": "BLT", "usageCount": 0, "isBundle": true },
+      { "id": "item-toast", "name": "Toast", "usageCount": 0, "isBundle": false },
+      { "id": "item-orange-juice", "name": "Orange Juice", "usageCount": 0, "isBundle": false }
     ],
-    "exercise": [
-      { "id": "running", "name": "Running", "usageCount": 0, "isBundle": false },
-      { "id": "weights", "name": "Weights", "usageCount": 0, "isBundle": false }
+    "cat-exercise": [
+      { "id": "item-running", "name": "Running", "usageCount": 0, "isBundle": false },
+      { "id": "item-weights", "name": "Weights", "usageCount": 0, "isBundle": false },
+      { "id": "item-yoga", "name": "Yoga", "usageCount": 0, "isBundle": false }
     ],
-    "pain": [
-      { "id": "headache", "name": "Headache", "usageCount": 0, "isBundle": false }
+    "cat-pain": [
+      { "id": "item-headache", "name": "Headache", "usageCount": 0, "isBundle": false },
+      { "id": "item-stomach-pain", "name": "Stomach Pain", "usageCount": 0, "isBundle": false }
     ]
   }
 }
-

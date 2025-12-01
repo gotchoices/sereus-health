@@ -1,17 +1,12 @@
 /**
- * Database Statistics Queries
+ * Database Statistics Queries (Quereus SQL Implementation)
  * 
- * Provides usage statistics for types, categories, and items
- * to support smart defaults and usage-based ordering.
- * 
- * Switches between Quereus SQL and existing mock data based on USE_QUEREUS flag.
+ * Provides usage statistics for types, categories, and items using SQL.
+ * Only called when USE_QUEREUS = true (via src/data/editEntryStats.ts adapter).
  */
 
-import { USE_QUEREUS } from './config';
 import type { Database } from '@quereus/quereus';
 import { getDatabase } from './index';
-// Import existing mock-based stats (from src/data/editEntryStats.ts)
-import * as mockStats from '../data/editEntryStats';
 
 export interface TypeStat {
 	id: string;
@@ -37,10 +32,6 @@ export interface ItemStat {
  * Returns types sorted by usage count (descending), then alphabetically
  */
 export async function getTypeStats(): Promise<TypeStat[]> {
-	if (!USE_QUEREUS) {
-		return mockStats.getTypeStats();
-	}
-	
 	const db = await getDatabase();
 	
 	const results = await db.prepare(`
@@ -66,10 +57,6 @@ export async function getTypeStats(): Promise<TypeStat[]> {
  * Returns categories sorted by usage count (descending), then alphabetically
  */
 export async function getCategoryStats(typeId: string): Promise<CategoryStat[]> {
-	if (!USE_QUEREUS) {
-		return mockStats.getCategoryStats(typeId);
-	}
-	
 	const db = await getDatabase();
 	
 	const results = await db.prepare(`
@@ -99,10 +86,6 @@ export async function getCategoryStats(typeId: string): Promise<CategoryStat[]> 
  * Includes both individual items and bundles
  */
 export async function getItemStats(categoryId: string): Promise<ItemStat[]> {
-	if (!USE_QUEREUS) {
-		return mockStats.getItemStats(categoryId);
-	}
-	
 	const db = await getDatabase();
 	
 	// Get individual items with usage counts
@@ -162,10 +145,6 @@ export async function getItemStats(categoryId: string): Promise<ItemStat[]> {
  * Returns null if no types exist
  */
 export async function getMostCommonType(): Promise<TypeStat | null> {
-	if (!USE_QUEREUS) {
-		return mockStats.getMostCommonType();
-	}
-	
 	const types = await getTypeStats();
 	return types.length > 0 ? types[0] : null;
 }
@@ -175,10 +154,6 @@ export async function getMostCommonType(): Promise<TypeStat | null> {
  * Returns null if no categories exist for that type
  */
 export async function getMostCommonCategory(typeId: string): Promise<CategoryStat | null> {
-	if (!USE_QUEREUS) {
-		return mockStats.getMostCommonCategory(typeId);
-	}
-	
 	const categories = await getCategoryStats(typeId);
 	return categories.length > 0 ? categories[0] : null;
 }
