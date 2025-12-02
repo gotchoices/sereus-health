@@ -65,50 +65,40 @@ export async function ensureDatabaseInitialized(): Promise<void> {
 			}
 			
 			// Check if data is seeded
-			logger.debug('Checking if data is seeded...');
+			logger.info('Checking if data is seeded...');
 			const typeCountStmt = await db.prepare('SELECT COUNT(*) as count FROM types');
 			const typeCountResult = await typeCountStmt.get();
+			await typeCountStmt.finalize();
 			const typeCount = (typeCountResult?.count as number) || 0;
-			logger.debug(`Type count check: ${typeCount} types found`);
+			logger.info(`Found ${typeCount} types in database`);
 			
 			if (typeCount === 0) {
-				logger.debug('No types found, will seed data...');
+				logger.info('No seed data found, applying seeds...');
+				
 				// Apply production seed data
-				logger.info('About to call applyProductionSeeds...');
-				try {
-					await applyProductionSeeds(db);
-					logger.info('applyProductionSeeds completed successfully');
-				} catch (error) {
-					logger.error('applyProductionSeeds failed:', error);
-					throw error;
-				}
+				await applyProductionSeeds(db);
 				
 				// Apply sample data in development
 				if (__DEV__ && applySampleData) {
-					logger.info('About to call applySampleData...');
-					try {
-						await applySampleData(db);
-						logger.info('applySampleData completed successfully');
-					} catch (error) {
-						logger.error('applySampleData failed:', error);
-						throw error;
-					}
+					logger.info('Applying sample data for development...');
+					await applySampleData(db);
 				}
 				
-				// Verify initialization
+				// Final verification
+				logger.info('Final verification of database state...');
 				const verifyTypes = await db.prepare('SELECT id, name FROM types');
 				const typeRows = [];
 				for await (const row of verifyTypes.all()) {
 					typeRows.push(row);
 				}
-				logger.debug(`Types in DB: ${typeRows.length} - ${typeRows.map(t => t.name).join(', ')}`);
+				await verifyTypes.finalize();
 				
-				const verifyEntries = await db.prepare('SELECT id FROM log_entries');
-				const entryRows = [];
-				for await (const row of verifyEntries.all()) {
-					entryRows.push(row);
-				}
-				logger.debug(`Log entries in DB: ${entryRows.length}`);
+				const verifyEntries = await db.prepare('SELECT COUNT(*) as count FROM log_entries');
+				const entryCountResult = await verifyEntries.get();
+				await verifyEntries.finalize();
+				const entryCount = (entryCountResult?.count as number) || 0;
+				
+				logger.info(`Database initialized: ${typeRows.length} types, ${entryCount} log entries`);
 			} else {
 				logger.info(`Database already initialized (${typeCount} types found)`);
 			}

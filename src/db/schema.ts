@@ -27,7 +27,7 @@ const logger = createLogger('DB Schema');
  * Seed data is applied separately via SQL INSERT statements.
  */
 const SCHEMA_SQL = `
-declare schema main {
+declare schema main using (default_vtab_module = 'memory') {
   -- Top-level types (Activity, Condition, Outcome, custom)
   table types (
     id text primary key,
@@ -169,13 +169,14 @@ export const PRODUCTION_SEEDS = {
 };
 
 /**
- * Apply the Diario schema to the database (structure only, no data)
+ * Apply the Sereus Health schema to the database
+ * Uses declarative schema syntax for order-independent schema definition
  */
 export async function applySchema(db: Database): Promise<void> {
 	try {
-		logger.debug('Declaring schema...');
+		logger.info('Declaring schema...');
 		await db.exec(SCHEMA_SQL);
-		logger.debug('Schema declared successfully');
+		logger.info('Schema declared successfully');
 		
 		logger.info('Applying schema...');
 		await db.exec('apply schema main');
@@ -188,7 +189,7 @@ export async function applySchema(db: Database): Promise<void> {
 
 /**
  * Insert production seed data into the database
- * Uses db.exec with parameters for simplicity
+ * Uses db.exec with parameters as recommended in Quereus docs
  */
 export async function applyProductionSeeds(db: Database): Promise<void> {
 	try {
@@ -198,26 +199,32 @@ export async function applyProductionSeeds(db: Database): Promise<void> {
 		for (const type of PRODUCTION_SEEDS.types) {
 			await db.exec('INSERT INTO types (id, name) VALUES (?, ?)', [type.id, type.name]);
 		}
+		logger.info(`Inserted ${PRODUCTION_SEEDS.types.length} types`);
 		
 		// Insert categories
 		for (const cat of PRODUCTION_SEEDS.categories) {
 			await db.exec('INSERT INTO categories (id, type_id, name) VALUES (?, ?, ?)', [cat.id, cat.type_id, cat.name]);
 		}
+		logger.info(`Inserted ${PRODUCTION_SEEDS.categories.length} categories`);
 		
 		// Insert welcome log entry
 		for (const entry of PRODUCTION_SEEDS.log_entries) {
-			await db.exec('INSERT INTO log_entries (id, timestamp, type_id, comment) VALUES (?, ?, ?, ?)', [entry.id, entry.timestamp, entry.type_id, entry.comment]);
+			await db.exec('INSERT INTO log_entries (id, timestamp, type_id, comment) VALUES (?, ?, ?, ?)', 
+				[entry.id, entry.timestamp, entry.type_id, entry.comment]);
 		}
+		logger.info(`Inserted ${PRODUCTION_SEEDS.log_entries.length} log entries`);
 		
-		logger.info(`Production seeds applied: ${PRODUCTION_SEEDS.types.length} types, ${PRODUCTION_SEEDS.categories.length} categories, ${PRODUCTION_SEEDS.log_entries.length} entries`);
-		
-		// Verify data was committed
-		logger.debug('Verifying with SELECT * FROM types...');
-		const allTypes = [];
-		for await (const type of db.eval('SELECT * FROM types')) {
-			allTypes.push(type);
+		// Verify data persisted
+		logger.info('Verifying seed data...');
+		const typeRows = [];
+		for await (const row of db.eval('SELECT * FROM types')) {
+			typeRows.push(row);
 		}
-		logger.debug(`Verification found ${allTypes.length} types:`, allTypes.map(t => t.name));
+		logger.info(`Verification: Found ${typeRows.length} types: ${typeRows.map(t => t.name).join(', ')}`);
+		
+		if (typeRows.length === 0) {
+			logger.error('CRITICAL: Seed data did not persist! Inserts succeeded but queries return no rows.');
+		}
 	} catch (error) {
 		logger.error('Failed to apply production seeds:', error);
 		throw error;

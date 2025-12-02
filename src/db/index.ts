@@ -12,8 +12,12 @@
 
 import { Database } from '@quereus/quereus';
 import { applySchema } from './schema';
+import { createLogger } from '../util/logger';
+
+const logger = createLogger('DB Instance');
 
 let dbInstance: Database | null = null;
+let instanceId = 0;
 
 /**
  * Get or create the singleton database instance
@@ -24,6 +28,8 @@ export async function getDatabase(): Promise<Database> {
 	}
 
 	// MemoryTableModule and sensible defaults are now built-in
+	instanceId++;
+	logger.info(`Creating database instance #${instanceId}`);
 	const db = new Database();
 	
 	dbInstance = db;
