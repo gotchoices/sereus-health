@@ -1,6 +1,8 @@
 # Quereus React Native Compatibility Issues
 
-This document tracks issues discovered while integrating Quereus into the Diario React Native app.
+This document tracks issues discovered while integrating Quereus into the Sereus Health React Native app.
+
+> **Note**: We are using Quereus from the workspace (`ser/quereus/packages/quereus`), so modifications are made directly to the source TypeScript files, not to compiled `node_modules` files.
 
 ## 1. Missing `structuredClone` Global (RESOLVED)
 
@@ -24,24 +26,47 @@ if (typeof globalThis.structuredClone === 'undefined') {
 
 ## 2. Dynamic `import()` Statements Not Supported (RESOLVED)
 
-**Issue**: Metro bundler (React Native's JavaScript bundler) fails on dynamic `import()` statements in `plugin-loader.js`.
+**Issue**: Metro bundler (React Native's JavaScript bundler) does not support dynamic `import()` statements, which are used in Quereus for plugin loading and Node.js module imports.
 
-**Location**: 
-- `plugin-loader.js:38` - `import(moduleUrl.toString())`
-- `schema-hasher.js:28` - `import('node:crypto')`
+**Locations**: 
+- `plugin-loader.ts:57` - `import(/* @vite-ignore */ moduleUrl.toString())`
+- `schema-hasher.ts:28` - `import('node:crypto')`
 
-**Workaround**: 
-1. Patched `plugin-loader.js` to comment out all 3 dynamic imports and throw errors instead
-2. Patched `schema-hasher.js` to always use `globalThis.crypto.subtle` (Web Crypto API)
+**Solution**: Modified Quereus source code in workspace:
+
+### Plugin Loader (`quereus/packages/quereus/src/util/plugin-loader.ts`)
+- Commented out dynamic import and plugin registration logic
+- Added clear error message explaining RN limitation
+- Throws error if plugin loading is attempted in RN environment
+
+```typescript
+throw new Error(
+  'Dynamic plugin loading is not supported in React Native. ' +
+  'Plugins must be statically imported and registered.'
+);
+```
+
+### Schema Hasher (`schema-hasher.ts`)
+- Uses `globalThis.crypto.subtle` (Web Crypto API) instead of Node.js crypto module
+- Web Crypto API is available in React Native via polyfills
+
+**Impact**:
+- ✅ **Schema hashing**: Works with Web Crypto polyfill
+- ❌ **Dynamic plugins**: Not available in React Native
+- ✅ **Static plugins**: Can be registered via explicit API calls (if needed)
+
+**Recommendation for Plugin Support in RN**:
+If plugins are needed, implement static registration pattern:
+```typescript
+import myPlugin from './my-plugin';
+await db.registerPlugin(myPlugin);
+```
 
 **Files Modified**:
-- `node_modules/@quereus/quereus/dist/src/util/plugin-loader.js`
-- `node_modules/@quereus/quereus/dist/src/schema/schema-hasher.js`
+- `quereus/packages/quereus/src/util/plugin-loader.ts` (source)
+- `quereus/packages/quereus/src/schema/schema-hasher.ts` (source)
 
-**Recommendation**: Quereus should either:
-1. Avoid dynamic imports in core code
-2. Provide RN-compatible alternatives
-3. Document these as known limitations
+**Status**: ✅ Resolved - plugins disabled, schema operations work
 
 ---
 

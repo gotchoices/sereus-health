@@ -1,6 +1,19 @@
-pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
+// pluginManagement must come first
+pluginManagement {
+    // Look for node_modules: local first, then workspace parent
+    def localNodeModules = file("../node_modules/@react-native/gradle-plugin")
+    def workspaceNodeModules = file("../../node_modules/@react-native/gradle-plugin")
+    def nodeModulesPath = localNodeModules.exists() ? "../node_modules" : "../../node_modules"
+    includeBuild("${nodeModulesPath}/@react-native/gradle-plugin")
+}
+
 plugins { id("com.facebook.react.settings") }
 extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
 rootProject.name = 'health'
 include ':app'
-includeBuild('../node_modules/@react-native/gradle-plugin')
+
+// Look for node_modules: local first, then workspace parent
+def localNodeModules = file("../node_modules/@react-native/gradle-plugin")
+def workspaceNodeModules = file("../../node_modules/@react-native/gradle-plugin")
+def nodeModulesPath = localNodeModules.exists() ? "../node_modules" : "../../node_modules"
+includeBuild("${nodeModulesPath}/@react-native/gradle-plugin")

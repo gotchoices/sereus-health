@@ -10,7 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@quereus/quereus": "^0.6.3",
+    "@quereus/quereus": "workspace:*",
     "@react-native/new-app-screen": "0.82.1",
     "react": "19.1.1",
     "react-native": "0.82.1",
@@ -41,5 +41,8 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "installConfig": {
+    "hoistingLimits": "dependencies"
   }
 }
