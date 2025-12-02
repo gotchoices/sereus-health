@@ -54,7 +54,8 @@ export default function LogHistory({
       .finally(() => {
         setLoading(false);
       });
-  }, [t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run on mount. t() is not a true dependency.
   
   // Filter entries
   const filteredEntries = useMemo(() => {

@@ -6,19 +6,52 @@
  */
 
 import { USE_QUEREUS } from '../db/config';
-import { getAllLogEntries, type LogEntry as DbLogEntry } from '../db/logEntries';
+// COMMENTED OUT: Prevents Quereus from loading when USE_QUEREUS = false
+// import { getAllLogEntries, type LogEntry as DbLogEntry } from '../db/logEntries';
 
 // Import static mock data variants
 import happyData from '../../mock/data/log-history.happy.json';
 import emptyData from '../../mock/data/log-history.empty.json';
 import errorData from '../../mock/data/log-history.error.json';
 
-const mockVariants: Record<string, any> = {
+// Mock data structure (as stored in JSON files)
+interface MockItem {
+	id: string;
+	name: string;
+	category: string;
+}
+
+interface MockBundle {
+	id: string;
+	name: string;
+}
+
+interface MockLogEntry {
+	id: string;
+	timestamp: string;
+	type: string;
+	items: MockItem[];
+	bundles: MockBundle[];
+	quantifiers: Array<{
+		itemId: string;
+		name: string;
+		value: number;
+		units: string;
+	}>;
+	comment: string | null;
+}
+
+interface MockData {
+	entries: MockLogEntry[];
+}
+
+const mockVariants: Record<string, MockData> = {
 	happy: happyData,
 	empty: emptyData,
 	error: errorData,
 };
 
+// Screen-expected format
 export interface LogEntry {
 	id: string;
 	timestamp: string;
@@ -30,10 +63,21 @@ export interface LogEntry {
 
 /**
  * Get log history using Appeus mock data system
+ * Transforms mock data format to screen-expected format
  */
 export async function getLogHistoryMock(variant: string = 'happy'): Promise<LogEntry[]> {
 	const mockData = mockVariants[variant] || mockVariants.happy;
-	return mockData.entries || [];
+	const rawEntries = mockData.entries || [];
+	
+	// Transform to expected format: extract item names from objects
+	return rawEntries.map((entry: MockLogEntry): LogEntry => ({
+		id: entry.id,
+		timestamp: entry.timestamp,
+		type: entry.type,
+		items: entry.items.map((item: MockItem) => item.name),
+		bundles: entry.bundles.length > 0 ? entry.bundles.map((bundle: MockBundle) => bundle.name) : undefined,
+		comment: entry.comment || undefined,
+	}));
 }
 
 /**
@@ -46,27 +90,29 @@ export async function getLogHistory(): Promise<LogEntry[]> {
 	}
 	
 	// Use Quereus SQL
-	const dbEntries = await getAllLogEntries();
+	throw new Error('Quereus not available - set USE_QUEREUS = false or uncomment imports in src/data/logHistory.ts');
 	
-	return dbEntries.map(entry => {
-		// Extract item names and bundle names
-		const itemNames: string[] = [];
-		const bundleNames: Set<string> = new Set();
-		
-		for (const item of entry.items) {
-			itemNames.push(item.name);
-			if (item.sourceBundleName) {
-				bundleNames.add(item.sourceBundleName);
-			}
-		}
-		
-		return {
-			id: entry.id,
-			timestamp: entry.timestamp,
-			type: entry.typeName,
-			items: itemNames,
-			bundles: bundleNames.size > 0 ? Array.from(bundleNames) : undefined,
-			comment: entry.comment || undefined,
-		};
-	});
+	// const dbEntries = await getAllLogEntries();
+	// 
+	// return dbEntries.map(entry => {
+	// 	// Extract item names and bundle names
+	// 	const itemNames: string[] = [];
+	// 	const bundleNames: Set<string> = new Set();
+	// 	
+	// 	for (const item of entry.items) {
+	// 		itemNames.push(item.name);
+	// 		if (item.sourceBundleName) {
+	// 			bundleNames.add(item.sourceBundleName);
+	// 		}
+	// 	}
+	// 	
+	// 	return {
+	// 		id: entry.id,
+	// 		timestamp: entry.timestamp,
+	// 		type: entry.typeName,
+	// 		items: itemNames,
+	// 		bundles: bundleNames.size > 0 ? Array.from(bundleNames) : undefined,
+	// 		comment: entry.comment || undefined,
+	// 	};
+	// });
 }
