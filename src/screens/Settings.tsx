@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Alert,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
+import { runMinimalQuereusTest } from '../util/debugQuereusTest';
 
 interface SettingsProps {
   onNavigateTab: (tab: 'home' | 'catalog' | 'settings') => void;
@@ -23,6 +25,28 @@ export default function Settings({
 }: SettingsProps) {
   const theme = useTheme();
   const t = useT();
+  const [testRunning, setTestRunning] = useState(false);
+  
+  const handleDebugTest = async () => {
+    setTestRunning(true);
+    try {
+      const result = await runMinimalQuereusTest();
+      
+      Alert.alert(
+        result.success ? 'Test Passed ✓' : 'Test Failed ✗',
+        result.details.join('\n'),
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      Alert.alert(
+        'Test Error',
+        error instanceof Error ? error.message : String(error),
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setTestRunning(false);
+    }
+  };
   
   const settingsSections = [
     {
@@ -46,6 +70,20 @@ export default function Settings({
         <Text style={[styles.title, { color: theme.textPrimary }]}>
           {t('settings.title')}
         </Text>
+        {__DEV__ && (
+          <TouchableOpacity
+            onPress={handleDebugTest}
+            disabled={testRunning}
+            style={styles.debugButton}
+            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+          >
+            <Ionicons 
+              name="bug" 
+              size={24} 
+              color={testRunning ? theme.textSecondary : theme.accentPrimary} 
+            />
+          </TouchableOpacity>
+        )}
       </View>
       
       {/* Settings List */}
@@ -127,7 +165,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing[3],  // 16
     paddingVertical: spacing[2],    // 8
     borderBottomWidth: 1,
@@ -135,6 +173,10 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title,
     fontWeight: '700',
+    flex: 1,
+  },
+  debugButton: {
+    padding: spacing[1],  // 4
   },
   content: {
     flex: 1,
