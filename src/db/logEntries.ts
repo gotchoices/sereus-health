@@ -7,6 +7,7 @@
  * Switches between Quereus SQL and existing mock data based on USE_QUEREUS flag.
  */
 
+import { asyncIterableToArray } from '@quereus/quereus';
 import type { Database } from '@quereus/quereus';
 import { getDatabase } from './index';
 
@@ -117,7 +118,7 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
 	const db = await getDatabase();
 	
 	// Get all entries with their type names
-	const entryRows = await db.prepare(`
+	const entryStmt = await db.prepare(`
 		SELECT 
 			e.id,
 			e.timestamp,
@@ -127,7 +128,8 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
 		FROM log_entries e
 		JOIN types t ON t.id = e.type_id
 		ORDER BY e.timestamp DESC
-	`).all();
+	`);
+	const entryRows = await asyncIterableToArray(entryStmt.all());
 	
 	// For each entry, fetch its items and quantifiers
 	const entries: LogEntry[] = [];
@@ -136,7 +138,7 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
 		const entryId = entryRow.id as string;
 		
 		// Get items for this entry
-		const itemRows = await db.prepare(`
+		const itemStmt = await db.prepare(`
 			SELECT 
 				i.id,
 				i.name,
@@ -149,7 +151,8 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
 			LEFT JOIN bundles b ON b.id = lei.source_bundle_id
 			WHERE lei.entry_id = ?
 			ORDER BY i.name ASC
-		`).all([entryId]);
+		`);
+		const itemRows = await asyncIterableToArray(itemStmt.all([entryId]));
 		
 		const items: LogEntryItem[] = [];
 		
@@ -157,7 +160,7 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
 			const itemId = itemRow.id as string;
 			
 			// Get quantifiers for this item in this entry
-			const quantRows = await db.prepare(`
+			const quantStmt = await db.prepare(`
 				SELECT 
 					q.id,
 					q.name,
@@ -169,7 +172,8 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
 				JOIN item_quantifiers q ON q.id = qv.quantifier_id
 				WHERE qv.entry_id = ? AND qv.item_id = ?
 				ORDER BY q.name ASC
-			`).all([entryId, itemId]);
+			`);
+			const quantRows = await asyncIterableToArray(quantStmt.all([entryId, itemId]));
 			
 			items.push({
 				id: itemId,
@@ -225,7 +229,7 @@ export async function getLogEntryById(entryId: string): Promise<LogEntry | null>
 	}
 	
 	// Get items for this entry
-	const itemRows = await db.prepare(`
+	const itemStmt2 = await db.prepare(`
 		SELECT 
 			i.id,
 			i.name,
@@ -238,7 +242,8 @@ export async function getLogEntryById(entryId: string): Promise<LogEntry | null>
 		LEFT JOIN bundles b ON b.id = lei.source_bundle_id
 		WHERE lei.entry_id = ?
 		ORDER BY i.name ASC
-	`).all([entryId]);
+	`);
+	const itemRows = await asyncIterableToArray(itemStmt2.all([entryId]));
 	
 	const items: LogEntryItem[] = [];
 	
@@ -246,7 +251,7 @@ export async function getLogEntryById(entryId: string): Promise<LogEntry | null>
 		const itemId = itemRow.id as string;
 		
 		// Get quantifiers for this item in this entry
-		const quantRows = await db.prepare(`
+		const quantStmt2 = await db.prepare(`
 			SELECT 
 				q.id,
 				q.name,
@@ -258,7 +263,8 @@ export async function getLogEntryById(entryId: string): Promise<LogEntry | null>
 			JOIN item_quantifiers q ON q.id = qv.quantifier_id
 			WHERE qv.entry_id = ? AND qv.item_id = ?
 			ORDER BY q.name ASC
-		`).all([entryId, itemId]);
+		`);
+		const quantRows = await asyncIterableToArray(quantStmt2.all([entryId, itemId]));
 		
 		items.push({
 			id: itemId,

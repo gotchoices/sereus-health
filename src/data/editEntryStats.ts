@@ -8,14 +8,14 @@
  */
 
 import { USE_QUEREUS } from '../db/config';
+import { ensureDatabaseInitialized } from '../db/init';
 
 // Import mock data
 import happyStats from '../../mock/data/edit-entry-stats.happy.json';
 import emptyStats from '../../mock/data/edit-entry-stats.empty.json';
 
 // Import Quereus SQL implementation (only used when USE_QUEREUS = true)
-// COMMENTED OUT: Prevents Quereus from loading when USE_QUEREUS = false
-// import * as quereusStats from '../db/stats';
+import * as quereusStats from '../db/stats';
 
 export interface TypeStat {
   id: string;
@@ -53,8 +53,8 @@ const statsVariants: Record<string, StatsData> = {
  */
 export async function getTypeStats(variant: string = 'happy'): Promise<TypeStat[]> {
   if (USE_QUEREUS) {
-    throw new Error('Quereus not available - set USE_QUEREUS = false or uncomment imports in src/data/editEntryStats.ts');
-    // return quereusStats.getTypeStats();
+    await ensureDatabaseInitialized();
+    return quereusStats.getTypeStats();
   }
   
   // Use mock data
@@ -68,8 +68,8 @@ export async function getTypeStats(variant: string = 'happy'): Promise<TypeStat[
  */
 export async function getCategoryStats(typeId: string, variant: string = 'happy'): Promise<CategoryStat[]> {
   if (USE_QUEREUS) {
-    throw new Error('Quereus not available - set USE_QUEREUS = false or uncomment imports in src/data/editEntryStats.ts');
-    // return quereusStats.getCategoryStats(typeId);
+    await ensureDatabaseInitialized();
+    return quereusStats.getCategoryStats(typeId);
   }
   
   // Use mock data
@@ -85,8 +85,8 @@ export async function getCategoryStats(typeId: string, variant: string = 'happy'
  */
 export async function getItemStats(categoryId: string, variant: string = 'happy'): Promise<ItemStat[]> {
   if (USE_QUEREUS) {
-    throw new Error('Quereus not available - set USE_QUEREUS = false or uncomment imports in src/data/editEntryStats.ts');
-    // return quereusStats.getItemStats(categoryId);
+    await ensureDatabaseInitialized();
+    return quereusStats.getItemStats(categoryId);
   }
   
   // Use mock data
@@ -101,8 +101,7 @@ export async function getItemStats(categoryId: string, variant: string = 'happy'
  */
 export async function getMostCommonType(variant: string = 'happy'): Promise<TypeStat | null> {
   if (USE_QUEREUS) {
-    throw new Error('Quereus not available - set USE_QUEREUS = false or uncomment imports in src/data/editEntryStats.ts');
-    // return quereusStats.getMostCommonType();
+    return quereusStats.getMostCommonType();
   }
   
   // Use mock data
@@ -122,8 +121,7 @@ export async function getMostCommonType(variant: string = 'happy'): Promise<Type
  */
 export async function getMostCommonCategory(typeId: string, variant: string = 'happy'): Promise<CategoryStat | null> {
   if (USE_QUEREUS) {
-    throw new Error('Quereus not available - set USE_QUEREUS = false or uncomment imports in src/data/editEntryStats.ts');
-    // return quereusStats.getMostCommonCategory(typeId);
+    return quereusStats.getMostCommonCategory(typeId);
   }
   
   // Use mock data

@@ -19,85 +19,106 @@ import type { Database } from '@quereus/quereus';
 /**
  * Declarative schema SQL for Diario
  * Uses Quereus declarative schema syntax (order-independent)
+ * 
+ * SEED DATA STRATEGY:
+ * - Currently included in schema for development convenience
+ * - `apply schema main with seed` clears and repopulates all tables
+ * - For production with persistence:
+ *   1. Run schema once on first launch (check schema hash or version table)
+ *   2. Skip seed data or use migrations for updates
+ *   3. Consider storing schema hash in AsyncStorage to detect first run
  */
 const SCHEMA_SQL = `
-declare schema main version '1.0.0' {
+declare schema main {
   -- Top-level types (Activity, Condition, Outcome, custom)
   table types (
     id text primary key,
-    name text not null unique
+    name text unique
   );
 
   -- Categories organized under types (flat, no hierarchy)
   table categories (
     id text primary key,
-    type_id text not null references types(id) on delete restrict,
-    name text not null,
-    constraint unique_category_per_type unique (type_id, name)
+    type_id text,
+    name text,
+    constraint unique_category_per_type unique (type_id, name),
+    constraint fk_categories_type foreign key (type_id) references types(id)
   );
 
   -- Individual loggable items
   table items (
     id text primary key,
-    category_id text not null references categories(id) on delete restrict,
-    name text not null,
+    category_id text,
+    name text,
     description text null,
-    constraint unique_item_per_category unique (category_id, name)
+    constraint unique_item_per_category unique (category_id, name),
+    constraint fk_items_category foreign key (category_id) references categories(id)
   );
 
   -- Quantifier definitions attached to items
   table item_quantifiers (
     id text primary key,
-    item_id text not null references items(id) on delete cascade,
-    name text not null,
+    item_id text,
+    name text,
     min_value real null,
     max_value real null,
     units text null,
-    constraint unique_quantifier_per_item unique (item_id, name)
+    constraint unique_quantifier_per_item unique (item_id, name),
+    constraint fk_quantifiers_item foreign key (item_id) references items(id)
   );
 
   -- Bundles (named collections of items/bundles)
   table bundles (
     id text primary key,
-    name text not null unique
+    name text unique
   );
 
   -- Bundle membership (items and nested bundles)
   table bundle_members (
-    bundle_id text not null references bundles(id) on delete cascade,
-    item_id text null references items(id) on delete cascade,
-    member_bundle_id text null references bundles(id) on delete cascade,
-    display_order integer not null,
-    constraint pk_bundle_members primary key (bundle_id, item_id, member_bundle_id),
+    id text primary key,
+    bundle_id text,
+    item_id text null,
+    member_bundle_id text null,
+    display_order integer,
     constraint one_member_type check (
       (item_id is not null and member_bundle_id is null) or
       (item_id is null and member_bundle_id is not null)
-    )
+    ),
+    constraint fk_bundle_members_bundle foreign key (bundle_id) references bundles(id),
+    constraint fk_bundle_members_item foreign key (item_id) references items(id),
+    constraint fk_bundle_members_nested foreign key (member_bundle_id) references bundles(id)
   );
 
   -- Log entries (timestamped records)
   table log_entries (
     id text primary key,
-    timestamp text not null,
-    type_id text not null references types(id) on delete restrict,
-    comment text null
+    timestamp text,
+    type_id text,
+    comment text null,
+    constraint fk_log_entries_type foreign key (type_id) references types(id)
   );
 
   -- Items in log entries (bundles expanded at log time)
   table log_entry_items (
-    entry_id text not null references log_entries(id) on delete cascade,
-    item_id text not null references items(id) on delete restrict,
-    source_bundle_id text null references bundles(id) on delete set null,
-    constraint pk_log_entry_items primary key (entry_id, item_id)
+    entry_id text,
+    item_id text,
+    source_bundle_id text null,
+    constraint pk_log_entry_items primary key (entry_id, item_id),
+    constraint fk_log_entry_items_entry foreign key (entry_id) references log_entries(id),
+    constraint fk_log_entry_items_item foreign key (item_id) references items(id),
+    constraint fk_log_entry_items_bundle foreign key (source_bundle_id) references bundles(id)
   );
 
   -- Recorded quantifier values
   table log_entry_quantifier_values (
-    entry_id text not null references log_entries(id) on delete cascade,
-    item_id text not null references items(id) on delete restrict,
-    quantifier_id text not null references item_quantifiers(id) on delete restrict,
-    value real not null,
-    constraint pk_log_entry_quantifier_values primary key (entry_id, item_id, quantifier_id)
+    entry_id text,
+    item_id text,
+    quantifier_id text,
+    value real,
+    constraint pk_log_entry_quantifier_values primary key (entry_id, item_id, quantifier_id),
+    constraint fk_log_quant_values_entry foreign key (entry_id) references log_entries(id),
+    constraint fk_log_quant_values_item foreign key (item_id) references items(id),
+    constraint fk_log_quant_values_quant foreign key (quantifier_id) references item_quantifiers(id)
   );
 
   -- Indexes for performance
@@ -115,29 +136,27 @@ declare schema main version '1.0.0' {
   index idx_log_entry_quantifier_values_entry on log_entry_quantifier_values(entry_id);
 
   -- Seed data: Initial types
-  seed types (id, name) values
+  seed types (
     ('type-activity', 'Activity'),
     ('type-condition', 'Condition'),
-    ('type-outcome', 'Outcome');
+    ('type-outcome', 'Outcome')
+  )
 
   -- Seed data: Initial categories
-  seed categories (id, type_id, name) values
-    -- Activity categories
+  seed categories (
     ('cat-eating', 'type-activity', 'Eating'),
     ('cat-exercise', 'type-activity', 'Exercise'),
     ('cat-recreation', 'type-activity', 'Recreation'),
-    -- Condition categories
     ('cat-stress', 'type-condition', 'Stress'),
     ('cat-weather', 'type-condition', 'Weather'),
     ('cat-environment', 'type-condition', 'Environment'),
-    -- Outcome categories
     ('cat-pain', 'type-outcome', 'Pain'),
     ('cat-health', 'type-outcome', 'Health'),
-    ('cat-wellbeing', 'type-outcome', 'Well-being');
+    ('cat-wellbeing', 'type-outcome', 'Well-being')
+  )
 
   -- Seed data: Sample items
-  seed items (id, category_id, name, description) values
-    -- Eating items
+  seed items (
     ('item-omelette', 'cat-eating', 'Omelette', null),
     ('item-toast', 'cat-eating', 'Toast', null),
     ('item-orange-juice', 'cat-eating', 'Orange Juice', null),
@@ -146,34 +165,37 @@ declare schema main version '1.0.0' {
     ('item-tomato', 'cat-eating', 'Tomato', null),
     ('item-bread', 'cat-eating', 'Bread', null),
     ('item-mayo', 'cat-eating', 'Mayonnaise', null),
-    -- Exercise items
     ('item-running', 'cat-exercise', 'Running', null),
     ('item-weights', 'cat-exercise', 'Weights', null),
     ('item-yoga', 'cat-exercise', 'Yoga', null),
-    -- Pain items (with quantifiers)
     ('item-headache', 'cat-pain', 'Headache', null),
-    ('item-stomach-pain', 'cat-pain', 'Stomach Pain', null);
+    ('item-stomach-pain', 'cat-pain', 'Stomach Pain', null)
+  )
 
   -- Seed data: Sample quantifiers
-  seed item_quantifiers (id, item_id, name, min_value, max_value, units) values
+  seed item_quantifiers (
     ('quant-headache-intensity', 'item-headache', 'Intensity', 1.0, 10.0, 'scale'),
     ('quant-headache-duration', 'item-headache', 'Duration', 0.0, null, 'minutes'),
-    ('quant-stomach-intensity', 'item-stomach-pain', 'Intensity', 1.0, 10.0, 'scale');
+    ('quant-stomach-intensity', 'item-stomach-pain', 'Intensity', 1.0, 10.0, 'scale')
+  )
 
   -- Seed data: Sample bundle (BLT)
-  seed bundles (id, name) values
-    ('bundle-blt', 'BLT');
+  seed bundles (
+    ('bundle-blt', 'BLT')
+  )
 
-  seed bundle_members (bundle_id, item_id, member_bundle_id, display_order) values
-    ('bundle-blt', 'item-bacon', null, 1),
-    ('bundle-blt', 'item-lettuce', null, 2),
-    ('bundle-blt', 'item-tomato', null, 3),
-    ('bundle-blt', 'item-bread', null, 4),
-    ('bundle-blt', 'item-mayo', null, 5);
+  seed bundle_members (
+    ('bm-blt-1', 'bundle-blt', 'item-bacon', null, 1),
+    ('bm-blt-2', 'bundle-blt', 'item-lettuce', null, 2),
+    ('bm-blt-3', 'bundle-blt', 'item-tomato', null, 3),
+    ('bm-blt-4', 'bundle-blt', 'item-bread', null, 4),
+    ('bm-blt-5', 'bundle-blt', 'item-mayo', null, 5)
+  )
 
   -- Seed data: Welcome note entry (Story 01:9)
-  seed log_entries (id, timestamp, type_id, comment) values
-    ('entry-welcome', '2025-11-26T09:00:00Z', 'type-condition', 'Welcome to Diario! Tap + above to log your first activity, condition, or outcome. Track what you do, how you feel, and find patterns to improve your health.');
+  seed log_entries (
+    ('entry-welcome', '2025-11-26T09:00:00Z', 'type-condition', 'Welcome to Diario! Tap + above to log your first activity, condition, or outcome. Track what you do, how you feel, and find patterns to improve your health.')
+  )
 }
 `;
 
@@ -183,14 +205,25 @@ declare schema main version '1.0.0' {
  * @param withSeed - If true, applies seed data (clears existing data)
  */
 export async function applySchema(db: Database, withSeed: boolean = false): Promise<void> {
-	// Declare the schema
-	await db.exec(SCHEMA_SQL);
-	
-	// Apply the schema (with or without seed)
-	if (withSeed) {
-		await db.exec('apply schema main with seed');
-	} else {
-		await db.exec('apply schema main');
+	try {
+		console.log('[DB Schema] Declaring schema...');
+		// Declare the schema
+		await db.exec(SCHEMA_SQL);
+		console.log('[DB Schema] Schema declared successfully');
+		
+		// Apply the schema (with or without seed)
+		if (withSeed) {
+			console.log('[DB Schema] Applying schema with seed data...');
+			await db.exec('apply schema main with seed');
+			console.log('[DB Schema] Schema applied with seed successfully');
+		} else {
+			console.log('[DB Schema] Applying schema...');
+			await db.exec('apply schema main');
+			console.log('[DB Schema] Schema applied successfully');
+		}
+	} catch (error) {
+		console.error('[DB Schema] Failed to apply schema:', error);
+		throw error;
 	}
 }
 

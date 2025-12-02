@@ -5,6 +5,7 @@
  * Only called when USE_QUEREUS = true (via src/data/editEntryStats.ts adapter).
  */
 
+import { asyncIterableToArray } from '@quereus/quereus';
 import type { Database } from '@quereus/quereus';
 import { getDatabase } from './index';
 
@@ -34,7 +35,7 @@ export interface ItemStat {
 export async function getTypeStats(): Promise<TypeStat[]> {
 	const db = await getDatabase();
 	
-	const results = await db.prepare(`
+	const stmt = await db.prepare(`
 		SELECT 
 			t.id,
 			t.name,
@@ -43,7 +44,9 @@ export async function getTypeStats(): Promise<TypeStat[]> {
 		LEFT JOIN log_entries e ON e.type_id = t.id
 		GROUP BY t.id, t.name
 		ORDER BY usageCount DESC, t.name ASC
-	`).all();
+	`);
+	
+	const results = await asyncIterableToArray(stmt.all());
 	
 	return results.map(row => ({
 		id: row.id as string,
@@ -59,7 +62,7 @@ export async function getTypeStats(): Promise<TypeStat[]> {
 export async function getCategoryStats(typeId: string): Promise<CategoryStat[]> {
 	const db = await getDatabase();
 	
-	const results = await db.prepare(`
+	const stmt = await db.prepare(`
 		SELECT 
 			c.id,
 			c.name,
@@ -71,7 +74,9 @@ export async function getCategoryStats(typeId: string): Promise<CategoryStat[]> 
 		WHERE c.type_id = ?
 		GROUP BY c.id, c.name
 		ORDER BY usageCount DESC, c.name ASC
-	`).all([typeId]);
+	`);
+	
+	const results = await asyncIterableToArray(stmt.all([typeId]));
 	
 	return results.map(row => ({
 		id: row.id as string,
@@ -89,7 +94,7 @@ export async function getItemStats(categoryId: string): Promise<ItemStat[]> {
 	const db = await getDatabase();
 	
 	// Get individual items with usage counts
-	const itemResults = await db.prepare(`
+	const itemStmt = await db.prepare(`
 		SELECT 
 			i.id,
 			i.name,
@@ -99,10 +104,11 @@ export async function getItemStats(categoryId: string): Promise<ItemStat[]> {
 		LEFT JOIN log_entry_items lei ON lei.item_id = i.id
 		WHERE i.category_id = ?
 		GROUP BY i.id, i.name
-	`).all([categoryId]);
+	`);
+	const itemResults = await asyncIterableToArray(itemStmt.all([categoryId]));
 	
 	// Get bundles with usage counts (via their expanded items)
-	const bundleResults = await db.prepare(`
+	const bundleStmt = await db.prepare(`
 		SELECT 
 			b.id,
 			b.name,
@@ -111,7 +117,8 @@ export async function getItemStats(categoryId: string): Promise<ItemStat[]> {
 		FROM bundles b
 		LEFT JOIN log_entry_items lei ON lei.source_bundle_id = b.id
 		GROUP BY b.id, b.name
-	`).all();
+	`);
+	const bundleResults = await asyncIterableToArray(bundleStmt.all());
 	
 	// Combine and sort
 	const combined = [
