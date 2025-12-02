@@ -83,77 +83,63 @@ export const SAMPLE_DATA = {
 
 /**
  * Apply sample data to the database (development only)
- * Uses a transaction for atomicity
- * 
- * NOTE: Some inserts use direct SQL instead of prepared statements
- * due to a Quereus bug where NULL values are rejected even for nullable columns.
- * See docs/quereus-rn-issues.md #3 for details.
+ * Uses db.exec with parameters for simplicity
  */
 export async function applySampleData(db: Database): Promise<void> {
 	try {
 		logger.info('Applying sample data for development...');
-		// NOTE: Removed explicit BEGIN/COMMIT due to Quereus bug in RN (see docs/quereus-rn-issues.md #4)
-		// Using autocommit mode instead
 		
 		logger.debug('Inserting items...');
 		
-		// Insert items
-		const itemStmt = await db.prepare('INSERT INTO items (id, category_id, name, description) VALUES (?, ?, ?, ?)');
+		// Insert items (description is nullable)
 		for (const item of SAMPLE_DATA.items) {
-			await itemStmt.run([item.id, item.category_id, item.name, item.description]);
+			await db.exec('INSERT INTO items (id, category_id, name, description) VALUES (?, ?, ?, ?)', 
+				[item.id, item.category_id, item.name, item.description]);
 		}
-		await itemStmt.finalize();
 		logger.debug(`Inserted ${SAMPLE_DATA.items.length} items`);
 		
-		// Insert item quantifiers
-		// Note: Using direct SQL instead of prepared statements due to Quereus NULL handling quirk
+		// Insert item quantifiers (max_value is nullable)
 		logger.debug('Inserting item quantifiers...');
 		for (const quant of SAMPLE_DATA.item_quantifiers) {
-			const maxVal = quant.max_value === null ? 'NULL' : quant.max_value;
-			await db.exec(`INSERT INTO item_quantifiers (id, item_id, name, min_value, max_value, units) VALUES ('${quant.id}', '${quant.item_id}', '${quant.name}', ${quant.min_value}, ${maxVal}, '${quant.units}')`);
+			await db.exec('INSERT INTO item_quantifiers (id, item_id, name, min_value, max_value, units) VALUES (?, ?, ?, ?, ?, ?)', 
+				[quant.id, quant.item_id, quant.name, quant.min_value, quant.max_value, quant.units]);
 		}
 		logger.debug(`Inserted ${SAMPLE_DATA.item_quantifiers.length} quantifiers`);
 		
 		// Insert bundles
 		logger.debug('Inserting bundles...');
-		const bundleStmt = await db.prepare('INSERT INTO bundles (id, name) VALUES (?, ?)');
 		for (const bundle of SAMPLE_DATA.bundles) {
-			await bundleStmt.run([bundle.id, bundle.name]);
+			await db.exec('INSERT INTO bundles (id, name) VALUES (?, ?)', [bundle.id, bundle.name]);
 		}
-		await bundleStmt.finalize();
 		logger.debug(`Inserted ${SAMPLE_DATA.bundles.length} bundles`);
 		
-		// Insert bundle members
+		// Insert bundle members (member_bundle_id is nullable)
 		logger.debug('Inserting bundle members...');
-		const memberStmt = await db.prepare('INSERT INTO bundle_members (id, bundle_id, item_id, member_bundle_id, display_order) VALUES (?, ?, ?, ?, ?)');
 		for (const member of SAMPLE_DATA.bundle_members) {
-			await memberStmt.run([member.id, member.bundle_id, member.item_id, member.member_bundle_id, member.display_order]);
+			await db.exec('INSERT INTO bundle_members (id, bundle_id, item_id, member_bundle_id, display_order) VALUES (?, ?, ?, ?, ?)', 
+				[member.id, member.bundle_id, member.item_id, member.member_bundle_id, member.display_order]);
 		}
-		await memberStmt.finalize();
 		logger.debug(`Inserted ${SAMPLE_DATA.bundle_members.length} bundle members`);
 		
-		// Insert log entries
-		// Note: Using direct SQL due to Quereus NULL handling bug (see docs/quereus-rn-issues.md #3)
+		// Insert log entries (comment is nullable)
 		logger.debug('Inserting log entries...');
 		for (const entry of SAMPLE_DATA.log_entries) {
-			const comment = entry.comment === null ? 'NULL' : `'${entry.comment.replace(/'/g, "''")}'`;
-			await db.exec(`INSERT INTO log_entries (id, timestamp, type_id, comment) VALUES ('${entry.id}', '${entry.timestamp}', '${entry.type_id}', ${comment})`);
+			await db.exec('INSERT INTO log_entries (id, timestamp, type_id, comment) VALUES (?, ?, ?, ?)', 
+				[entry.id, entry.timestamp, entry.type_id, entry.comment]);
 		}
 		logger.debug(`Inserted ${SAMPLE_DATA.log_entries.length} log entries`);
 		
-		// Insert log entry items
-		// Note: Using direct SQL due to Quereus NULL handling bug (see docs/quereus-rn-issues.md #3)
+		// Insert log entry items (source_bundle_id is nullable)
 		for (const lei of SAMPLE_DATA.log_entry_items) {
-			const bundleId = lei.source_bundle_id === null ? 'NULL' : `'${lei.source_bundle_id}'`;
-			await db.exec(`INSERT INTO log_entry_items (entry_id, item_id, source_bundle_id) VALUES ('${lei.entry_id}', '${lei.item_id}', ${bundleId})`);
+			await db.exec('INSERT INTO log_entry_items (entry_id, item_id, source_bundle_id) VALUES (?, ?, ?)', 
+				[lei.entry_id, lei.item_id, lei.source_bundle_id]);
 		}
 		
 		// Insert log entry quantifier values
-		const qvStmt = await db.prepare('INSERT INTO log_entry_quantifier_values (entry_id, item_id, quantifier_id, value) VALUES (?, ?, ?, ?)');
 		for (const qv of SAMPLE_DATA.log_entry_quantifier_values) {
-			await qvStmt.run([qv.entry_id, qv.item_id, qv.quantifier_id, qv.value]);
+			await db.exec('INSERT INTO log_entry_quantifier_values (entry_id, item_id, quantifier_id, value) VALUES (?, ?, ?, ?)', 
+				[qv.entry_id, qv.item_id, qv.quantifier_id, qv.value]);
 		}
-		await qvStmt.finalize();
 		
 		logger.info(`Sample data applied: ${SAMPLE_DATA.items.length} items, ${SAMPLE_DATA.bundles.length} bundles, ${SAMPLE_DATA.log_entries.length} log entries`);
 	} catch (error) {

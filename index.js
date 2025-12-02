@@ -4,12 +4,10 @@
 
 // Polyfill for structuredClone (needed by Quereus in React Native)
 // structuredClone is a Web/Node.js 17+ global API not available in RN
+// Using @ungap/structured-clone for robust deep cloning
+import structuredClone from '@ungap/structured-clone';
 if (typeof globalThis.structuredClone === 'undefined') {
-  globalThis.structuredClone = function structuredClone(obj) {
-    // Simple deep clone using JSON parse/stringify
-    // Works for Quereus's use case (cloning SqlValue types in B-tree nodes)
-    return JSON.parse(JSON.stringify(obj));
-  };
+  globalThis.structuredClone = structuredClone;
 }
 
 import { AppRegistry } from 'react-native';

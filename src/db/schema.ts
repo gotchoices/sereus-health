@@ -15,7 +15,6 @@
  */
 
 import type { Database } from '@quereus/quereus';
-import { asyncIterableToArray } from '@quereus/quereus';
 import { createLogger } from '../util/logger';
 
 const logger = createLogger('DB Schema');
@@ -189,42 +188,36 @@ export async function applySchema(db: Database): Promise<void> {
 
 /**
  * Insert production seed data into the database
- * Uses a transaction for atomicity
+ * Uses db.exec with parameters for simplicity
  */
 export async function applyProductionSeeds(db: Database): Promise<void> {
 	try {
 		logger.info('Applying production seed data...');
-		// NOTE: Removed explicit BEGIN/COMMIT due to Quereus bug in RN (see docs/quereus-rn-issues.md #4)
-		// Using autocommit mode instead
 		
 		// Insert types
-		const typeStmt = await db.prepare('INSERT INTO types (id, name) VALUES (?, ?)');
 		for (const type of PRODUCTION_SEEDS.types) {
-			await typeStmt.run([type.id, type.name]);
+			await db.exec('INSERT INTO types (id, name) VALUES (?, ?)', [type.id, type.name]);
 		}
-		await typeStmt.finalize();
 		
 		// Insert categories
-		const catStmt = await db.prepare('INSERT INTO categories (id, type_id, name) VALUES (?, ?, ?)');
 		for (const cat of PRODUCTION_SEEDS.categories) {
-			await catStmt.run([cat.id, cat.type_id, cat.name]);
+			await db.exec('INSERT INTO categories (id, type_id, name) VALUES (?, ?, ?)', [cat.id, cat.type_id, cat.name]);
 		}
-		await catStmt.finalize();
 		
 		// Insert welcome log entry
-		const entryStmt = await db.prepare('INSERT INTO log_entries (id, timestamp, type_id, comment) VALUES (?, ?, ?, ?)');
 		for (const entry of PRODUCTION_SEEDS.log_entries) {
-			await entryStmt.run([entry.id, entry.timestamp, entry.type_id, entry.comment]);
+			await db.exec('INSERT INTO log_entries (id, timestamp, type_id, comment) VALUES (?, ?, ?, ?)', [entry.id, entry.timestamp, entry.type_id, entry.comment]);
 		}
-		await entryStmt.finalize();
 		
 		logger.info(`Production seeds applied: ${PRODUCTION_SEEDS.types.length} types, ${PRODUCTION_SEEDS.categories.length} categories, ${PRODUCTION_SEEDS.log_entries.length} entries`);
 		
 		// Verify data was committed
-		logger.debug('Attempting to verify with SELECT * FROM types...');
-		const verifyStmt = await db.prepare('SELECT * FROM types');
-		const allTypes = await asyncIterableToArray(verifyStmt.all());
-		logger.debug(`Direct SELECT in autocommit mode found ${allTypes.length} types:`, allTypes.map(t => t.name));
+		logger.debug('Verifying with SELECT * FROM types...');
+		const allTypes = [];
+		for await (const type of db.eval('SELECT * FROM types')) {
+			allTypes.push(type);
+		}
+		logger.debug(`Verification found ${allTypes.length} types:`, allTypes.map(t => t.name));
 	} catch (error) {
 		logger.error('Failed to apply production seeds:', error);
 		throw error;

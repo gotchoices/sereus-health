@@ -1,11 +1,16 @@
 /**
- * Diario Database Initialization
+ * Sereus Health Database Initialization
  * 
- * Provides a singleton Quereus database instance with MemoryTableModule
- * for in-memory SQL storage of log entries, taxonomy, and app data.
+ * Provides a singleton Quereus database instance for in-memory SQL storage
+ * of log entries, taxonomy, and app data.
+ * 
+ * NOTE: As of Quereus latest version:
+ * - MemoryTableModule is registered by default
+ * - default_vtab_module is 'memory' by default
+ * - default_column_nullability is 'not_null' by default (Third Manifesto)
  */
 
-import { Database, MemoryTableModule } from '@quereus/quereus';
+import { Database } from '@quereus/quereus';
 import { applySchema } from './schema';
 
 let dbInstance: Database | null = null;
@@ -18,17 +23,8 @@ export async function getDatabase(): Promise<Database> {
 		return dbInstance;
 	}
 
+	// MemoryTableModule and sensible defaults are now built-in
 	const db = new Database();
-	
-	// Register memory table module for in-memory storage
-	db.registerVtabModule('memory', new MemoryTableModule());
-	
-	// Set memory as default module so CREATE TABLE works without USING clause
-	await db.exec("pragma default_vtab_module = 'memory'");
-	
-	// Set default column nullability (Quereus defaults to NOT NULL)
-	// We keep NOT NULL as default per Third Manifesto principles
-	await db.exec("pragma default_column_nullability = 'not_null'");
 	
 	dbInstance = db;
 	return db;

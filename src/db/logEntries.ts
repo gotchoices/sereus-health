@@ -7,7 +7,6 @@
  * Switches between Quereus SQL and existing mock data based on USE_QUEREUS flag.
  */
 
-import { asyncIterableToArray } from '@quereus/quereus';
 import type { Database } from '@quereus/quereus';
 import { getDatabase } from './index';
 import { createLogger } from '../util/logger';
@@ -81,24 +80,24 @@ export async function createLogEntry(input: CreateLogEntryInput): Promise<string
 	
 	try {
 		// Insert log entry
-		await db.prepare(`
+		await db.exec(`
 			INSERT INTO log_entries (id, timestamp, type_id, comment)
 			VALUES (?, ?, ?, ?)
-		`).run([entryId, input.timestamp, input.typeId, input.comment]);
+		`, [entryId, input.timestamp, input.typeId, input.comment]);
 		
 		// Insert each item
 		for (const item of input.items) {
-			await db.prepare(`
+			await db.exec(`
 				INSERT INTO log_entry_items (entry_id, item_id, source_bundle_id)
 				VALUES (?, ?, ?)
-			`).run([entryId, item.itemId, item.sourceBundleId]);
+			`, [entryId, item.itemId, item.sourceBundleId]);
 			
 			// Insert quantifier values for this item
 			for (const quant of item.quantifiers) {
-				await db.prepare(`
+				await db.exec(`
 					INSERT INTO log_entry_quantifier_values (entry_id, item_id, quantifier_id, value)
 					VALUES (?, ?, ?, ?)
-				`).run([entryId, item.itemId, quant.quantifierId, quant.value]);
+				`, [entryId, item.itemId, quant.quantifierId, quant.value]);
 			}
 		}
 		
@@ -135,7 +134,11 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
 	logger.sql(entryQuery);
 	
 	const entryStmt = await db.prepare(entryQuery);
-	const entryRows = await asyncIterableToArray(entryStmt.all());
+	const entryRows = [];
+	for await (const row of entryStmt.all()) {
+		entryRows.push(row);
+	}
+	await entryStmt.finalize();
 	
 	logger.debug(`getAllLogEntries found ${entryRows.length} entries`);
 	
@@ -160,7 +163,11 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
 			WHERE lei.entry_id = ?
 			ORDER BY i.name ASC
 		`);
-		const itemRows = await asyncIterableToArray(itemStmt.all([entryId]));
+		const itemRows = [];
+		for await (const row of itemStmt.all([entryId])) {
+			itemRows.push(row);
+		}
+		await itemStmt.finalize();
 		
 		const items: LogEntryItem[] = [];
 		
@@ -181,7 +188,11 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
 				WHERE qv.entry_id = ? AND qv.item_id = ?
 				ORDER BY q.name ASC
 			`);
-			const quantRows = await asyncIterableToArray(quantStmt.all([entryId, itemId]));
+			const quantRows = [];
+			for await (const row of quantStmt.all([entryId, itemId])) {
+				quantRows.push(row);
+			}
+			await quantStmt.finalize();
 			
 			items.push({
 				id: itemId,
@@ -251,7 +262,11 @@ export async function getLogEntryById(entryId: string): Promise<LogEntry | null>
 		WHERE lei.entry_id = ?
 		ORDER BY i.name ASC
 	`);
-	const itemRows = await asyncIterableToArray(itemStmt2.all([entryId]));
+	const itemRows = [];
+	for await (const row of itemStmt2.all([entryId])) {
+		itemRows.push(row);
+	}
+	await itemStmt2.finalize();
 	
 	const items: LogEntryItem[] = [];
 	
@@ -272,7 +287,11 @@ export async function getLogEntryById(entryId: string): Promise<LogEntry | null>
 			WHERE qv.entry_id = ? AND qv.item_id = ?
 			ORDER BY q.name ASC
 		`);
-		const quantRows = await asyncIterableToArray(quantStmt2.all([entryId, itemId]));
+		const quantRows = [];
+		for await (const row of quantStmt2.all([entryId, itemId])) {
+			quantRows.push(row);
+		}
+		await quantStmt2.finalize();
 		
 		items.push({
 			id: itemId,
@@ -313,34 +332,34 @@ export async function updateLogEntry(entryId: string, input: CreateLogEntryInput
 	
 	try {
 		// Update entry metadata
-		await db.prepare(`
+		await db.exec(`
 			UPDATE log_entries
 			SET timestamp = ?, type_id = ?, comment = ?
 			WHERE id = ?
-		`).run([input.timestamp, input.typeId, input.comment, entryId]);
+		`, [input.timestamp, input.typeId, input.comment, entryId]);
 		
 		// Delete existing items and quantifiers (cascade will handle quantifiers)
-		await db.prepare(`
+		await db.exec(`
 			DELETE FROM log_entry_items WHERE entry_id = ?
-		`).run([entryId]);
+		`, [entryId]);
 		
-		await db.prepare(`
+		await db.exec(`
 			DELETE FROM log_entry_quantifier_values WHERE entry_id = ?
-		`).run([entryId]);
+		`, [entryId]);
 		
 		// Insert new items
 		for (const item of input.items) {
-			await db.prepare(`
+			await db.exec(`
 				INSERT INTO log_entry_items (entry_id, item_id, source_bundle_id)
 				VALUES (?, ?, ?)
-			`).run([entryId, item.itemId, item.sourceBundleId]);
+			`, [entryId, item.itemId, item.sourceBundleId]);
 			
 			// Insert quantifier values for this item
 			for (const quant of item.quantifiers) {
-				await db.prepare(`
+				await db.exec(`
 					INSERT INTO log_entry_quantifier_values (entry_id, item_id, quantifier_id, value)
 					VALUES (?, ?, ?, ?)
-				`).run([entryId, item.itemId, quant.quantifierId, quant.value]);
+				`, [entryId, item.itemId, quant.quantifierId, quant.value]);
 			}
 		}
 		
@@ -360,8 +379,8 @@ export async function updateLogEntry(entryId: string, input: CreateLogEntryInput
 export async function deleteLogEntry(entryId: string): Promise<void> {
 	const db = await getDatabase();
 	
-	await db.prepare(`
+	await db.exec(`
 		DELETE FROM log_entries WHERE id = ?
-	`).run([entryId]);
+	`, [entryId]);
 }
 
