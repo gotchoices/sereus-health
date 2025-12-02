@@ -47,28 +47,82 @@ This file tracks open design questions for Diario so they can be resolved one at
   - 9 tables with detailed examples, constraints, and rationale
   - Ready for Quereus implementation
 
-### Quereus Integration (On Hold - Feature Flag Added)
+### Quereus Integration (BLOCKED - Critical RN Incompatibilities)
 
+**Implementation Status:**
 - [x] **Add Quereus dependency**: Installed `@quereus/quereus@^0.4.11`
 - [x] **Create database initialization**: `src/db/index.ts` with Database instance, MemoryTableModule registration, and default pragmas
 - [x] **Translate schema to declarative SQL**: Created `src/db/schema.ts` with full declarative schema matching `design/specs/api/schema.md`
+- [x] **Production & sample seed data**: Separated into `schema.ts` (production) and `schema.samples.ts` (dev only)
 - [x] **Implement SQL adapters**: Created `src/db/stats.ts` and `src/db/logEntries.ts` with full SQL implementation
 - [x] **Add feature flag**: Created `src/db/config.ts` with `USE_QUEREUS` toggle (default: false)
 - [x] **Preserve Appeus mock system**: Updated adapters to fall back to existing `mock/data/*.json` when `USE_QUEREUS = false`
-- [ ] **Resolve RN compatibility**: Quereus requires crypto polyfills or Node.js environment
-  - Blocked by: `node:crypto` import in Quereus (Metro bundler incompatible)
-  - Workaround: Use `USE_QUEREUS = false` to use Appeus mock data
-  - Future: Add crypto polyfills OR wait for Quereus RN compatibility OR use on desktop/web
+- [x] **Document RN issues**: Comprehensive issue tracking in `docs/quereus-rn-issues.md`
 
 **Current Status:**
-- App runs with `USE_QUEREUS = false` (using Appeus mock data)
-- Quereus code is committed and ready for when crypto issue is resolved
-- To enable Quereus: Set `USE_QUEREUS = true` in `src/db/config.ts` (requires crypto polyfills)
+- **App runs with `USE_QUEREUS = false`** (using Appeus mock data)
+- **Quereus integration is BLOCKED** by fundamental React Native incompatibilities (see below)
+- All Quereus code is committed and documented for future use
 
-**Future Options:**
-1. Add `react-native-quick-crypto` polyfill (tested, works but adds dependency)
-2. Wait for Quereus to add React Native support upstream
-3. Use Quereus only on desktop/web platforms (Electron, browser)
+**Blocking Issues** (see `docs/quereus-rn-issues.md` for details):
+1. ✅ **RESOLVED**: Missing `structuredClone` global - Fixed with polyfill in `index.js`
+2. ✅ **RESOLVED**: Dynamic `import()` not supported - Fixed with patches to `node_modules/@quereus/quereus`
+3. ❌ **ACTIVE**: NULL parameter validation bug - Workaround: using direct SQL for nullable columns
+4. ❌ **CRITICAL**: Transaction data loss - Data disappears after COMMIT, autocommit mode has same issue
+5. ❌ **CRITICAL**: Internal data structure corruption - `primaryKeys.add is not a function` errors
+
+**Issues #4 and #5 are fundamental** and suggest Quereus's in-memory MemoryTable is not compatible with React Native's JavaScript engine (Hermes). These cannot be worked around without deep changes to Quereus's core.
+
+**Cleanup Checklist for When Quereus RN Support is Fixed:**
+
+Once Quereus resolves the RN compatibility issues, perform these cleanup steps:
+
+- [ ] **Remove workarounds in `src/db/schema.ts`**:
+  - [ ] Remove comment about autocommit workaround
+  - [ ] Re-add `BEGIN` transaction at start of `applyProductionSeeds()`
+  - [ ] Re-add `COMMIT` and `ROLLBACK` error handling
+  - [ ] Remove verification SELECT query (debugging code)
+
+- [ ] **Remove workarounds in `src/db/schema.samples.ts`**:
+  - [ ] Remove comment about autocommit workaround  
+  - [ ] Re-add `BEGIN` transaction at start of `applySampleData()`
+  - [ ] Re-add `COMMIT` and `ROLLBACK` error handling
+  - [ ] **Replace direct SQL with prepared statements** for:
+    - [ ] Item quantifiers insert (line ~101)
+    - [ ] Log entries insert (line ~130)
+    - [ ] Log entry items insert (line ~140)
+  - [ ] Remove all `db.exec()` string interpolation for INSERTs
+  - [ ] Remove special NULL handling (use native `null` in arrays)
+
+- [ ] **Remove patches to `node_modules/@quereus/quereus`**:
+  - [ ] Remove patch to `plugin-loader.js` (or update package.json to apply automatically)
+  - [ ] Remove patch to `schema-hasher.js` (or update package.json to apply automatically)
+  - [ ] Consider documenting patches if they need to persist
+
+- [ ] **Remove polyfills from `index.js`**:
+  - [ ] Remove `structuredClone` polyfill (only if Quereus includes its own)
+
+- [ ] **Update logging in `src/db/init.ts`**:
+  - [ ] Remove excessive debug logging added for troubleshooting
+  - [ ] Keep only info-level logs for initialization milestones
+  - [ ] Remove verification queries and type counting
+
+- [ ] **Set `USE_QUEREUS = true` in `src/db/config.ts`**
+  - [ ] Test full CRUD operations
+  - [ ] Test with multiple log entries
+  - [ ] Test bundle expansion
+  - [ ] Test quantifier values
+  - [ ] Verify EditEntry stats queries work
+  - [ ] Verify LogHistory queries work
+
+- [ ] **Archive or remove `docs/quereus-rn-issues.md`**:
+  - [ ] If issues are fully resolved, move to `docs/archive/` or delete
+  - [ ] If some workarounds remain, update status to reflect what's fixed
+
+- [ ] **Update `docs/STATUS.md`**:
+  - [ ] Mark Quereus integration as complete
+  - [ ] Remove this cleanup checklist
+  - [ ] Document any remaining limitations or known issues
 
 ### Possible Future Enhancements (Post-MVP)
 

@@ -15,6 +15,7 @@
  */
 
 import type { Database } from '@quereus/quereus';
+import { asyncIterableToArray } from '@quereus/quereus';
 import { createLogger } from '../util/logger';
 
 const logger = createLogger('DB Schema');
@@ -23,13 +24,8 @@ const logger = createLogger('DB Schema');
  * Declarative schema SQL for Diario
  * Uses Quereus declarative schema syntax (order-independent)
  * 
- * SEED DATA STRATEGY:
- * - Currently included in schema for development convenience
- * - `apply schema main with seed` clears and repopulates all tables
- * - For production with persistence:
- *   1. Run schema once on first launch (check schema hash or version table)
- *   2. Skip seed data or use migrations for updates
- *   3. Consider storing schema hash in AsyncStorage to detect first run
+ * NOTE: No seed data in schema definition.
+ * Seed data is applied separately via SQL INSERT statements.
  */
 const SCHEMA_SQL = `
 declare schema main {
@@ -137,94 +133,100 @@ declare schema main {
   index idx_log_entry_items_item on log_entry_items(item_id);
   index idx_log_entry_items_source_bundle on log_entry_items(source_bundle_id);
   index idx_log_entry_quantifier_values_entry on log_entry_quantifier_values(entry_id);
-
-  -- Seed data: Initial types
-  seed types (
-    ('type-activity', 'Activity'),
-    ('type-condition', 'Condition'),
-    ('type-outcome', 'Outcome')
-  )
-
-  -- Seed data: Initial categories
-  seed categories (
-    ('cat-eating', 'type-activity', 'Eating'),
-    ('cat-exercise', 'type-activity', 'Exercise'),
-    ('cat-recreation', 'type-activity', 'Recreation'),
-    ('cat-stress', 'type-condition', 'Stress'),
-    ('cat-weather', 'type-condition', 'Weather'),
-    ('cat-environment', 'type-condition', 'Environment'),
-    ('cat-pain', 'type-outcome', 'Pain'),
-    ('cat-health', 'type-outcome', 'Health'),
-    ('cat-wellbeing', 'type-outcome', 'Well-being')
-  )
-
-  -- Seed data: Sample items
-  seed items (
-    ('item-omelette', 'cat-eating', 'Omelette', null),
-    ('item-toast', 'cat-eating', 'Toast', null),
-    ('item-orange-juice', 'cat-eating', 'Orange Juice', null),
-    ('item-bacon', 'cat-eating', 'Bacon', null),
-    ('item-lettuce', 'cat-eating', 'Lettuce', null),
-    ('item-tomato', 'cat-eating', 'Tomato', null),
-    ('item-bread', 'cat-eating', 'Bread', null),
-    ('item-mayo', 'cat-eating', 'Mayonnaise', null),
-    ('item-running', 'cat-exercise', 'Running', null),
-    ('item-weights', 'cat-exercise', 'Weights', null),
-    ('item-yoga', 'cat-exercise', 'Yoga', null),
-    ('item-headache', 'cat-pain', 'Headache', null),
-    ('item-stomach-pain', 'cat-pain', 'Stomach Pain', null)
-  )
-
-  -- Seed data: Sample quantifiers
-  seed item_quantifiers (
-    ('quant-headache-intensity', 'item-headache', 'Intensity', 1.0, 10.0, 'scale'),
-    ('quant-headache-duration', 'item-headache', 'Duration', 0.0, null, 'minutes'),
-    ('quant-stomach-intensity', 'item-stomach-pain', 'Intensity', 1.0, 10.0, 'scale')
-  )
-
-  -- Seed data: Sample bundle (BLT)
-  seed bundles (
-    ('bundle-blt', 'BLT')
-  )
-
-  seed bundle_members (
-    ('bm-blt-1', 'bundle-blt', 'item-bacon', null, 1),
-    ('bm-blt-2', 'bundle-blt', 'item-lettuce', null, 2),
-    ('bm-blt-3', 'bundle-blt', 'item-tomato', null, 3),
-    ('bm-blt-4', 'bundle-blt', 'item-bread', null, 4),
-    ('bm-blt-5', 'bundle-blt', 'item-mayo', null, 5)
-  )
-
-  -- Seed data: Welcome note entry (Story 01:9)
-  seed log_entries (id, timestamp, type_id, comment) values
-    ('entry-welcome', '2025-11-26T09:00:00Z', 'type-condition', 'Welcome to Diario! Tap + above to log your first activity, condition, or outcome. Track what you do, how you feel, and find patterns to improve your health.')
 }
 `;
 
 /**
- * Apply the Diario schema to the database
- * @param db - Quereus database instance
- * @param withSeed - If true, applies seed data (clears existing data)
+ * Production seed data - minimal starter data for all users
  */
-export async function applySchema(db: Database, withSeed: boolean = false): Promise<void> {
+export const PRODUCTION_SEEDS = {
+	types: [
+		{ id: 'type-activity', name: 'Activity' },
+		{ id: 'type-condition', name: 'Condition' },
+		{ id: 'type-outcome', name: 'Outcome' },
+	],
+	categories: [
+		// Activity categories
+		{ id: 'cat-eating', type_id: 'type-activity', name: 'Eating' },
+		{ id: 'cat-exercise', type_id: 'type-activity', name: 'Exercise' },
+		{ id: 'cat-recreation', type_id: 'type-activity', name: 'Recreation' },
+		// Condition categories
+		{ id: 'cat-stress', type_id: 'type-condition', name: 'Stress' },
+		{ id: 'cat-weather', type_id: 'type-condition', name: 'Weather' },
+		{ id: 'cat-environment', type_id: 'type-condition', name: 'Environment' },
+		// Outcome categories
+		{ id: 'cat-pain', type_id: 'type-outcome', name: 'Pain' },
+		{ id: 'cat-health', type_id: 'type-outcome', name: 'Health' },
+		{ id: 'cat-wellbeing', type_id: 'type-outcome', name: 'Well-being' },
+	],
+	log_entries: [
+		{
+			id: 'entry-welcome',
+			timestamp: '2025-11-26T09:00:00Z',
+			type_id: 'type-condition',
+			comment: 'Welcome to Diario! Tap + above to log your first activity, condition, or outcome. Track what you do, how you feel, and find patterns to improve your health.',
+		},
+	],
+};
+
+/**
+ * Apply the Diario schema to the database (structure only, no data)
+ */
+export async function applySchema(db: Database): Promise<void> {
 	try {
 		logger.debug('Declaring schema...');
-		// Declare the schema
 		await db.exec(SCHEMA_SQL);
 		logger.debug('Schema declared successfully');
 		
-		// Apply the schema (with or without seed)
-		if (withSeed) {
-			logger.info('Applying schema with seed data...');
-			await db.exec('apply schema main with seed');
-			logger.info('Schema applied with seed successfully');
-		} else {
-			logger.info('Applying schema...');
-			await db.exec('apply schema main');
-			logger.info('Schema applied successfully');
-		}
+		logger.info('Applying schema...');
+		await db.exec('apply schema main');
+		logger.info('Schema applied successfully');
 	} catch (error) {
 		logger.error('Failed to apply schema:', error);
+		throw error;
+	}
+}
+
+/**
+ * Insert production seed data into the database
+ * Uses a transaction for atomicity
+ */
+export async function applyProductionSeeds(db: Database): Promise<void> {
+	try {
+		logger.info('Applying production seed data...');
+		// NOTE: Removed explicit BEGIN/COMMIT due to Quereus bug in RN (see docs/quereus-rn-issues.md #4)
+		// Using autocommit mode instead
+		
+		// Insert types
+		const typeStmt = await db.prepare('INSERT INTO types (id, name) VALUES (?, ?)');
+		for (const type of PRODUCTION_SEEDS.types) {
+			await typeStmt.run([type.id, type.name]);
+		}
+		await typeStmt.finalize();
+		
+		// Insert categories
+		const catStmt = await db.prepare('INSERT INTO categories (id, type_id, name) VALUES (?, ?, ?)');
+		for (const cat of PRODUCTION_SEEDS.categories) {
+			await catStmt.run([cat.id, cat.type_id, cat.name]);
+		}
+		await catStmt.finalize();
+		
+		// Insert welcome log entry
+		const entryStmt = await db.prepare('INSERT INTO log_entries (id, timestamp, type_id, comment) VALUES (?, ?, ?, ?)');
+		for (const entry of PRODUCTION_SEEDS.log_entries) {
+			await entryStmt.run([entry.id, entry.timestamp, entry.type_id, entry.comment]);
+		}
+		await entryStmt.finalize();
+		
+		logger.info(`Production seeds applied: ${PRODUCTION_SEEDS.types.length} types, ${PRODUCTION_SEEDS.categories.length} categories, ${PRODUCTION_SEEDS.log_entries.length} entries`);
+		
+		// Verify data was committed
+		logger.debug('Attempting to verify with SELECT * FROM types...');
+		const verifyStmt = await db.prepare('SELECT * FROM types');
+		const allTypes = await asyncIterableToArray(verifyStmt.all());
+		logger.debug(`Direct SELECT in autocommit mode found ${allTypes.length} types:`, allTypes.map(t => t.name));
+	} catch (error) {
+		logger.error('Failed to apply production seeds:', error);
 		throw error;
 	}
 }
