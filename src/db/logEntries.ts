@@ -10,6 +10,9 @@
 import { asyncIterableToArray } from '@quereus/quereus';
 import type { Database } from '@quereus/quereus';
 import { getDatabase } from './index';
+import { createLogger } from '../util/logger';
+
+const logger = createLogger('DB LogEntries');
 
 export interface LogEntry {
 	id: string;
@@ -118,7 +121,7 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
 	const db = await getDatabase();
 	
 	// Get all entries with their type names
-	const entryStmt = await db.prepare(`
+	const entryQuery = `
 		SELECT 
 			e.id,
 			e.timestamp,
@@ -128,8 +131,13 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
 		FROM log_entries e
 		JOIN types t ON t.id = e.type_id
 		ORDER BY e.timestamp DESC
-	`);
+	`;
+	logger.sql(entryQuery);
+	
+	const entryStmt = await db.prepare(entryQuery);
 	const entryRows = await asyncIterableToArray(entryStmt.all());
+	
+	logger.debug(`getAllLogEntries found ${entryRows.length} entries`);
 	
 	// For each entry, fetch its items and quantifiers
 	const entries: LogEntry[] = [];

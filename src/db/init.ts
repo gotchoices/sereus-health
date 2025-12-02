@@ -7,6 +7,9 @@
 
 import { getDatabase } from './index';
 import { applySchema } from './schema';
+import { createLogger } from '../util/logger';
+
+const logger = createLogger('DB Init');
 
 let initPromise: Promise<void> | null = null;
 let isInitialized = false;
@@ -28,15 +31,25 @@ export async function ensureDatabaseInitialized(): Promise<void> {
 	// Start initialization
 	initPromise = (async () => {
 		try {
-			console.log('[DB] Initializing Quereus database...');
+			logger.info('Initializing Quereus database...');
 			const db = await getDatabase();
-			console.log('[DB] Applying schema...');
+			logger.debug('Applying schema...');
 			await applySchema(db, true); // Apply with seed data
-			console.log('[DB] Schema applied successfully');
+			logger.debug('Schema applied successfully');
+			
+			// Verify seed data was loaded
+			const typeCountStmt = await db.prepare('SELECT COUNT(*) as count FROM types');
+			const typeCountResult = await typeCountStmt.get();
+			logger.debug(`Types seeded: ${typeCountResult?.count || 0}`);
+			
+			const entryCountStmt = await db.prepare('SELECT COUNT(*) as count FROM log_entries');
+			const entryCountResult = await entryCountStmt.get();
+			logger.debug(`Log entries seeded: ${entryCountResult?.count || 0}`);
+			
 			isInitialized = true;
-			console.log('[DB] Database initialized successfully');
+			logger.info('Database initialized successfully');
 		} catch (error) {
-			console.error('[DB] Initialization failed:', error);
+			logger.error('Initialization failed:', error);
 			initPromise = null; // Reset so it can be retried
 			throw error;
 		}

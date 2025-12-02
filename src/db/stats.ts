@@ -8,6 +8,9 @@
 import { asyncIterableToArray } from '@quereus/quereus';
 import type { Database } from '@quereus/quereus';
 import { getDatabase } from './index';
+import { createLogger } from '../util/logger';
+
+const logger = createLogger('DB Stats');
 
 export interface TypeStat {
 	id: string;
@@ -35,7 +38,7 @@ export interface ItemStat {
 export async function getTypeStats(): Promise<TypeStat[]> {
 	const db = await getDatabase();
 	
-	const stmt = await db.prepare(`
+	const query = `
 		SELECT 
 			t.id,
 			t.name,
@@ -44,9 +47,13 @@ export async function getTypeStats(): Promise<TypeStat[]> {
 		LEFT JOIN log_entries e ON e.type_id = t.id
 		GROUP BY t.id, t.name
 		ORDER BY usageCount DESC, t.name ASC
-	`);
+	`;
+	logger.sql(query);
 	
+	const stmt = await db.prepare(query);
 	const results = await asyncIterableToArray(stmt.all());
+	
+	logger.debug(`getTypeStats returned ${results.length} types`);
 	
 	return results.map(row => ({
 		id: row.id as string,
@@ -62,7 +69,7 @@ export async function getTypeStats(): Promise<TypeStat[]> {
 export async function getCategoryStats(typeId: string): Promise<CategoryStat[]> {
 	const db = await getDatabase();
 	
-	const stmt = await db.prepare(`
+	const query = `
 		SELECT 
 			c.id,
 			c.name,
@@ -74,9 +81,13 @@ export async function getCategoryStats(typeId: string): Promise<CategoryStat[]> 
 		WHERE c.type_id = ?
 		GROUP BY c.id, c.name
 		ORDER BY usageCount DESC, c.name ASC
-	`);
+	`;
+	logger.sql(query, [typeId]);
 	
+	const stmt = await db.prepare(query);
 	const results = await asyncIterableToArray(stmt.all([typeId]));
+	
+	logger.debug(`getCategoryStats(${typeId}) returned ${results.length} categories`);
 	
 	return results.map(row => ({
 		id: row.id as string,

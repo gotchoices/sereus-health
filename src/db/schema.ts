@@ -15,6 +15,9 @@
  */
 
 import type { Database } from '@quereus/quereus';
+import { createLogger } from '../util/logger';
+
+const logger = createLogger('DB Schema');
 
 /**
  * Declarative schema SQL for Diario
@@ -193,9 +196,8 @@ declare schema main {
   )
 
   -- Seed data: Welcome note entry (Story 01:9)
-  seed log_entries (
+  seed log_entries (id, timestamp, type_id, comment) values
     ('entry-welcome', '2025-11-26T09:00:00Z', 'type-condition', 'Welcome to Diario! Tap + above to log your first activity, condition, or outcome. Track what you do, how you feel, and find patterns to improve your health.')
-  )
 }
 `;
 
@@ -206,23 +208,23 @@ declare schema main {
  */
 export async function applySchema(db: Database, withSeed: boolean = false): Promise<void> {
 	try {
-		console.log('[DB Schema] Declaring schema...');
+		logger.debug('Declaring schema...');
 		// Declare the schema
 		await db.exec(SCHEMA_SQL);
-		console.log('[DB Schema] Schema declared successfully');
+		logger.debug('Schema declared successfully');
 		
 		// Apply the schema (with or without seed)
 		if (withSeed) {
-			console.log('[DB Schema] Applying schema with seed data...');
+			logger.info('Applying schema with seed data...');
 			await db.exec('apply schema main with seed');
-			console.log('[DB Schema] Schema applied with seed successfully');
+			logger.info('Schema applied with seed successfully');
 		} else {
-			console.log('[DB Schema] Applying schema...');
+			logger.info('Applying schema...');
 			await db.exec('apply schema main');
-			console.log('[DB Schema] Schema applied successfully');
+			logger.info('Schema applied successfully');
 		}
 	} catch (error) {
-		console.error('[DB Schema] Failed to apply schema:', error);
+		logger.error('Failed to apply schema:', error);
 		throw error;
 	}
 }
