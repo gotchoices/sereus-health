@@ -121,7 +121,7 @@ type TranslationKey =
 
 const translations: Record<TranslationKey, string> = {
   // App-wide
-  'app.title': 'Diario',
+  'app.title': 'Sereus Health',
   
   // Navigation
   'navigation.home': 'Home',

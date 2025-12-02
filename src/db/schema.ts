@@ -164,7 +164,7 @@ export const PRODUCTION_SEEDS = {
 			id: 'entry-welcome',
 			timestamp: '2025-11-26T09:00:00Z',
 			type_id: 'type-condition',
-			comment: 'Welcome to Diario! Tap + above to log your first activity, condition, or outcome. Track what you do, how you feel, and find patterns to improve your health.',
+			comment: 'Welcome to Sereus Health! Tap + above to log your first activity, condition, or outcome. Track what you do, how you feel, and find patterns to improve your health.',
 		},
 	],
 };
