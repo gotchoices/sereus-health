@@ -18,6 +18,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
+import { useVariant } from '../mock';
 import { 
   getSereusConnections, 
   formatLastSync, 
@@ -28,7 +29,6 @@ import {
 
 interface SereusConnectionsProps {
   onBack: () => void;
-  variant?: SereusConnectionsVariant;
 }
 
 // Status colors
@@ -40,10 +40,10 @@ const STATUS_COLORS = {
 
 export default function SereusConnections({ 
   onBack,
-  variant = 'happy',
 }: SereusConnectionsProps) {
   const theme = useTheme();
   const t = useT();
+  const variant = useVariant() as SereusConnectionsVariant;
   const [cadreNodes, setCadreNodes] = useState<SereusNode[]>([]);
   const [guestNodes, setGuestNodes] = useState<SereusNode[]>([]);
   

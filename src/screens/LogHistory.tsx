@@ -11,10 +11,10 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
+import { useVariant } from '../mock';
 import { getLogHistory, LogEntry } from '../data/logHistory';
 
 interface LogHistoryProps {
-  variant?: string;
   onAddNew: () => void;
   onClone: (entryId: string) => void;
   onEdit: (entryId: string) => void;
@@ -23,7 +23,6 @@ interface LogHistoryProps {
 }
 
 export default function LogHistory({
-  variant = 'happy',
   onAddNew,
   onClone,
   onEdit,
@@ -32,6 +31,7 @@ export default function LogHistory({
 }: LogHistoryProps) {
   const theme = useTheme();
   const t = useT();
+  const variant = useVariant();
   
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [filterText, setFilterText] = useState('');
@@ -39,10 +39,10 @@ export default function LogHistory({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Load data from SQL database
+  // Load data - variant comes from deep link via context
   useEffect(() => {
     setLoading(true);
-    getLogHistory()
+    getLogHistory(variant)
       .then((data) => {
         setEntries(data);
         setError(null);
@@ -55,7 +55,7 @@ export default function LogHistory({
         setLoading(false);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty deps - only run on mount. t() is not a true dependency.
+  }, [variant]); // Reload when variant changes (from deep link)
   
   // Filter entries
   const filteredEntries = useMemo(() => {
@@ -199,7 +199,7 @@ export default function LogHistory({
             onPress={() => {
               setError(null);
               setLoading(true);
-              getLogHistory()
+              getLogHistory(variant)
                 .then((data) => {
                   setEntries(data);
                   setError(null);

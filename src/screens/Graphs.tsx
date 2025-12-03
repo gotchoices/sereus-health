@@ -19,6 +19,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
+import { useVariant } from '../mock';
 import { getGraphs, formatDateRange, type Graph } from '../data/graphs';
 
 interface GraphsProps {
@@ -26,8 +27,7 @@ interface GraphsProps {
   onCreateGraph?: () => void;
   onViewGraph?: (graphId: string) => void;
   onCloseGraph?: (graphId: string) => void;
-  graphs?: Graph[];  // Managed by parent (App.tsx)
-  variant?: 'happy' | 'empty';
+  graphs?: Graph[];  // Managed by parent (App.tsx) for ephemeral storage
 }
 
 export default function Graphs({ 
@@ -36,10 +36,10 @@ export default function Graphs({
   onViewGraph,
   onCloseGraph,
   graphs: propsGraphs,
-  variant = 'happy',
 }: GraphsProps) {
   const theme = useTheme();
   const t = useT();
+  const variant = useVariant();
   const [localGraphs, setLocalGraphs] = useState<Graph[]>([]);
   
   // Use props graphs if provided, otherwise load from mock

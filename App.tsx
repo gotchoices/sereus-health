@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { VariantProvider } from './src/mock';
 import LogHistory from './src/screens/LogHistory';
 import { EditEntry } from './src/screens/EditEntry';
 import ConfigureCatalog from './src/screens/ConfigureCatalog';
@@ -30,7 +31,7 @@ interface EditParams {
   entryId?: string;
 }
 
-function App(): React.JSX.Element {
+function AppContent(): React.JSX.Element {
   const [currentTab, setCurrentTab] = useState<Tab>('home');
   const [currentScreen, setCurrentScreen] = useState<Screen>('LogHistory');
   const [editParams, setEditParams] = useState<EditParams | null>(null);
@@ -144,12 +145,12 @@ function App(): React.JSX.Element {
   };
 
   // Render current screen
+  // Note: Screens get variant from VariantContext, not props
   const renderScreen = () => {
     switch (currentScreen) {
       case 'LogHistory':
         return (
           <LogHistory
-            variant="happy"
             onAddNew={handleAddNew}
             onClone={handleClone}
             onEdit={handleEdit}
@@ -226,7 +227,6 @@ function App(): React.JSX.Element {
       default:
         return (
           <LogHistory
-            variant="happy"
             onAddNew={handleAddNew}
             onClone={handleClone}
             onEdit={handleEdit}
@@ -238,10 +238,24 @@ function App(): React.JSX.Element {
   };
 
   return (
+    <SafeAreaView style={styles.container}>
+      {renderScreen()}
+    </SafeAreaView>
+  );
+}
+
+/**
+ * App root with providers
+ * 
+ * VariantProvider handles deep link parsing for mock variants.
+ * Deep link format: health://screen/Route?variant=happy
+ */
+function App(): React.JSX.Element {
+  return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.container}>
-        {renderScreen()}
-      </SafeAreaView>
+      <VariantProvider>
+        <AppContent />
+      </VariantProvider>
     </SafeAreaProvider>
   );
 }
