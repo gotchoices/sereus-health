@@ -11,31 +11,18 @@ if (typeof globalThis.structuredClone === 'undefined') {
 }
 
 // Enable Quereus debug logging in development
-// The 'debug' library is used by Quereus for internal logging
-// We need to enable it on QUEREUS's debug instance (not health's)
-if (__DEV__) {
-  try {
-    // Get the debug instance that Quereus uses (from its node_modules)
-    // This is necessary because portal: keeps quereus's dependencies separate
-    const quereusDebug = require('../quereus/node_modules/debug');
-    
-    // Force debug to use console.log (console.debug may be filtered in RN)
-    quereusDebug.log = console.log.bind(console);
-    
-    // Enable all Quereus logs, or be more selective:
-    // 'quereus:vtab:memory' - memory table operations
-    // 'quereus:runtime' - VDBE execution (very verbose)
-    // 'quereus:*' - everything
-    quereusDebug.enable('quereus:*');
-    
-    // Verify it's working
-    const testLog = quereusDebug('quereus:test');
-    testLog('Debug logging test from Quereus debug instance');
-    console.log('[Debug] Quereus debug logging enabled');
-  } catch (e) {
-    console.warn('[Debug] Could not enable Quereus debug logging:', e);
-  }
-}
+//!if (__DEV__) {
+//!  // Import must be dynamic to avoid loading before polyfills
+//!  const { enableLogging } = require('@quereus/quereus');
+//!  
+//!  // Enable selective Quereus logs (use console.log since console.debug may be filtered in RN)
+//!  // Focus on database operations, runtime scan, and memory table - exclude optimizer/parser noise
+//!  enableLogging(
+//!    'quereus:core:database*,quereus:core:statement:debug,quereus:runtime:scan:debug,quereus:vtab:memory:*,quereus:schema:manager',
+//!    console.log.bind(console)
+//!  );
+//!  console.log('[Debug] Quereus debug logging enabled');
+//!}
 
 import { AppRegistry } from 'react-native';
 import App from './App';
