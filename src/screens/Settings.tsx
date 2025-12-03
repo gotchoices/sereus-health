@@ -1,16 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
-import { runMinimalQuereusTest } from '../util/debugQuereusTest';
 
 interface SettingsProps {
   onNavigateTab: (tab: 'home' | 'catalog' | 'settings') => void;
@@ -25,28 +23,18 @@ export default function Settings({
 }: SettingsProps) {
   const theme = useTheme();
   const t = useT();
-  const [testRunning, setTestRunning] = useState(false);
   
-  const handleDebugTest = async () => {
-    setTestRunning(true);
-    try {
-      const result = await runMinimalQuereusTest();
-      
-      Alert.alert(
-        result.success ? 'Test Passed ✓' : 'Test Failed ✗',
-        result.details.join('\n'),
-        [{ text: 'OK' }]
-      );
-    } catch (error) {
-      Alert.alert(
-        'Test Error',
-        error instanceof Error ? error.message : String(error),
-        [{ text: 'OK' }]
-      );
-    } finally {
-      setTestRunning(false);
-    }
-  };
+  // Debug button handler - uncomment and implement when needed
+  // const [testRunning, setTestRunning] = useState(false);
+  // const handleDebugTest = async () => {
+  //   setTestRunning(true);
+  //   try {
+  //     // Add your debug test here
+  //     Alert.alert('Debug', 'Test complete');
+  //   } finally {
+  //     setTestRunning(false);
+  //   }
+  // };
   
   const settingsSections = [
     {
@@ -70,6 +58,7 @@ export default function Settings({
         <Text style={[styles.title, { color: theme.textPrimary }]}>
           {t('settings.title')}
         </Text>
+        {/* Debug button - uncomment when needed for testing
         {__DEV__ && (
           <TouchableOpacity
             onPress={handleDebugTest}
@@ -77,13 +66,10 @@ export default function Settings({
             style={styles.debugButton}
             hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
           >
-            <Ionicons 
-              name="bug" 
-              size={24} 
-              color={testRunning ? theme.textSecondary : theme.accentPrimary} 
-            />
+            <Ionicons name="bug" size={24} color={theme.accentPrimary} />
           </TouchableOpacity>
         )}
+        */}
       </View>
       
       {/* Settings List */}
