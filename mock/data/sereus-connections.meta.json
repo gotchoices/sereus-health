@@ -1,31 +1,37 @@
 {
   "route": "SereusConnections",
   "variants": ["happy", "empty"],
-  "description": "Mock data for Sereus Connections screen - cadre and guest nodes",
+  "description": "Mock data for Sereus Connections screen - DHT nodes in Bob's network",
+  "spec": "design/specs/screens/sereus-connections.md",
   "schema": {
     "cadreNodes": [
       {
         "id": "string",
-        "name": "string",
+        "name": "string (common name)",
         "type": "cadre",
         "deviceType": "phone | server | desktop | other",
-        "status": "online | offline | syncing",
-        "lastSync": "string (ISO 8601)",
+        "status": "online | unreachable",
+        "peerId": "string (libp2p-style peer ID)",
         "addedAt": "string (ISO 8601)"
       }
     ],
     "guestNodes": [
       {
         "id": "string",
-        "name": "string",
+        "name": "string (common name)",
         "type": "guest",
         "deviceType": "phone | server | desktop | other",
-        "status": "online | offline | syncing",
-        "lastSync": "string (ISO 8601)",
+        "status": "online | unreachable",
+        "peerId": "string (libp2p-style peer ID)",
         "addedAt": "string (ISO 8601)",
-        "source": "string (optional - who shared it)"
+        "source": "string (optional - organization/affiliation)"
       }
     ]
-  }
+  },
+  "notes": [
+    "Nodes are part of a DHT - they don't 'sync' traditionally",
+    "Status is 'online' or 'unreachable' only",
+    "Peer ID is libp2p-style, displayed truncated with copy action",
+    "Guest nodes use 'unlink' icon for revoke, cadre uses 'trash' for remove"
+  ]
 }
-

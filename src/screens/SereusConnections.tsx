@@ -2,8 +2,9 @@
  * SereusConnections Screen
  * 
  * View and manage Sereus nodes - cadre (owned) and guest (shared) nodes.
+ * Nodes are part of a DHT - they're either online or unreachable.
  * 
- * @see design/generated/screens/SereusConnections.md
+ * @see design/specs/screens/sereus-connections.md
  */
 
 import React, { useState, useEffect } from 'react';
@@ -14,6 +15,7 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Clipboard,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
@@ -21,8 +23,9 @@ import { useT } from '../i18n/useT';
 import { useVariant } from '../mock';
 import { 
   getSereusConnections, 
-  formatLastSync, 
+  formatPeerId, 
   getDeviceIcon,
+  getStatusInfo,
   type SereusNode,
   type SereusConnectionsVariant,
 } from '../data/sereusConnections';
@@ -30,13 +33,6 @@ import {
 interface SereusConnectionsProps {
   onBack: () => void;
 }
-
-// Status colors
-const STATUS_COLORS = {
-  online: '#36B37E',
-  offline: '#8993A4',
-  syncing: '#4C9AFF',
-};
 
 export default function SereusConnections({ 
   onBack,
@@ -61,13 +57,21 @@ export default function SereusConnections({
     );
   };
   
+  const handleCopyPeerId = (peerId: string) => {
+    Clipboard.setString(peerId);
+    // Simple feedback - could use a toast in production
+    Alert.alert('Copied', 'Peer ID copied to clipboard');
+  };
+  
   const handleRemoveNode = (node: SereusNode) => {
-    const message = node.type === 'cadre' 
-      ? 'Removing your own node may affect data safety. Continue?'
-      : 'Remove this node from your network?';
+    const isGuest = node.type === 'guest';
+    const title = isGuest ? 'Revoke Access' : t('sereus.removeNode');
+    const message = isGuest 
+      ? `Revoke ${node.name}'s access to your data?`
+      : 'Removing your own node may affect data redundancy. Continue?';
     
     Alert.alert(
-      t('sereus.removeNode'),
+      title,
       message,
       [
         { text: t('common.cancel'), style: 'cancel' },
@@ -86,62 +90,84 @@ export default function SereusConnections({
     );
   };
   
-  const renderNodeCard = (node: SereusNode) => (
-    <View 
-      key={node.id}
-      style={[styles.nodeCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
-    >
-      <View style={styles.nodeContent}>
-        {/* Device icon */}
-        <View style={[styles.deviceIcon, { backgroundColor: theme.background }]}>
-          <Ionicons 
-            name={getDeviceIcon(node.deviceType)} 
-            size={24} 
-            color={theme.textPrimary} 
-          />
-        </View>
-        
-        {/* Node info */}
-        <View style={styles.nodeInfo}>
-          <Text style={[styles.nodeName, { color: theme.textPrimary }]} numberOfLines={1}>
-            {node.name}
-          </Text>
-          <View style={styles.nodeDetails}>
-            {node.type === 'guest' && (
-              <View style={[styles.typeBadge, { backgroundColor: theme.accentPrimary + '20' }]}>
-                <Text style={[styles.typeBadgeText, { color: theme.accentPrimary }]}>
-                  Guest
-                </Text>
-              </View>
-            )}
-            <View style={styles.statusRow}>
-              <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[node.status] }]} />
-              <Text style={[styles.statusText, { color: theme.textSecondary }]}>
-                {node.status === 'syncing' ? 'Syncing...' : node.status}
-              </Text>
-            </View>
+  const renderNodeCard = (node: SereusNode) => {
+    const statusInfo = getStatusInfo(node.status);
+    const isGuest = node.type === 'guest';
+    
+    return (
+      <View 
+        key={node.id}
+        style={[styles.nodeCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
+      >
+        <View style={styles.nodeContent}>
+          {/* Device icon */}
+          <View style={[styles.deviceIcon, { backgroundColor: theme.background }]}>
+            <Ionicons 
+              name={getDeviceIcon(node.deviceType)} 
+              size={24} 
+              color={theme.textPrimary} 
+            />
           </View>
-          <Text style={[styles.lastSync, { color: theme.textSecondary }]}>
-            Last sync: {formatLastSync(node.lastSync)}
-          </Text>
-          {node.source && (
-            <Text style={[styles.source, { color: theme.textSecondary }]}>
-              {node.source}
+          
+          {/* Node info */}
+          <View style={styles.nodeInfo}>
+            {/* Name */}
+            <Text style={[styles.nodeName, { color: theme.textPrimary }]} numberOfLines={1}>
+              {node.name}
             </Text>
-          )}
+            
+            {/* Status */}
+            <View style={styles.statusRow}>
+              <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
+              <Text style={[styles.statusText, { color: theme.textSecondary }]}>
+                {statusInfo.label}
+              </Text>
+              {isGuest && (
+                <View style={[styles.typeBadge, { backgroundColor: theme.accentPrimary + '20' }]}>
+                  <Text style={[styles.typeBadgeText, { color: theme.accentPrimary }]}>
+                    Guest
+                  </Text>
+                </View>
+              )}
+            </View>
+            
+            {/* Peer ID */}
+            <TouchableOpacity 
+              style={styles.peerIdRow}
+              onPress={() => handleCopyPeerId(node.peerId)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.peerId, { color: theme.textSecondary }]}>
+                {formatPeerId(node.peerId)}
+              </Text>
+              <Ionicons name="copy-outline" size={14} color={theme.textSecondary} />
+            </TouchableOpacity>
+            
+            {/* Source (for guest nodes) */}
+            {node.source && (
+              <Text style={[styles.source, { color: theme.textSecondary }]}>
+                {node.source}
+              </Text>
+            )}
+          </View>
+          
+          {/* Remove/Revoke button */}
+          <TouchableOpacity
+            onPress={() => handleRemoveNode(node)}
+            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+            style={styles.removeButton}
+            accessibilityLabel={isGuest ? 'Revoke access' : 'Remove node'}
+          >
+            <Ionicons 
+              name={isGuest ? 'unlink' : 'trash-outline'} 
+              size={20} 
+              color="#FF5630" 
+            />
+          </TouchableOpacity>
         </View>
-        
-        {/* Remove button */}
-        <TouchableOpacity
-          onPress={() => handleRemoveNode(node)}
-          hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-          style={styles.removeButton}
-        >
-          <Ionicons name="trash-outline" size={20} color="#FF5630" />
-        </TouchableOpacity>
       </View>
-    </View>
-  );
+    );
+  };
   
   const renderSection = (title: string, nodes: SereusNode[]) => {
     if (nodes.length === 0) return null;
@@ -168,7 +194,7 @@ export default function SereusConnections({
         {t('sereus.emptyTitle')}
       </Text>
       <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-        Scan a QR code to add your first Sereus node
+        Scan a QR code to add nodes to your network
       </Text>
       
       <TouchableOpacity
@@ -280,7 +306,7 @@ const styles = StyleSheet.create({
   },
   nodeContent: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     padding: spacing[3],
   },
   deviceIcon: {
@@ -300,11 +326,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: spacing[0],
   },
-  nodeDetails: {
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
-    marginBottom: spacing[0],
+    marginBottom: spacing[1],
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusText: {
+    ...typography.small,
   },
   typeBadge: {
     paddingHorizontal: spacing[1],
@@ -316,22 +350,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 10,
   },
-  statusRow: {
+  peerIdRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[1],
   },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusText: {
+  peerId: {
     ...typography.small,
-    textTransform: 'capitalize',
-  },
-  lastSync: {
-    ...typography.small,
+    fontFamily: 'monospace',
   },
   source: {
     ...typography.small,

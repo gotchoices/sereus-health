@@ -3,6 +3,8 @@
  * 
  * Provides data for SereusConnections screen.
  * Uses Appeus mock data system for variants.
+ * 
+ * @see design/specs/screens/sereus-connections.md
  */
 
 import happyData from '../../mock/data/sereus-connections.happy.json';
@@ -13,10 +15,10 @@ export interface SereusNode {
 	name: string;
 	type: 'cadre' | 'guest';
 	deviceType: 'phone' | 'server' | 'desktop' | 'other';
-	status: 'online' | 'offline' | 'syncing';
-	lastSync: string;
+	status: 'online' | 'unreachable';  // DHT nodes don't "sync" - they're online or not
+	peerId: string;                     // libp2p-style peer ID
 	addedAt: string;
-	source?: string;
+	source?: string;                    // For guest nodes: who shared it
 }
 
 interface MockData {
@@ -51,27 +53,16 @@ export function getSereusConnections(variant: SereusConnectionsVariant = 'happy'
 }
 
 /**
- * Format last sync time for display
+ * Format peer ID for display
+ * Shows first 6 chars + ... + last 4 chars
+ * 
+ * Example: QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG → QmYwAP...bdG
  */
-export function formatLastSync(timestamp: string): string {
-	const syncDate = new Date(timestamp);
-	const now = new Date();
-	const diffMs = now.getTime() - syncDate.getTime();
-	const diffMins = Math.floor(diffMs / 60000);
-	const diffHours = Math.floor(diffMs / 3600000);
-	const diffDays = Math.floor(diffMs / 86400000);
-	
-	if (diffMins < 1) {
-		return 'Just now';
-	} else if (diffMins < 60) {
-		return `${diffMins} min ago`;
-	} else if (diffHours < 24) {
-		return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-	} else if (diffDays === 1) {
-		return 'Yesterday';
-	} else {
-		return syncDate.toLocaleDateString();
+export function formatPeerId(peerId: string): string {
+	if (peerId.length <= 12) {
+		return peerId;
 	}
+	return `${peerId.slice(0, 6)}...${peerId.slice(-4)}`;
 }
 
 /**
@@ -90,3 +81,19 @@ export function getDeviceIcon(deviceType: SereusNode['deviceType']): string {
 	}
 }
 
+/**
+ * Get status display info
+ */
+export function getStatusInfo(status: SereusNode['status']): {
+	label: string;
+	color: string;
+} {
+	switch (status) {
+		case 'online':
+			return { label: 'Online', color: '#36B37E' };
+		case 'unreachable':
+			return { label: 'Unreachable', color: '#8993A4' };
+		default:
+			return { label: 'Unknown', color: '#8993A4' };
+	}
+}

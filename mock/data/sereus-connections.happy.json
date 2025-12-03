@@ -6,7 +6,7 @@
       "type": "cadre",
       "deviceType": "phone",
       "status": "online",
-      "lastSync": "2025-12-03T10:28:00Z",
+      "peerId": "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
       "addedAt": "2025-10-15T09:00:00Z"
     },
     {
@@ -15,7 +15,7 @@
       "type": "cadre",
       "deviceType": "server",
       "status": "online",
-      "lastSync": "2025-12-03T10:25:00Z",
+      "peerId": "QmT7TDR9MnVxJgKxzYV9eMEbKPPkN2f1Z5rNQzBdVxRqHj",
       "addedAt": "2025-10-20T14:30:00Z"
     }
   ],
@@ -26,7 +26,7 @@
       "type": "guest",
       "deviceType": "server",
       "status": "online",
-      "lastSync": "2025-12-03T10:20:00Z",
+      "peerId": "QmRKLGVfKx5WZbR3vYw9N2QpVhDMkL8Xe7rNhJy3KmWcFp",
       "addedAt": "2025-11-01T11:00:00Z",
       "source": "Family Medicine Clinic"
     },
@@ -35,11 +35,10 @@
       "name": "City Health Clinic",
       "type": "guest",
       "deviceType": "server",
-      "status": "offline",
-      "lastSync": "2025-12-02T16:45:00Z",
+      "status": "unreachable",
+      "peerId": "QmPnEWL8vQx9MZgKrTWy2Cb4FjH5dNxR6sYmV7eKpLqXtU",
       "addedAt": "2025-11-15T09:30:00Z",
       "source": "Physical Therapy"
     }
   ]
 }
-
