@@ -8,8 +8,12 @@ Quereus works correctly in Node.js but experiences a critical data persistence i
 
 - **Platform**: React Native 0.82.1 (Android emulator)
 - **Quereus Version**: Latest from workspace (packages/quereus)
-- **JavaScript Engine**: React Native's JavaScriptCore/Hermes
+- **JavaScript Engine**: Hermes (enabled)
+- **Bundler**: Metro
 - **Polyfills**: `@ungap/structured-clone` for `structuredClone`
+
+### Note on Hermes
+Standalone Hermes CLI cannot be used to reproduce this issue because it lacks `require()` and CommonJS module loading. The issue appears to be specific to the React Native environment (Hermes + Metro + RN bridging), not Hermes itself.
 
 ## Issue Description
 
@@ -114,9 +118,11 @@ console.log(rows); // ✗ Returns 0 rows (but no error!)
 
 1. Is there a known issue with memory table data persistence in React Native?
 2. Are there any React Native-specific initialization steps required?
-3. Could this be related to React Native's event loop or microtask queue?
+3. Could this be related to React Native's event loop or microtask queue implementation?
 4. Is there a way to verify that the memory table manager is properly initialized?
-5. Could this be related to how React Native bundles/transforms the Quereus code?
+5. Could this be related to how Metro bundler transforms the Quereus code?
+6. Could React Native's JavaScript bridge or threading model affect memory table state?
+7. Are there any assumptions about JavaScript engine internals (WeakMap, Symbol, etc.) that might differ in React Native?
 
 ## Additional Context
 

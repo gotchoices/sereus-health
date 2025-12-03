@@ -76,12 +76,12 @@ export async function ensureDatabaseInitialized(): Promise<void> {
 				logger.info('No seed data found, applying seeds...');
 				
 				// Apply production seed data
-				await applyProductionSeeds(db);
+					await applyProductionSeeds(db);
 				
 				// Apply sample data in development
 				if (__DEV__ && applySampleData) {
 					logger.info('Applying sample data for development...');
-					await applySampleData(db);
+						await applySampleData(db);
 				}
 				
 				// Final verification

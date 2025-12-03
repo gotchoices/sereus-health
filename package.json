@@ -10,7 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@quereus/quereus": "workspace:*",
+    "@quereus/quereus": "portal:../quereus/packages/quereus",
     "@react-native/new-app-screen": "0.82.1",
     "@ungap/structured-clone": "^1.2.0",
     "react": "19.1.1",

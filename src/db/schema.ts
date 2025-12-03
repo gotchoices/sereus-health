@@ -223,10 +223,10 @@ export async function applyProductionSeeds(db: Database): Promise<void> {
 		logger.info(`Verification: Found ${typeRows.length} types: ${typeRows.map(t => t.name).join(', ')}`);
 		
 		if (typeRows.length === 0) {
-			logger.error('CRITICAL: Seed data did not persist! Inserts succeeded but queries return no rows.');
+			logger.debug('CRITICAL: Seed data did not persist! Inserts succeeded but queries return no rows.');
 		}
 	} catch (error) {
-		logger.error('Failed to apply production seeds:', error);
+		logger.debug('Failed to apply production seeds:', error);
 		throw error;
 	}
 }
