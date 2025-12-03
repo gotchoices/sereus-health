@@ -22,7 +22,16 @@ export type EditEntryVariant = 'happy' | 'error';
 const happyData = happyJson as EditEntryModel;
 const errorData = errorJson as EditEntryModel;
 
-export function getEditEntryMock(
+/**
+ * Get edit entry data
+ * 
+ * Note: Will eventually use Quereus. Currently uses mock data.
+ * 
+ * @param mode - Entry mode ('new', 'edit', 'clone')
+ * @param entryId - ID of entry to edit/clone (ignored for 'new')
+ * @param variant - Mock variant to use ('happy', 'error')
+ */
+export function getEditEntry(
   mode: 'new' | 'edit' | 'clone' = 'new',
   _entryId?: string,
   variant: EditEntryVariant = 'happy',

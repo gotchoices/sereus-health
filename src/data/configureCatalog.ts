@@ -27,7 +27,14 @@ const happyData = happyJson as ConfigureCatalogModel;
 const emptyData = emptyJson as ConfigureCatalogModel;
 const errorData = errorJson as ConfigureCatalogModel;
 
-export function getConfigureCatalogMock(
+/**
+ * Get catalog configuration
+ * 
+ * Note: Will eventually use Quereus. Currently uses mock data.
+ * 
+ * @param variant - Mock variant to use ('happy', 'empty', 'error')
+ */
+export function getConfigureCatalog(
   variant: ConfigureCatalogVariant = 'happy',
 ): ConfigureCatalogModel {
   if (variant === 'empty') {

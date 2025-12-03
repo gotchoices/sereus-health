@@ -42,8 +42,13 @@ export type GraphsVariant = 'happy' | 'empty';
 /**
  * Get initial graphs for a variant
  * Used to seed the ephemeral graph store on mount
+ * 
+ * Note: Graphs are ephemeral in MVP - no Quereus storage.
+ * This function provides mock data for development/scenarios.
+ * 
+ * @param variant - Mock variant to use ('happy', 'empty')
  */
-export function getGraphsMock(variant: GraphsVariant = 'happy'): Graph[] {
+export function getGraphs(variant: GraphsVariant = 'happy'): Graph[] {
 	const mockData = mockVariants[variant] || mockVariants.happy;
 	return mockData.graphs || [];
 }

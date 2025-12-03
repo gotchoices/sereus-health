@@ -33,8 +33,13 @@ export type SereusConnectionsVariant = 'happy' | 'empty';
 
 /**
  * Get Sereus nodes for a variant
+ * 
+ * Note: Sereus connections will eventually come from Sereus fabric.
+ * This function provides mock data for development/scenarios.
+ * 
+ * @param variant - Mock variant to use ('happy', 'empty')
  */
-export function getSereusConnectionsMock(variant: SereusConnectionsVariant = 'happy'): {
+export function getSereusConnections(variant: SereusConnectionsVariant = 'happy'): {
 	cadreNodes: SereusNode[];
 	guestNodes: SereusNode[];
 } {

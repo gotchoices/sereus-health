@@ -19,7 +19,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { 
-  getSereusConnectionsMock, 
+  getSereusConnections, 
   formatLastSync, 
   getDeviceIcon,
   type SereusNode,
@@ -48,7 +48,7 @@ export default function SereusConnections({
   const [guestNodes, setGuestNodes] = useState<SereusNode[]>([]);
   
   useEffect(() => {
-    const data = getSereusConnectionsMock(variant);
+    const data = getSereusConnections(variant);
     setCadreNodes(data.cadreNodes);
     setGuestNodes(data.guestNodes);
   }, [variant]);

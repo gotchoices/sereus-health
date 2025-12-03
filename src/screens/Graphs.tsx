@@ -19,7 +19,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
-import { getGraphsMock, formatDateRange, type Graph } from '../data/graphs';
+import { getGraphs, formatDateRange, type Graph } from '../data/graphs';
 
 interface GraphsProps {
   onBack: () => void;
@@ -48,7 +48,7 @@ export default function Graphs({
   // Load initial graphs from mock data only if not managed by parent
   useEffect(() => {
     if (!propsGraphs) {
-      const initialGraphs = getGraphsMock(variant);
+      const initialGraphs = getGraphs(variant);
       setLocalGraphs(initialGraphs);
     }
   }, [variant, propsGraphs]);

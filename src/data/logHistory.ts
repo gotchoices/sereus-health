@@ -62,10 +62,9 @@ export interface LogEntry {
 }
 
 /**
- * Get log history using Appeus mock data system
- * Transforms mock data format to screen-expected format
+ * Get log history using Appeus mock data system (internal)
  */
-export async function getLogHistoryMock(variant: string = 'happy'): Promise<LogEntry[]> {
+async function getLogHistoryFromMock(variant: string = 'happy'): Promise<LogEntry[]> {
 	const mockData = mockVariants[variant] || mockVariants.happy;
 	const rawEntries = mockData.entries || [];
 	
@@ -81,12 +80,15 @@ export async function getLogHistoryMock(variant: string = 'happy'): Promise<LogE
 }
 
 /**
- * Get log history - switches between SQL and mock based on feature flag
+ * Get log history - public API for screens
+ * Switches between SQL and mock based on USE_QUEREUS flag
+ * 
+ * @param variant - Mock variant to use ('happy', 'empty', 'error'). Ignored when USE_QUEREUS=true.
  */
-export async function getLogHistory(): Promise<LogEntry[]> {
+export async function getLogHistory(variant: string = 'happy'): Promise<LogEntry[]> {
 	if (!USE_QUEREUS) {
 		// Use Appeus mock data system
-		return getLogHistoryMock('happy');
+		return getLogHistoryFromMock(variant);
 	}
 	
 	// Use Quereus SQL - ensure DB is initialized first

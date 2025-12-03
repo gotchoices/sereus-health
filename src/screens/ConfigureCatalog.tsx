@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { getConfigureCatalogMock } from '../data/configureCatalog';
+import { getConfigureCatalog } from '../data/configureCatalog';
 import { useT } from '../i18n/useT';
 import { SelectionList, SelectionListItem } from '../components/SelectionList';
 import { useTheme } from '../theme/useTheme';
@@ -13,7 +13,7 @@ type Props = {
 export const ConfigureCatalog: React.FC<Props> = ({ navigation, onBack }) => {
   const t = useT();
   const theme = useTheme();
-  const catalog = getConfigureCatalogMock('happy');
+  const catalog = getConfigureCatalog('happy');
 
   const [filter, setFilter] = useState('');
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
