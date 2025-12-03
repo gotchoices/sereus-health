@@ -70,14 +70,38 @@ type TranslationKey =
   
   // Graphs screen
   | 'graphs.title'
+  | 'graphs.createGraph'
   | 'graphs.selectItems'
   | 'graphs.dateRange'
   | 'graphs.generate'
   | 'graphs.save'
   | 'graphs.share'
   | 'graphs.close'
+  | 'graphs.emptyTitle'
+  | 'graphs.emptyMessage'
   | 'graphs.emptyGraphs'
   | 'graphs.noItemsSelected'
+  | 'graphs.itemsCount'
+  
+  // GraphCreate screen
+  | 'graphCreate.title'
+  | 'graphCreate.namePlaceholder'
+  | 'graphCreate.nameRequired'
+  | 'graphCreate.selectItems'
+  | 'graphCreate.dateRange'
+  | 'graphCreate.last7Days'
+  | 'graphCreate.last30Days'
+  | 'graphCreate.last90Days'
+  | 'graphCreate.allTime'
+  | 'graphCreate.generate'
+  | 'graphCreate.noItemsSelected'
+  | 'graphCreate.filterPlaceholder'
+  
+  // GraphView screen
+  | 'graphView.title'
+  | 'graphView.share'
+  | 'graphView.shareSuccess'
+  | 'graphView.shareError'
   
   // Settings screen
   | 'settings.title'
@@ -92,6 +116,7 @@ type TranslationKey =
   | 'sereus.addNode'
   | 'sereus.removeNode'
   | 'sereus.scanQR'
+  | 'sereus.emptyTitle'
   | 'sereus.emptyNodes'
   
   // Reminders screen
@@ -183,14 +208,38 @@ const translations: Record<TranslationKey, string> = {
   
   // Graphs screen
   'graphs.title': 'Graphs',
+  'graphs.createGraph': 'Create Graph',
   'graphs.selectItems': 'Select items to graph',
   'graphs.dateRange': 'Date range',
   'graphs.generate': 'Generate graph',
   'graphs.save': 'Save graph',
   'graphs.share': 'Share',
   'graphs.close': 'Close graph',
+  'graphs.emptyTitle': 'No graphs yet',
+  'graphs.emptyMessage': 'Create your first graph to visualize trends in your data',
   'graphs.emptyGraphs': 'No graphs yet',
   'graphs.noItemsSelected': 'Select at least one item to generate a graph',
+  'graphs.itemsCount': '{count} items',
+  
+  // GraphCreate screen
+  'graphCreate.title': 'Create Graph',
+  'graphCreate.namePlaceholder': 'Graph name...',
+  'graphCreate.nameRequired': 'Please enter a graph name',
+  'graphCreate.selectItems': 'Select Items',
+  'graphCreate.dateRange': 'Date Range',
+  'graphCreate.last7Days': 'Last 7 days',
+  'graphCreate.last30Days': 'Last 30 days',
+  'graphCreate.last90Days': 'Last 90 days',
+  'graphCreate.allTime': 'All time',
+  'graphCreate.generate': 'Generate Graph',
+  'graphCreate.noItemsSelected': 'Select at least one item',
+  'graphCreate.filterPlaceholder': 'Filter items...',
+  
+  // GraphView screen
+  'graphView.title': 'Graph',
+  'graphView.share': 'Share',
+  'graphView.shareSuccess': 'Graph shared successfully',
+  'graphView.shareError': 'Failed to share graph',
   
   // Settings screen
   'settings.title': 'Settings',
@@ -204,7 +253,8 @@ const translations: Record<TranslationKey, string> = {
   'sereus.guestNodes': 'Guest Nodes',
   'sereus.addNode': 'Add node',
   'sereus.removeNode': 'Remove node',
-  'sereus.scanQR': 'Scan QR code',
+  'sereus.scanQR': 'Scan QR Code',
+  'sereus.emptyTitle': 'No nodes connected',
   'sereus.emptyNodes': 'No nodes yet',
   
   // Reminders screen

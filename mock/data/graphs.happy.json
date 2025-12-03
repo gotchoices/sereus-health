@@ -1,0 +1,48 @@
+{
+  "graphs": [
+    {
+      "id": "graph-1",
+      "name": "Headache Triggers",
+      "createdAt": "2025-11-28T14:30:00Z",
+      "items": [
+        { "id": "item-headache", "name": "Headache", "category": "Pain" },
+        { "id": "item-peanuts", "name": "Peanuts", "category": "Eating" },
+        { "id": "item-chocolate", "name": "Chocolate", "category": "Eating" }
+      ],
+      "dateRange": {
+        "start": "2025-11-01",
+        "end": "2025-11-30"
+      }
+    },
+    {
+      "id": "graph-2",
+      "name": "Exercise Effects",
+      "createdAt": "2025-11-25T10:15:00Z",
+      "items": [
+        { "id": "item-running", "name": "Running", "category": "Exercise" },
+        { "id": "item-weights", "name": "Weights", "category": "Exercise" },
+        { "id": "item-energy", "name": "Energy Level", "category": "Well-being" }
+      ],
+      "dateRange": {
+        "start": "2025-10-15",
+        "end": "2025-11-15"
+      }
+    },
+    {
+      "id": "graph-3",
+      "name": "Food & Stomach",
+      "createdAt": "2025-11-30T08:45:00Z",
+      "items": [
+        { "id": "item-stomach-pain", "name": "Stomach Pain", "category": "Pain" },
+        { "id": "item-omelette", "name": "Omelette", "category": "Eating" },
+        { "id": "item-toast", "name": "Toast", "category": "Eating" },
+        { "id": "item-bacon", "name": "Bacon", "category": "Eating" }
+      ],
+      "dateRange": {
+        "start": "2025-11-24",
+        "end": "2025-11-30"
+      }
+    }
+  ]
+}
+

@@ -1,0 +1,45 @@
+{
+  "cadreNodes": [
+    {
+      "id": "node-phone-1",
+      "name": "My iPhone",
+      "type": "cadre",
+      "deviceType": "phone",
+      "status": "online",
+      "lastSync": "2025-12-03T10:28:00Z",
+      "addedAt": "2025-10-15T09:00:00Z"
+    },
+    {
+      "id": "node-server-1",
+      "name": "Home Server",
+      "type": "cadre",
+      "deviceType": "server",
+      "status": "online",
+      "lastSync": "2025-12-03T10:25:00Z",
+      "addedAt": "2025-10-20T14:30:00Z"
+    }
+  ],
+  "guestNodes": [
+    {
+      "id": "node-doctor-1",
+      "name": "Dr. Smith's Office",
+      "type": "guest",
+      "deviceType": "server",
+      "status": "online",
+      "lastSync": "2025-12-03T10:20:00Z",
+      "addedAt": "2025-11-01T11:00:00Z",
+      "source": "Family Medicine Clinic"
+    },
+    {
+      "id": "node-clinic-1",
+      "name": "City Health Clinic",
+      "type": "guest",
+      "deviceType": "server",
+      "status": "offline",
+      "lastSync": "2025-12-02T16:45:00Z",
+      "addedAt": "2025-11-15T09:30:00Z",
+      "source": "Physical Therapy"
+    }
+  ]
+}
+

@@ -5,13 +5,24 @@ import LogHistory from './src/screens/LogHistory';
 import { EditEntry } from './src/screens/EditEntry';
 import ConfigureCatalog from './src/screens/ConfigureCatalog';
 import Graphs from './src/screens/Graphs';
+import GraphCreate from './src/screens/GraphCreate';
+import GraphView from './src/screens/GraphView';
 import Settings from './src/screens/Settings';
 import SereusConnections from './src/screens/SereusConnections';
 import Reminders from './src/screens/Reminders';
-// Database initialization is now handled by data layer (src/data/*)
-// No direct imports needed here
+import { type Graph } from './src/data/graphs';
 
-type Screen = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog' | 'Graphs' | 'Settings' | 'SereusConnections' | 'Reminders';
+type Screen = 
+  | 'LogHistory' 
+  | 'EditEntry' 
+  | 'ConfigureCatalog' 
+  | 'Graphs' 
+  | 'GraphCreate'
+  | 'GraphView'
+  | 'Settings' 
+  | 'SereusConnections' 
+  | 'Reminders';
+
 type Tab = 'home' | 'catalog' | 'settings';
 
 interface EditParams {
@@ -23,67 +34,113 @@ function App(): React.JSX.Element {
   const [currentTab, setCurrentTab] = useState<Tab>('home');
   const [currentScreen, setCurrentScreen] = useState<Screen>('LogHistory');
   const [editParams, setEditParams] = useState<EditParams | null>(null);
-  // Database initialization is now handled by data layer
-  // No app-level initialization needed
+  
+  // Ephemeral graph storage (lives only while app is running)
+  const [graphs, setGraphs] = useState<Graph[]>([]);
+  const [currentGraphId, setCurrentGraphId] = useState<string | null>(null);
+  
+  // Navigation stack for proper back navigation
+  const [screenStack, setScreenStack] = useState<Screen[]>(['LogHistory']);
+
+  // Push a screen onto the stack
+  const pushScreen = (screen: Screen) => {
+    setScreenStack(prev => [...prev, screen]);
+    setCurrentScreen(screen);
+  };
+
+  // Pop back to previous screen
+  const popScreen = () => {
+    setScreenStack(prev => {
+      if (prev.length <= 1) {
+        // At root, stay there
+        return prev;
+      }
+      const newStack = prev.slice(0, -1);
+      setCurrentScreen(newStack[newStack.length - 1]);
+      return newStack;
+    });
+  };
 
   // Navigation handlers
   const handleAddNew = () => {
     setEditParams({ mode: 'new' });
-    setCurrentScreen('EditEntry');
+    pushScreen('EditEntry');
   };
 
   const handleClone = (entryId: string) => {
     setEditParams({ mode: 'clone', entryId });
-    setCurrentScreen('EditEntry');
+    pushScreen('EditEntry');
   };
 
   const handleEdit = (entryId: string) => {
     setEditParams({ mode: 'edit', entryId });
-    setCurrentScreen('EditEntry');
+    pushScreen('EditEntry');
   };
 
   const handleOpenGraphs = () => {
-    setCurrentScreen('Graphs');
+    pushScreen('Graphs');
   };
 
   const handleNavigateTab = (tab: Tab) => {
     setCurrentTab(tab);
     
-    // Map tabs to root screens
+    // Reset stack to tab root
     switch (tab) {
       case 'home':
+        setScreenStack(['LogHistory']);
         setCurrentScreen('LogHistory');
         break;
       case 'catalog':
+        setScreenStack(['ConfigureCatalog']);
         setCurrentScreen('ConfigureCatalog');
         break;
       case 'settings':
+        setScreenStack(['Settings']);
         setCurrentScreen('Settings');
         break;
     }
   };
 
   const handleOpenSereus = () => {
-    setCurrentScreen('SereusConnections');
+    pushScreen('SereusConnections');
   };
 
   const handleOpenReminders = () => {
-    setCurrentScreen('Reminders');
+    pushScreen('Reminders');
+  };
+
+  // Graph navigation handlers
+  const handleCreateGraph = () => {
+    pushScreen('GraphCreate');
+  };
+
+  const handleViewGraph = (graphId: string) => {
+    setCurrentGraphId(graphId);
+    pushScreen('GraphView');
+  };
+
+  const handleGraphCreated = (graph: Graph) => {
+    // Add new graph to ephemeral list
+    setGraphs(prev => [graph, ...prev]);
+    setCurrentGraphId(graph.id);
+    // Navigate to view the new graph
+    // Pop GraphCreate and push GraphView
+    setScreenStack(prev => [...prev.slice(0, -1), 'GraphView']);
+    setCurrentScreen('GraphView');
+  };
+
+  const handleCloseGraph = (graphId: string) => {
+    setGraphs(prev => prev.filter(g => g.id !== graphId));
   };
 
   const handleBack = () => {
-    // Simple back navigation: return to tab root
-    switch (currentTab) {
-      case 'home':
-        setCurrentScreen('LogHistory');
-        break;
-      case 'catalog':
-        setCurrentScreen('ConfigureCatalog');
-        break;
-      case 'settings':
-        setCurrentScreen('Settings');
-        break;
-    }
+    popScreen();
+  };
+
+  // Get current graph for GraphView
+  const getCurrentGraph = (): Graph | null => {
+    if (!currentGraphId) return null;
+    return graphs.find(g => g.id === currentGraphId) || null;
   };
 
   // Render current screen
@@ -102,7 +159,38 @@ function App(): React.JSX.Element {
         );
       
       case 'Graphs':
-        return <Graphs onBack={handleBack} />;
+        return (
+          <Graphs 
+            onBack={handleBack}
+            onCreateGraph={handleCreateGraph}
+            onViewGraph={handleViewGraph}
+            onCloseGraph={handleCloseGraph}
+            graphs={graphs}
+          />
+        );
+      
+      case 'GraphCreate':
+        return (
+          <GraphCreate
+            onBack={handleBack}
+            onGraphCreated={handleGraphCreated}
+          />
+        );
+      
+      case 'GraphView': {
+        const graph = getCurrentGraph();
+        if (!graph) {
+          // Fallback if graph not found
+          handleBack();
+          return null;
+        }
+        return (
+          <GraphView
+            graph={graph}
+            onBack={handleBack}
+          />
+        );
+      }
       
       case 'Settings':
         return (
@@ -120,7 +208,11 @@ function App(): React.JSX.Element {
         return <Reminders onBack={handleBack} />;
       
       case 'ConfigureCatalog':
-        return <ConfigureCatalog onBack={handleBack} />;
+        return (
+          <ConfigureCatalog 
+            onBack={handleBack}
+          />
+        );
       
       case 'EditEntry':
         return (

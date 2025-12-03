@@ -1,0 +1,31 @@
+{
+  "route": "SereusConnections",
+  "variants": ["happy", "empty"],
+  "description": "Mock data for Sereus Connections screen - cadre and guest nodes",
+  "schema": {
+    "cadreNodes": [
+      {
+        "id": "string",
+        "name": "string",
+        "type": "cadre",
+        "deviceType": "phone | server | desktop | other",
+        "status": "online | offline | syncing",
+        "lastSync": "string (ISO 8601)",
+        "addedAt": "string (ISO 8601)"
+      }
+    ],
+    "guestNodes": [
+      {
+        "id": "string",
+        "name": "string",
+        "type": "guest",
+        "deviceType": "phone | server | desktop | other",
+        "status": "online | offline | syncing",
+        "lastSync": "string (ISO 8601)",
+        "addedAt": "string (ISO 8601)",
+        "source": "string (optional - who shared it)"
+      }
+    ]
+  }
+}
+

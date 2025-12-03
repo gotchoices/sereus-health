@@ -1,0 +1,26 @@
+{
+  "route": "Graphs",
+  "variants": ["happy", "empty"],
+  "description": "Mock data for Graphs screen - list of ephemeral named graphs",
+  "schema": {
+    "graphs": [
+      {
+        "id": "string (UUID)",
+        "name": "string (user-assigned name)",
+        "createdAt": "string (ISO 8601 timestamp)",
+        "items": [
+          {
+            "id": "string",
+            "name": "string",
+            "category": "string"
+          }
+        ],
+        "dateRange": {
+          "start": "string (ISO 8601 date)",
+          "end": "string (ISO 8601 date)"
+        }
+      }
+    ]
+  }
+}
+
