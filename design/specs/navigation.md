@@ -1,7 +1,7 @@
 # Navigation Spec
 
 Purpose
-- Define app-wide navigation structure, deep links, and route options for Diario.
+- Define app-wide navigation structure, deep links, and route options for Sereus Health.
 
 Sitemap (high-level)
 - HOME Tab (stack)
@@ -46,17 +46,17 @@ Sitemap (high-level)
     - Simple time picker UI.
 
 Deep Links
-- Scheme: `diario://`
+- Scheme: `health://`
 - Base patterns (screen-level):
-  - `diario://screen/LogHistory`
-  - `diario://screen/EditEntry`
-  - `diario://screen/Graphs`
-  - `diario://screen/GraphCreate`
-  - `diario://screen/GraphView`
-  - `diario://screen/ConfigureCatalog`
-  - `diario://screen/Settings`
-  - `diario://screen/SereusConnections`
-  - `diario://screen/Reminders`
+  - `health://screen/LogHistory`
+  - `health://screen/EditEntry`
+  - `health://screen/Graphs`
+  - `health://screen/GraphCreate`
+  - `health://screen/GraphView`
+  - `health://screen/ConfigureCatalog`
+  - `health://screen/Settings`
+  - `health://screen/SereusConnections`
+  - `health://screen/Reminders`
 
 - Common query parameters:
   - `variant`: optional mock/scenario variant (e.g., `happy`, `empty`, `error`), used in mock mode only.
@@ -73,9 +73,9 @@ Deep Links
       - `graphId`: identifier for a specific saved graph to display.
 
 - Action links (from notifications, QR codes, etc.):
-  - `diario://sereus/add-node?nodeId={id}&type={cadre|guest}`
+  - `health://sereus/add-node?nodeId={id}&type={cadre|guest}`
     - Opens SereusConnections with add-node prompt (Story 07).
-  - `diario://reminder/log`
+  - `health://reminder/log`
     - Opens EditEntry in new mode (Story 08: tap notification to add entry).
 
 Route Options

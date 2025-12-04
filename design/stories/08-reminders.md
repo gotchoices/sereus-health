@@ -11,10 +11,10 @@ Context: Bob has been [using the app daily](02-daily.md) for a few days. He's co
 3. The reminders screen shows a simple option: "Remind me if I haven't logged anything in: [4] hours".
 4. He can adjust the time interval using a picker (1-12 hours, or "Off").
 5. He sets it to 4 hours and returns to the main screen.
-6. Later that day, Bob has breakfast at 8am and logs it in Diario.
+6. Later that day, Bob has breakfast at 8am and logs it in Sereus Health.
 7. By noon (4 hours later), he's been busy with work and hasn't logged anything.
 8. His phone shows a notification: "Haven't logged in a while. Tap to add an entry."
-9. Bob taps the notification, and Diario opens directly to the new entry screen (EditEntry in new mode).
+9. Bob taps the notification, and Sereus Health opens directly to the new entry screen (EditEntry in new mode).
 10. He quickly logs his lunch and goes back to work.
 11. The next morning, Bob notices he logged breakfast yesterday at 7am, but it's now 10am and he hasn't logged breakfast yet.
 12. He receives another reminder notification and logs his breakfast.

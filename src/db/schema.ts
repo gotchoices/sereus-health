@@ -1,5 +1,5 @@
 /**
- * Diario Database Schema
+ * Sereus Health Database Schema
  * 
  * Declarative schema for Quereus database matching design/specs/api/schema.md
  * 
@@ -20,7 +20,7 @@ import { createLogger } from '../util/logger';
 const logger = createLogger('DB Schema');
 
 /**
- * Declarative schema SQL for Diario
+ * Declarative schema SQL for Sereus Health
  * Uses Quereus declarative schema syntax (order-independent)
  * 
  * NOTE: No seed data in schema definition.

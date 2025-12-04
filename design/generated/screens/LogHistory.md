@@ -1,12 +1,12 @@
 # LogHistory Screen Consolidation
 
 ## Purpose
-The main entry point and primary screen of Diario. Displays Bob's chronological log of all entries (activities, conditions, outcomes) and provides quick access to core actions: adding new entries, cloning existing ones, and navigating to other major app areas.
+The main entry point and primary screen of Sereus Health. Displays Bob's chronological log of all entries (activities, conditions, outcomes) and provides quick access to core actions: adding new entries, cloning existing ones, and navigating to other major app areas.
 
 ## Screen Identity
 - **Route**: `LogHistory` (HOME tab root)
 - **Title**: "History"
-- **Deep Link**: `diario://screen/LogHistory?variant={happy|empty|error}`
+- **Deep Link**: `health://screen/LogHistory?variant={happy|empty|error}`
 
 ## User Journey Context
 From stories:
@@ -18,7 +18,7 @@ From stories:
 ## Layout & Information Architecture
 
 ### Header
-- **App Title**: "Diario" (centered or left-aligned per platform conventions)
+- **App Title**: "Sereus Health" (centered or left-aligned per platform conventions)
 - **Primary Action**: Large, prominent "+" button (top-right) to add new entry
   - Rationale: Stories emphasize Bob immediately noticing the add icon; it should be unmissable
 - **Secondary Actions**: 
@@ -79,7 +79,7 @@ From stories:
 ### Navigation
 - **Tab Navigation**: Bottom tab bar switches between Home/Catalog/Settings
 - **Back Behavior**: At root of HOME tab; Android back button exits app
-- **Deep Links**: Support `diario://screen/LogHistory?variant={variant}` for testing/scenarios
+- **Deep Links**: Support `health://screen/LogHistory?variant={variant}` for testing/scenarios
 
 ## Data Model (for this screen)
 
@@ -156,7 +156,7 @@ From stories:
 ## i18n Keys (Comprehensive)
 ```
 logHistory.title: "History"
-logHistory.appTitle: "Diario"
+logHistory.appTitle: "Sereus Health"
 logHistory.addNew: "Add new entry"
 logHistory.openGraphs: "Open graphs"
 logHistory.filter: "Filter entries..."

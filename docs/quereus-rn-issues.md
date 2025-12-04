@@ -194,7 +194,7 @@ logger.debug(`Found ${allTypes.length} types`); // ❌ Prints: "Found 0 types"
 
 **Expected Behavior**: After COMMIT (or in autocommit mode), all inserted data should be visible in subsequent queries on the same database connection.
 
-**Reproduction**: See `diario/src/db/schema.ts` `applyProductionSeeds()` function.
+**Reproduction**: See `health/src/db/schema.ts` `applyProductionSeeds()` function.
 
 ---
 
@@ -261,5 +261,5 @@ These issues suggest **Quereus's in-memory MemoryTable implementation is not com
 - Quereus Version: (from package.json)
 
 **Reproduction**:
-See `diario` project at `diario/src/db/schema.samples.ts` for full reproduction case.
+See `health` project at `health/src/db/schema.samples.ts` for full reproduction case.
 

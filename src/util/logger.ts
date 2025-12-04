@@ -1,5 +1,5 @@
 /**
- * Centralized logging module for Diario
+ * Centralized logging module for Sereus Health
  * Provides log level control and structured logging
  */
 

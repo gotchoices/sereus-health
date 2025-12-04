@@ -1,7 +1,7 @@
 # Database Schema Spec
 
 ## Purpose
-Outline the schema for Diario's core data model: log entries, taxonomy (types, categories, items, bundles), and quantifiers. This schema will be implemented in Quereus (Sereus SQL layer).
+Outline the schema for Sereus Health's core data model: log entries, taxonomy (types, categories, items, bundles), and quantifiers. This schema will be implemented in Quereus (Sereus SQL layer).
 
 ## Design Principles
 

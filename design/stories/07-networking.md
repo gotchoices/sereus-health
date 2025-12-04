@@ -5,12 +5,12 @@ I want to be able to network my data with my healthcare professionals and severa
 
 Context: Bob has already been [using the app daily](02-daily.md) for some time.  He now wants to use his data for his benefit.
 
-He learns that diario is built on [sereus fabric](sereus.org).  This means he can share his database with other peers/nodes in order to get safer data storage and share data in real time with providers.
+He learns that Sereus Health is built on [sereus fabric](sereus.org).  This means he can share his database with other peers/nodes in order to get safer data storage and share data in real time with providers.
 
 ## Sequence
 1. Bob has already logged into a sereus node provider and stood up a node which he controls.  In that context, he has generated a QR code for the node ID.
 2. He scans the QR with his phone camera.
-3. The deep link launches to diario and prompts that it is about to add the scanned node as part of Bob's cadre.  He confirms with OK.
+3. The deep link launches Sereus Health and prompts that it is about to add the scanned node as part of Bob's cadre.  He confirms with OK.
 4. The app returns to normal operation.
 5. Bob wants to confirm the node was added so he goes to his settings page.  He sees a section for Sereus.
 6. Entering the page, he sees his cadre consists of two nodes: His phone and the new node he just stood up.

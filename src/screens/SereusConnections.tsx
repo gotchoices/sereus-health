@@ -50,9 +50,11 @@ export default function SereusConnections({
   }, [variant]);
   
   const handleScanQR = () => {
+    // TODO: Implement with react-native-vision-camera or similar
+    // Flow: Launch camera → Scan QR → Parse deep link → Show add-node confirmation
     Alert.alert(
-      'Scan QR Code',
-      'Camera access for QR scanning will be implemented with native module integration.',
+      t('sereus.scanQR'),
+      'QR scanning integration not yet complete. For now, add nodes by scanning QR codes with your phone camera app.',
       [{ text: 'OK' }]
     );
   };

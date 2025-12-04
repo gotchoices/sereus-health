@@ -85,6 +85,30 @@ interface SereusNode {
 }
 ```
 
+## Adding Nodes
+
+### Primary Flow (Per Story)
+1. External source (server dashboard, clinic reception) generates QR code containing deep link
+2. User scans QR with phone camera app (not Sereus Health)
+3. Deep link (`health://sereus/add-node?peerId={id}&type={cadre|guest}&name={name}`) opens Sereus Health
+4. Sereus Health shows confirmation dialog with node details
+5. User confirms → node added to appropriate section
+
+### In-App Convenience (Header QR Button)
+- Tapping the QR icon in the header launches the device camera for scanning
+- Same result: scanned QR content parsed as deep link → confirmation dialog
+- Requires native camera/QR module (e.g., `react-native-vision-camera`)
+- This is a shortcut - the story flow works without it
+
+### Deep Link Schema
+```
+health://sereus/add-node
+  ?peerId=QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG
+  &type=cadre|guest
+  &name=Dr.%20Smith%27s%20Office    (optional, user can edit)
+  &deviceType=server|phone|desktop  (optional)
+```
+
 ## Accessibility
 
 - Status announced as "Online" or "Unreachable"

@@ -1,7 +1,7 @@
 # Regeneration Summary - 2025-11-29
 
 ## Overview
-Complete regeneration of Diario from fresh analysis of stories and specs, with no consideration of previous implementations. All UI/UX decisions are now grounded in explicit story requirements and industry-standard React Native design patterns.
+Complete regeneration of Sereus Health from fresh analysis of stories and specs, with no consideration of previous implementations. All UI/UX decisions are now grounded in explicit story requirements and industry-standard React Native design patterns.
 
 ## What Was Done
 
@@ -57,7 +57,7 @@ Complete regeneration of Diario from fresh analysis of stories and specs, with n
 
 ### 6. LogHistory Screen (src/screens/LogHistory.tsx)
 - **Full implementation** following consolidation spec:
-  - **Header**: App title "Diario", search icon (toggle filter), graph icon, prominent "+" button
+  - **Header**: App title "Sereus Health", search icon (toggle filter), graph icon, prominent "+" button
   - **Filter bar**: Collapsible, live client-side filtering, clear button
   - **Entry cards**:
     - Date/time formatted to device locale
@@ -129,7 +129,7 @@ Complete regeneration of Diario from fresh analysis of stories and specs, with n
 3. **Accessibility**: Users with vision issues often rely on system dark mode
 4. **Flexibility**: Easy to add manual override later if needed
 
-### Why App Title "Diario" in Header?
+### Why App Title "Sereus Health" in Header?
 1. **Branding**: Users should always know what app they're in
 2. **Context**: Especially important when switching between apps or taking screenshots
 3. **Standard Pattern**: Most RN apps show app name or logo in main screen header
@@ -194,7 +194,7 @@ Complete regeneration of Diario from fresh analysis of stories and specs, with n
 
 ### Navigation Enhancement
 - **Integrate React Navigation**: Replace simple state machine with proper stack/tab navigator
-- **Deep linking**: Wire up `diario://screen/*` URLs
+- **Deep linking**: Wire up `health://screen/*` URLs
 - **Android back button**: Handle via React Navigation's back handler
 
 ### Component Library

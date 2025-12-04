@@ -1,11 +1,11 @@
-## Diario – General Specs
+## Sereus Health – General Specs
 
 These are cross-cutting behaviors and assumptions that apply across multiple screens and features.
 
 ### Storage and Fabric
 
 - **Sereus fabric and SQL**  
-  - Diario runs on top of Sereus fabric; user data is stored in an SQL database built on the user’s cadre of Sereus nodes.  
+  - Sereus Health runs on top of Sereus fabric; user data is stored in an SQL database built on the user’s cadre of Sereus nodes.  
   - Application data such as log entries, taxonomy (types, categories, items, bundles), quantifier definitions, and app settings should be modeled in this SQL layer so that it can be synced across nodes.
   - In-app state management (e.g., React/React Native state, optional Redux) should treat Sereus/SQL as the source of truth for persisted data, with local state acting as a cache/interaction layer.
 
@@ -58,7 +58,7 @@ These are cross-cutting behaviors and assumptions that apply across multiple scr
 
 ### Time and Timestamps
 
-- Diario uses the Quereus timestamp type for all persisted times in the database.  
+- Sereus Health uses the Quereus timestamp type for all persisted times in the database.  
 - All stored timestamps are normalized to **UTC**.  
 - On Bob’s device, timestamps are displayed in the device’s **local timezone and locale** (date/time formatting) so they match what he expects from his phone/OS.  
 - When Bob edits a timestamp in the UI (for example, adjusting the time of a past log entry), the controls operate in local time and the result is converted back to UTC for storage.
@@ -66,7 +66,7 @@ These are cross-cutting behaviors and assumptions that apply across multiple scr
 ### Sync and Consistency
 
 - Sereus is responsible for handling node contention, replication, and conflict resolution across Bob’s cadre and guest nodes.  
-- Diario can treat the underlying Quereus/SQL database as a **logically consistent SQL store**, without implementing its own per-record conflict resolution UI.  
+- Sereus Health can treat the underlying Quereus/SQL database as a **logically consistent SQL store**, without implementing its own per-record conflict resolution UI.  
 - From the app’s perspective, reads and writes go against a consistent database view; any low-level reconciliation between nodes happens within Sereus.
 
 ### Graphing (MVP)
@@ -95,7 +95,7 @@ These are cross-cutting behaviors and assumptions that apply across multiple scr
 
 ### Theming
 
-- Diario should **default to the device’s system appearance settings** (light/dark) and follow them where possible, rather than forcing a theme globally.  
+- Sereus Health should **default to the device's system appearance settings** (light/dark) and follow them where possible, rather than forcing a theme globally.  
 - Screen layouts and colors should be implemented so they remain legible and pleasant in both light and dark modes; any deviations from system theme should be called out explicitly in screen specs.
 
 ### Internationalization and Iconography

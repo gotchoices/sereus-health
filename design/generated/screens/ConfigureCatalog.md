@@ -19,7 +19,7 @@ dependsOn:
 
 ## Purpose and Role
 
-ConfigureCatalog lets Bob curate the vocabulary he uses in Diario:
+ConfigureCatalog lets Bob curate the vocabulary he uses in Sereus Health:
 categories, items, groups, and the quantifiers attached to items.
 It supports bulk creation (e.g., “fridge pass”) and group creation
 for combinations like a BLT.

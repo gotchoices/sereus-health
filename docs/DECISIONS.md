@@ -1,4 +1,4 @@
-# Diario Design Decisions
+# Sereus Health Design Decisions
 
 This document captures key architectural and design decisions made during development, including the rationale behind them.
 

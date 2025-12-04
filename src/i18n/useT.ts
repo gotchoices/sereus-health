@@ -1,5 +1,5 @@
 /**
- * i18n hook for Diario
+ * i18n hook for Sereus Health
  * Based on design/specs/global/general.md: all UI strings via translation mechanism
  * 
  * For MVP, returns English strings directly.

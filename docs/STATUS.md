@@ -1,6 +1,6 @@
 ## Design Status
 
-This file tracks open design questions for Diario so they can be resolved one at a time.
+This file tracks open design questions for Sereus Health so they can be resolved one at a time.
 
 ### Open Questions / TODOs
 

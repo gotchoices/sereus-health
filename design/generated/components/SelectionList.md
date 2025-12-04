@@ -1,7 +1,7 @@
 # SelectionList Component Consolidation
 
 ## Purpose
-A reusable, filterable list component used throughout Diario wherever Bob needs to browse and select from collections: choosing items when logging, building groups in catalog, selecting items for graphs, etc.
+A reusable, filterable list component used throughout Sereus Health wherever Bob needs to browse and select from collections: choosing items when logging, building groups in catalog, selecting items for graphs, etc.
 
 ## Component Identity
 - **Type**: Reusable presentational component
