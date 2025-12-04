@@ -65,10 +65,13 @@ declare schema main using (default_vtab_module = 'memory') {
     constraint fk_quantifiers_item foreign key (item_id) references items(id)
   );
 
-  -- Bundles (named collections of items/bundles)
+  -- Bundles (named collections of items/bundles, type-specific)
   table bundles (
     id text primary key,
-    name text unique
+    type_id text,
+    name text,
+    constraint unique_bundle_per_type unique (type_id, name),
+    constraint fk_bundles_type foreign key (type_id) references types(id)
   );
 
   -- Bundle membership (items and nested bundles)
@@ -123,6 +126,7 @@ declare schema main using (default_vtab_module = 'memory') {
   index idx_categories_type on categories(type_id);
   index idx_items_category on items(category_id);
   index idx_item_quantifiers_item on item_quantifiers(item_id);
+  index idx_bundles_type on bundles(type_id);
   index idx_bundle_members_bundle on bundle_members(bundle_id);
   index idx_bundle_members_item on bundle_members(item_id);
   index idx_bundle_members_member_bundle on bundle_members(member_bundle_id);

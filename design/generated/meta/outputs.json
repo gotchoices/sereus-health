@@ -49,7 +49,7 @@
       ],
       "depHashes": {
         "design/generated/screens/ConfigureCatalog.md": "cdd462b094f3ae3ac3643ed65086e06ab2381d09615aad4291dad24984e9b257",
-        "design/specs/screens/index.md": "7948b13ac54ae3d364929133f1985e7ba1d8307bcaebda50442f61438d48365b",
+        "design/specs/screens/index.md": "735a1cc3cb14efdfccc1d8715b5e15fe98c468eaa0999d0c710145876898dac3",
         "design/specs/navigation.md": "234e3d4f87a49bd92500497023b717ac1db7aaa756a0d6906808513745c78358",
         "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755"
       }

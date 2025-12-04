@@ -63,7 +63,7 @@ export const SAMPLE_DATA = {
 	],
 	
 	bundles: [
-		{ id: 'bundle-blt', name: 'BLT' },
+		{ id: 'bundle-blt', type_id: 'type-activity', name: 'BLT' },
 	],
 	
 	bundle_members: [
@@ -146,7 +146,7 @@ export async function applySampleData(db: Database): Promise<void> {
 		// Insert bundles
 		logger.debug('Inserting bundles...');
 		for (const bundle of SAMPLE_DATA.bundles) {
-			await db.exec('INSERT INTO bundles (id, name) VALUES (?, ?)', [bundle.id, bundle.name]);
+			await db.exec('INSERT INTO bundles (id, type_id, name) VALUES (?, ?, ?)', [bundle.id, bundle.type_id, bundle.name]);
 		}
 		logger.debug(`Inserted ${SAMPLE_DATA.bundles.length} bundles`);
 		

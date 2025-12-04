@@ -35,6 +35,7 @@
     {
       "id": "bundle-blt",
       "name": "BLT",
+      "type": "Activity",
       "itemIds": [
         "item-bacon",
         "item-lettuce",
@@ -44,6 +45,7 @@
     {
       "id": "bundle-morning-routine",
       "name": "Morning Routine",
+      "type": "Activity",
       "itemIds": [
         "item-omelette",
         "item-toast",

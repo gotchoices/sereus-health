@@ -12,6 +12,7 @@ export type CatalogItem = {
 export type CatalogBundle = {
   id: string;
   name: string;
+  type: string;
   itemIds: string[];
 };
 

@@ -18,6 +18,8 @@ import { getConfigureCatalog, CatalogItem, CatalogBundle } from '../data/configu
 interface ConfigureCatalogProps {
   onBack?: () => void;
   onNavigateTab: (tab: 'home' | 'catalog' | 'settings') => void;
+  onNavigateEditItem?: (params: { itemId?: string; typeId?: string }) => void;
+  onNavigateEditBundle?: (params: { bundleId?: string; typeId?: string }) => void;
 }
 
 type ItemType = 'Activity' | 'Condition' | 'Outcome';
@@ -25,6 +27,8 @@ type ItemType = 'Activity' | 'Condition' | 'Outcome';
 export default function ConfigureCatalog({
   onBack,
   onNavigateTab,
+  onNavigateEditItem,
+  onNavigateEditBundle,
 }: ConfigureCatalogProps) {
   const theme = useTheme();
   const t = useT();
@@ -55,15 +59,21 @@ export default function ConfigureCatalog({
     return items;
   }, [catalog.items, selectedType, filterText]);
   
-  // Filter bundles by search text
+  // Filter bundles by type and search text
   const filteredBundles = useMemo(() => {
-    if (!filterText.trim()) return catalog.bundles;
-    
-    const query = filterText.toLowerCase();
-    return catalog.bundles.filter((bundle) =>
-      bundle.name.toLowerCase().includes(query)
+    let bundles = catalog.bundles.filter(
+      (bundle) => bundle.type.toLowerCase() === selectedType.toLowerCase()
     );
-  }, [catalog.bundles, filterText]);
+    
+    if (filterText.trim()) {
+      const query = filterText.toLowerCase();
+      bundles = bundles.filter((bundle) =>
+        bundle.name.toLowerCase().includes(query)
+      );
+    }
+    
+    return bundles;
+  }, [catalog.bundles, selectedType, filterText]);
   
   // Get type badge color
   const getTypeBadgeColor = (type: string) => {
@@ -79,43 +89,68 @@ export default function ConfigureCatalog({
     }
   };
   
+  // Get type ID from type name
+  const getTypeId = (type: ItemType): string => {
+    switch (type) {
+      case 'Activity': return 'type-activity';
+      case 'Condition': return 'type-condition';
+      case 'Outcome': return 'type-outcome';
+    }
+  };
+  
   // Handle add item
   const handleAddItem = () => {
-    Alert.alert(
-      t('configureCatalog.addItem'),
-      t('configureCatalog.comingSoon'),
-      [{ text: t('common.close') }]
-    );
+    if (onNavigateEditItem) {
+      onNavigateEditItem({ typeId: getTypeId(selectedType) });
+    } else {
+      Alert.alert(
+        t('configureCatalog.addItem'),
+        t('configureCatalog.comingSoon'),
+        [{ text: t('common.close') }]
+      );
+    }
   };
   
   // Handle add bundle
   const handleAddBundle = () => {
-    Alert.alert(
-      t('configureCatalog.addBundle'),
-      t('configureCatalog.comingSoon'),
-      [{ text: t('common.close') }]
-    );
+    if (onNavigateEditBundle) {
+      onNavigateEditBundle({ typeId: getTypeId(selectedType) });
+    } else {
+      Alert.alert(
+        t('configureCatalog.addBundle'),
+        t('configureCatalog.comingSoon'),
+        [{ text: t('common.close') }]
+      );
+    }
   };
   
   // Handle item press
   const handleItemPress = (item: CatalogItem) => {
-    Alert.alert(
-      item.name,
-      `${item.category} • ${item.type}\n\n${t('configureCatalog.comingSoon')}`,
-      [{ text: t('common.close') }]
-    );
+    if (onNavigateEditItem) {
+      onNavigateEditItem({ itemId: item.id });
+    } else {
+      Alert.alert(
+        item.name,
+        `${item.category} • ${item.type}\n\n${t('configureCatalog.comingSoon')}`,
+        [{ text: t('common.close') }]
+      );
+    }
   };
   
   // Handle bundle press
   const handleBundlePress = (bundle: CatalogBundle) => {
-    const itemNames = bundle.itemIds
-      .map((id) => catalog.items.find((i) => i.id === id)?.name || id)
-      .join(', ');
-    Alert.alert(
-      bundle.name,
-      `${itemNames}\n\n${t('configureCatalog.comingSoon')}`,
-      [{ text: t('common.close') }]
-    );
+    if (onNavigateEditBundle) {
+      onNavigateEditBundle({ bundleId: bundle.id });
+    } else {
+      const itemNames = bundle.itemIds
+        .map((id) => catalog.items.find((i) => i.id === id)?.name || id)
+        .join(', ');
+      Alert.alert(
+        bundle.name,
+        `${itemNames}\n\n${t('configureCatalog.comingSoon')}`,
+        [{ text: t('common.close') }]
+      );
+    }
   };
   
   // Render item card
@@ -294,40 +329,38 @@ export default function ConfigureCatalog({
         </TouchableOpacity>
       </View>
       
-      {/* Type Filter (only for items) */}
-      {!showBundles && (
-        <View style={[styles.typeBar, { borderBottomColor: theme.border }]}>
-          {(['Activity', 'Condition', 'Outcome'] as ItemType[]).map((type) => {
-            const typeLabel = type === 'Activity' 
-              ? t('configureCatalog.typeActivity')
-              : type === 'Condition' 
-              ? t('configureCatalog.typeCondition')
-              : t('configureCatalog.typeOutcome');
-            return (
-              <TouchableOpacity
-                key={type}
+      {/* Type Filter (applies to both items and bundles) */}
+      <View style={[styles.typeBar, { borderBottomColor: theme.border }]}>
+        {(['Activity', 'Condition', 'Outcome'] as ItemType[]).map((type) => {
+          const typeLabel = type === 'Activity' 
+            ? t('configureCatalog.typeActivity')
+            : type === 'Condition' 
+            ? t('configureCatalog.typeCondition')
+            : t('configureCatalog.typeOutcome');
+          return (
+            <TouchableOpacity
+              key={type}
+              style={[
+                styles.typeChip,
+                {
+                  backgroundColor: selectedType === type ? getTypeBadgeColor(type) : theme.surface,
+                  borderColor: getTypeBadgeColor(type),
+                },
+              ]}
+              onPress={() => setSelectedType(type)}
+            >
+              <Text
                 style={[
-                  styles.typeChip,
-                  {
-                    backgroundColor: selectedType === type ? getTypeBadgeColor(type) : theme.surface,
-                    borderColor: getTypeBadgeColor(type),
-                  },
+                  styles.typeChipText,
+                  { color: selectedType === type ? '#fff' : getTypeBadgeColor(type) },
                 ]}
-                onPress={() => setSelectedType(type)}
               >
-                <Text
-                  style={[
-                    styles.typeChipText,
-                    { color: selectedType === type ? '#fff' : getTypeBadgeColor(type) },
-                  ]}
-                >
-                  {typeLabel}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      )}
+                {typeLabel}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
       
       {/* Content List */}
       {showBundles ? (

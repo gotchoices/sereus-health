@@ -280,17 +280,30 @@ Named collections of items and/or other bundles (e.g., "BLT", "Breakfast", "Uppe
 
 **Columns:**
 - `id` (UUID, PK)
-- `name` (TEXT, NOT NULL, UNIQUE)
+- `type_id` (UUID, FK → types.id, NOT NULL)
+  - **Type affinity**: All members must belong to this type
+  - Examples: "BLT" is Activity, "Migraine Symptoms" is Outcome, "Stressful Day" is Condition
+- `name` (TEXT, NOT NULL)
 - `description` (TEXT, NULL)
 
 **Constraints:**
 - Primary key: `id`
-- Unique: `name` - bundle names are globally unique
+- Foreign key: `type_id` references `types(id)` ON DELETE RESTRICT
+- Unique: `(type_id, name)` - bundle names unique within a type
+
+**Validation (via trigger or application logic):**
+```sql
+-- Ensure all items in bundle_members share bundle's type_id
+-- Check on INSERT/UPDATE of bundle_members:
+--   item.category.type_id == bundle.type_id (for item members)
+--   nested_bundle.type_id == bundle.type_id (for bundle members)
+```
 
 **Notes:**
-- Story 03:15: "BLT" bundle containing bacon, lettuce, tomato, bread, mayo
-- Bundles are NOT hierarchical by category (can mix items from different categories)
-- Bundle nesting allowed (general.md): a bundle can contain other bundles
+- Story 03:15: "BLT" bundle containing bacon, lettuce, tomato, bread, mayo (all Activity/Eating)
+- Bundles are type-specific: cannot mix Activity items with Outcome items
+- Bundle nesting allowed (general.md): a bundle can contain other bundles of the same type
+- Enables filtering bundles by type in Catalog UI
 - Deletion should check if bundle is referenced by log entries or parent bundles
 
 ---
@@ -525,6 +538,9 @@ items:
 
 item_quantifiers:
   - INDEX (item_id) - lookup quantifiers for item
+
+bundles:
+  - INDEX (type_id) - filter bundles by type
 
 bundle_members:
   - INDEX (bundle_id) - expand bundle membership

@@ -5,6 +5,8 @@ import { VariantProvider } from './src/mock';
 import LogHistory from './src/screens/LogHistory';
 import { EditEntry } from './src/screens/EditEntry';
 import ConfigureCatalog from './src/screens/ConfigureCatalog';
+import EditItem from './src/screens/EditItem';
+import EditBundle from './src/screens/EditBundle';
 import Graphs from './src/screens/Graphs';
 import GraphCreate from './src/screens/GraphCreate';
 import GraphView from './src/screens/GraphView';
@@ -17,6 +19,8 @@ type Screen =
   | 'LogHistory' 
   | 'EditEntry' 
   | 'ConfigureCatalog' 
+  | 'EditItem'
+  | 'EditBundle'
   | 'Graphs' 
   | 'GraphCreate'
   | 'GraphView'
@@ -31,10 +35,22 @@ interface EditParams {
   entryId?: string;
 }
 
+interface EditItemParams {
+  itemId?: string;
+  typeId?: string;
+}
+
+interface EditBundleParams {
+  bundleId?: string;
+  typeId?: string;
+}
+
 function AppContent(): React.JSX.Element {
   const [currentTab, setCurrentTab] = useState<Tab>('home');
   const [currentScreen, setCurrentScreen] = useState<Screen>('LogHistory');
   const [editParams, setEditParams] = useState<EditParams | null>(null);
+  const [editItemParams, setEditItemParams] = useState<EditItemParams | null>(null);
+  const [editBundleParams, setEditBundleParams] = useState<EditBundleParams | null>(null);
   
   // Ephemeral graph storage (lives only while app is running)
   const [graphs, setGraphs] = useState<Graph[]>([]);
@@ -108,6 +124,17 @@ function AppContent(): React.JSX.Element {
 
   const handleOpenReminders = () => {
     pushScreen('Reminders');
+  };
+
+  // Catalog edit navigation handlers
+  const handleNavigateEditItem = (params: { itemId?: string; typeId?: string }) => {
+    setEditItemParams(params);
+    pushScreen('EditItem');
+  };
+
+  const handleNavigateEditBundle = (params: { bundleId?: string; typeId?: string }) => {
+    setEditBundleParams(params);
+    pushScreen('EditBundle');
   };
 
   // Graph navigation handlers
@@ -213,6 +240,26 @@ function AppContent(): React.JSX.Element {
           <ConfigureCatalog 
             onBack={handleBack}
             onNavigateTab={handleNavigateTab}
+            onNavigateEditItem={handleNavigateEditItem}
+            onNavigateEditBundle={handleNavigateEditBundle}
+          />
+        );
+      
+      case 'EditItem':
+        return (
+          <EditItem
+            itemId={editItemParams?.itemId}
+            typeId={editItemParams?.typeId}
+            onBack={handleBack}
+          />
+        );
+      
+      case 'EditBundle':
+        return (
+          <EditBundle
+            bundleId={editBundleParams?.bundleId}
+            typeId={editBundleParams?.typeId}
+            onBack={handleBack}
           />
         );
       

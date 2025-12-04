@@ -184,6 +184,54 @@ type TranslationKey =
   | 'reminders.futureTitle'
   | 'reminders.futureList'
   
+  // EditItem screen
+  | 'editItem.addTitle'
+  | 'editItem.editTitle'
+  | 'editItem.name'
+  | 'editItem.namePlaceholder'
+  | 'editItem.nameRequired'
+  | 'editItem.description'
+  | 'editItem.descriptionPlaceholder'
+  | 'editItem.type'
+  | 'editItem.category'
+  | 'editItem.categoryRequired'
+  | 'editItem.selectCategory'
+  | 'editItem.searchCategories'
+  | 'editItem.createCategory'
+  | 'editItem.newCategory'
+  | 'editItem.categoryNamePlaceholder'
+  | 'editItem.categoryCreated'
+  | 'editItem.quantifiers'
+  | 'editItem.noQuantifiers'
+  | 'editItem.addQuantifier'
+  | 'editItem.editQuantifier'
+  | 'editItem.quantifierName'
+  | 'editItem.quantifierNamePlaceholder'
+  | 'editItem.quantifierNameRequired'
+  | 'editItem.minValue'
+  | 'editItem.maxValue'
+  | 'editItem.units'
+  | 'editItem.unitsPlaceholder'
+  | 'editItem.noRange'
+  | 'editItem.itemSaved'
+  
+  // EditBundle screen
+  | 'editBundle.addTitle'
+  | 'editBundle.editTitle'
+  | 'editBundle.name'
+  | 'editBundle.namePlaceholder'
+  | 'editBundle.nameRequired'
+  | 'editBundle.type'
+  | 'editBundle.itemsInBundle'
+  | 'editBundle.noItems'
+  | 'editBundle.addItems'
+  | 'editBundle.searchItems'
+  | 'editBundle.selectItems'
+  | 'editBundle.addSelectedItems'
+  | 'editBundle.alreadyInBundle'
+  | 'editBundle.itemsRequired'
+  | 'editBundle.bundleSaved'
+  
   // SelectionList component
   | 'selectionList.filterPlaceholder'
   | 'selectionList.clearFilter'
@@ -203,7 +251,10 @@ type TranslationKey =
   | 'common.confirm'
   | 'common.retry'
   | 'common.loading'
-  | 'common.error';
+  | 'common.error'
+  | 'common.ok'
+  | 'common.info'
+  | 'common.saved';
 
 const translations: Record<TranslationKey, string> = {
   // App-wide
@@ -383,6 +434,54 @@ const translations: Record<TranslationKey, string> = {
   'reminders.futureTitle': 'Future reminder options:',
   'reminders.futureList': '• Smart reminders based on patterns\n• Quiet hours (no notifications at night)\n• Specific reminders for meal times\n• Custom notification messages',
   
+  // EditItem screen
+  'editItem.addTitle': 'Add Item',
+  'editItem.editTitle': 'Edit Item',
+  'editItem.name': 'Name',
+  'editItem.namePlaceholder': 'e.g., Omelette, Running, Headache',
+  'editItem.nameRequired': 'Please enter an item name',
+  'editItem.description': 'Description (optional)',
+  'editItem.descriptionPlaceholder': 'Add notes about this item...',
+  'editItem.type': 'Type',
+  'editItem.category': 'Category',
+  'editItem.categoryRequired': 'Please select a category',
+  'editItem.selectCategory': 'Select a category...',
+  'editItem.searchCategories': 'Search categories...',
+  'editItem.createCategory': 'Create new category',
+  'editItem.newCategory': 'New Category',
+  'editItem.categoryNamePlaceholder': 'Category name...',
+  'editItem.categoryCreated': 'Category created. Select it to continue.',
+  'editItem.quantifiers': 'Quantifiers',
+  'editItem.noQuantifiers': 'No quantifiers defined. Tap + to add one.',
+  'editItem.addQuantifier': 'Add Quantifier',
+  'editItem.editQuantifier': 'Edit Quantifier',
+  'editItem.quantifierName': 'Name',
+  'editItem.quantifierNamePlaceholder': 'e.g., Intensity, Duration, Amount',
+  'editItem.quantifierNameRequired': 'Please enter a quantifier name',
+  'editItem.minValue': 'Min Value',
+  'editItem.maxValue': 'Max Value',
+  'editItem.units': 'Units',
+  'editItem.unitsPlaceholder': 'e.g., scale, minutes, reps',
+  'editItem.noRange': 'No range',
+  'editItem.itemSaved': 'Item saved successfully',
+  
+  // EditBundle screen
+  'editBundle.addTitle': 'Add Bundle',
+  'editBundle.editTitle': 'Edit Bundle',
+  'editBundle.name': 'Name',
+  'editBundle.namePlaceholder': 'e.g., BLT, Morning Routine',
+  'editBundle.nameRequired': 'Please enter a bundle name',
+  'editBundle.type': 'Type',
+  'editBundle.itemsInBundle': 'Items in Bundle',
+  'editBundle.noItems': 'No items yet. Tap + to add items.',
+  'editBundle.addItems': 'Add Items',
+  'editBundle.searchItems': 'Search items...',
+  'editBundle.selectItems': 'Select items to add',
+  'editBundle.addSelectedItems': 'Add {count} Selected',
+  'editBundle.alreadyInBundle': 'already in bundle',
+  'editBundle.itemsRequired': 'Please add at least one item to the bundle',
+  'editBundle.bundleSaved': 'Bundle saved successfully',
+  
   // SelectionList component
   'selectionList.filterPlaceholder': 'Filter...',
   'selectionList.clearFilter': 'Clear filter',
@@ -403,6 +502,9 @@ const translations: Record<TranslationKey, string> = {
   'common.retry': 'Retry',
   'common.loading': 'Loading...',
   'common.error': 'Error',
+  'common.ok': 'OK',
+  'common.info': 'Info',
+  'common.saved': 'Saved',
 };
 
 /**
