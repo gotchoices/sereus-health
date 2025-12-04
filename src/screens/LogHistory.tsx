@@ -131,15 +131,28 @@ export default function LogHistory({
         onPress={() => onEdit(item.id)}
         activeOpacity={0.7}
       >
+        {/* Line 1: Type (left) | Date (center-left) | Clone (right) */}
         <View style={styles.entryHeader}>
-          <Text style={[styles.entryDate, { color: theme.textSecondary }]}>
-            {formatTimestamp(item.timestamp)}
-          </Text>
-          <View style={[styles.typeBadge, { backgroundColor: getTypeBadgeColor(item.type) }]}>
-            <Text style={[styles.typeBadgeText, { color: '#ffffff' }]}>{item.type}</Text>
+          <View style={styles.entryHeaderLeft}>
+            <View style={[styles.typeBadge, { backgroundColor: getTypeBadgeColor(item.type) }]}>
+              <Text style={[styles.typeBadgeText, { color: '#ffffff' }]}>{item.type}</Text>
+            </View>
+            <Text style={[styles.entryDate, { color: theme.textSecondary }]}>
+              {formatTimestamp(item.timestamp)}
+            </Text>
           </View>
+          <TouchableOpacity
+            onPress={(e) => {
+              e.stopPropagation();
+              onClone(item.id);
+            }}
+            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+          >
+            <Ionicons name="copy-outline" size={20} color={theme.accentPrimary} />
+          </TouchableOpacity>
         </View>
         
+        {/* Line 2: Items */}
         <Text style={[styles.entryItems, { color: theme.textPrimary }]}>
           {primaryDisplay}
           {moreCount > 0 && (
@@ -150,6 +163,7 @@ export default function LogHistory({
           )}
         </Text>
         
+        {/* Line 3: Comment (optional) */}
         {item.comment && (
           <Text
             style={[styles.entryComment, { color: theme.textSecondary }]}
@@ -159,17 +173,6 @@ export default function LogHistory({
             {item.comment}
           </Text>
         )}
-        
-        <TouchableOpacity
-          style={styles.cloneButton}
-          onPress={(e) => {
-            e.stopPropagation();
-            onClone(item.id);
-          }}
-          hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-        >
-          <Ionicons name="copy-outline" size={20} color={theme.accentPrimary} />
-        </TouchableOpacity>
       </TouchableOpacity>
     );
   };
@@ -392,47 +395,46 @@ const styles = StyleSheet.create({
   entryCard: {
     borderRadius: 8,
     borderWidth: 1,
-    padding: spacing[3],  // 16
+    padding: spacing[2],  // 12 - tighter
     marginBottom: spacing[2],  // 8
-    position: 'relative',
   },
   entryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing[2],  // 8
+    marginBottom: spacing[1],  // 4 - tighter
+  },
+  entryHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],  // 8
   },
   entryDate: {
-    ...typography.body,
-    fontSize: 14,
+    ...typography.small,
+    fontSize: 13,
   },
   typeBadge: {
     paddingHorizontal: spacing[2],  // 8
-    paddingVertical: spacing[0],    // 4
-    borderRadius: 12,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
   typeBadgeText: {
     ...typography.small,
+    fontSize: 11,
     fontWeight: '600',
   },
   entryItems: {
     ...typography.body,
-    marginBottom: spacing[1],  // 8
+    marginBottom: spacing[0],  // 4 - tighter
   },
   entryQuantifier: {
     ...typography.small,
-    marginTop: spacing[1],  // 8
+    marginTop: spacing[0],  // 4
   },
   entryComment: {
     ...typography.small,
     fontStyle: 'italic',
-    marginTop: spacing[1],  // 8
-  },
-  cloneButton: {
-    position: 'absolute',
-    top: spacing[3],   // 16
-    right: spacing[3],  // 16
-    padding: spacing[1],  // 8
+    marginTop: spacing[0],  // 4 - tighter
   },
   emptyContainer: {
     flex: 1,
