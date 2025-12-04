@@ -48,6 +48,32 @@ type TranslationKey =
   | 'editEntry.save'
   | 'editEntry.cancel'
   | 'editEntry.delete'
+  | 'editEntry.searchTypes'
+  | 'editEntry.searchCategories'
+  | 'editEntry.searchItems'
+  | 'editEntry.addType'
+  | 'editEntry.addCategory'
+  | 'editEntry.addItem'
+  | 'editEntry.typeName'
+  | 'editEntry.categoryName'
+  | 'editEntry.itemName'
+  | 'editEntry.noResults'
+  | 'editEntry.bundleItems'
+  | 'editEntry.createBundle'
+  | 'editEntry.groupItems'
+  | 'editEntry.bundleNamePlaceholder'
+  | 'editEntry.setDateTime'
+  | 'editEntry.now'
+  | 'editEntry.addEntry'
+  | 'editEntry.cloneEntry'
+  | 'editEntry.labelType'
+  | 'editEntry.labelCategory'
+  | 'editEntry.labelItems'
+  | 'editEntry.labelItemsOptional'
+  | 'editEntry.labelDateTime'
+  | 'editEntry.labelComment'
+  | 'editEntry.labelCommentOptional'
+  | 'editEntry.bundleBadge'
   
   // ConfigureCatalog screen
   | 'configureCatalog.header.title'
@@ -143,6 +169,8 @@ type TranslationKey =
   | 'common.delete'
   | 'common.edit'
   | 'common.add'
+  | 'common.create'
+  | 'common.done'
   | 'common.back'
   | 'common.close'
   | 'common.confirm'
@@ -192,6 +220,32 @@ const translations: Record<TranslationKey, string> = {
   'editEntry.save': 'Save',
   'editEntry.cancel': 'Cancel',
   'editEntry.delete': 'Delete',
+  'editEntry.searchTypes': 'Search types...',
+  'editEntry.searchCategories': 'Search categories...',
+  'editEntry.searchItems': 'Search items...',
+  'editEntry.addType': 'Add New Type',
+  'editEntry.addCategory': 'Add New Category',
+  'editEntry.addItem': 'Add New Item',
+  'editEntry.typeName': 'Type name',
+  'editEntry.categoryName': 'Category name',
+  'editEntry.itemName': 'Item name',
+  'editEntry.noResults': 'No results found',
+  'editEntry.bundleItems': 'Bundle {count} items into a named group',
+  'editEntry.createBundle': 'Create Bundle',
+  'editEntry.groupItems': 'Group {count} items: {items}',
+  'editEntry.bundleNamePlaceholder': 'Bundle name (e.g., My Breakfast)',
+  'editEntry.setDateTime': 'Set Date & Time',
+  'editEntry.now': 'Now',
+  'editEntry.addEntry': 'Add Entry',
+  'editEntry.cloneEntry': 'Clone Entry',
+  'editEntry.labelType': 'Type',
+  'editEntry.labelCategory': 'Category',
+  'editEntry.labelItems': 'Items',
+  'editEntry.labelItemsOptional': '(optional for note entries)',
+  'editEntry.labelDateTime': 'Date & Time',
+  'editEntry.labelComment': 'Comment',
+  'editEntry.labelCommentOptional': '(optional)',
+  'editEntry.bundleBadge': 'Bundle',
   
   // ConfigureCatalog screen
   'configureCatalog.header.title': 'Configure Catalog',
@@ -287,6 +341,8 @@ const translations: Record<TranslationKey, string> = {
   'common.delete': 'Delete',
   'common.edit': 'Edit',
   'common.add': 'Add',
+  'common.create': 'Create',
+  'common.done': 'Done',
   'common.back': 'Back',
   'common.close': 'Close',
   'common.confirm': 'Confirm',

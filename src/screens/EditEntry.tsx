@@ -404,10 +404,10 @@ export const EditEntry: React.FC<EditEntryProps> = ({
 
   const saveButtonLabel =
     mode === 'new'
-      ? 'Add Entry'
+      ? t('editEntry.addEntry')
       : mode === 'clone'
-      ? 'Clone Entry'
-      : 'Save';
+      ? t('editEntry.cloneEntry')
+      : t('common.save');
 
   const formatTimestamp = (date: Date): string => {
     return date.toLocaleString('en-US', {
@@ -452,7 +452,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
         {/* Type Selector */}
         <View style={styles.field}>
           <Text style={[styles.label, { color: theme.textSecondary }]}>
-            Type <Text style={{ color: theme.error }}>*</Text>
+            {t('editEntry.labelType')} <Text style={{ color: theme.error }}>*</Text>
           </Text>
           <TouchableOpacity
             style={[
@@ -482,7 +482,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
         {/* Category Selector */}
         <View style={styles.field}>
           <Text style={[styles.label, { color: theme.textSecondary }]}>
-            Category {selectedItems.length > 0 && <Text style={{ color: theme.error }}>*</Text>}
+            {t('editEntry.labelCategory')} {selectedItems.length > 0 && <Text style={{ color: theme.error }}>*</Text>}
           </Text>
           <TouchableOpacity
             style={[
@@ -514,7 +514,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
         {/* Items Selector */}
         <View style={styles.field}>
           <Text style={[styles.label, { color: theme.textSecondary }]}>
-            Items <Text style={{ fontSize: 12 }}>(optional for note entries)</Text>
+            {t('editEntry.labelItems')} <Text style={{ fontSize: 12 }}>{t('editEntry.labelItemsOptional')}</Text>
           </Text>
           <TouchableOpacity
             style={[
@@ -564,7 +564,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
         {/* Timestamp Selector */}
         <View style={styles.field}>
           <Text style={[styles.label, { color: theme.textSecondary }]}>
-            Date & Time <Text style={{ color: theme.error }}>*</Text>
+            {t('editEntry.labelDateTime')} <Text style={{ color: theme.error }}>*</Text>
           </Text>
           <TouchableOpacity
             style={[
@@ -594,7 +594,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
         {/* Comment Input */}
         <View style={styles.field}>
           <Text style={[styles.label, { color: theme.textSecondary }]}>
-            Comment <Text style={{ fontSize: 12 }}>(optional)</Text>
+            {t('editEntry.labelComment')} <Text style={{ fontSize: 12 }}>{t('editEntry.labelCommentOptional')}</Text>
           </Text>
           <TextInput
             style={[
@@ -643,7 +643,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
         <View style={[styles.modalContainer, { backgroundColor: theme.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
-              Select Type
+              {t('editEntry.selectType')}
             </Text>
             <TouchableOpacity onPress={() => { setTypeModalVisible(false); setTypeFilter(''); }}>
               <Ionicons name="close" size={28} color={theme.textPrimary} />
@@ -655,7 +655,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
             <Ionicons name="search" size={20} color={theme.textSecondary} style={{ marginRight: spacing[2] }} />
             <TextInput
               style={[styles.searchInput, { color: theme.textPrimary }]}
-              placeholder="Search types..."
+              placeholder={t('editEntry.searchTypes')}
               placeholderTextColor={theme.textSecondary}
               value={typeFilter}
               onChangeText={setTypeFilter}
@@ -696,7 +696,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
             ) : (
               <View style={styles.emptyState}>
                 <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
-                  No results found
+                  {t('editEntry.noResults')}
                 </Text>
               </View>
             )}
@@ -714,11 +714,11 @@ export const EditEntry: React.FC<EditEntryProps> = ({
         <View style={styles.addModalOverlay}>
           <View style={[styles.addModalContent, { backgroundColor: theme.surface }]}>
             <Text style={[styles.addModalTitle, { color: theme.textPrimary }]}>
-              Add New Type
+              {t('editEntry.addType')}
             </Text>
             <TextInput
               style={[styles.addModalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
-              placeholder="Type name"
+              placeholder={t('editEntry.typeName')}
               placeholderTextColor={theme.textSecondary}
               value={newTypeName}
               onChangeText={setNewTypeName}
@@ -729,14 +729,14 @@ export const EditEntry: React.FC<EditEntryProps> = ({
                 style={[styles.addModalButton, { borderColor: theme.border }]}
                 onPress={() => { setAddTypeModalVisible(false); setNewTypeName(''); }}
               >
-                <Text style={[styles.addModalButtonText, { color: theme.textSecondary }]}>Cancel</Text>
+                <Text style={[styles.addModalButtonText, { color: theme.textSecondary }]}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.addModalButton, { backgroundColor: theme.accentPrimary }]}
                 onPress={handleAddType}
                 disabled={!newTypeName.trim()}
               >
-                <Text style={[styles.addModalButtonText, { color: '#fff' }]}>Add</Text>
+                <Text style={[styles.addModalButtonText, { color: '#fff' }]}>{t('common.add')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -753,7 +753,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
         <View style={[styles.modalContainer, { backgroundColor: theme.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
-              Select Category
+              {t('editEntry.selectCategory')}
             </Text>
             <TouchableOpacity onPress={() => { setCategoryModalVisible(false); setCategoryFilter(''); }}>
               <Ionicons name="close" size={28} color={theme.textPrimary} />
@@ -765,7 +765,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
             <Ionicons name="search" size={20} color={theme.textSecondary} style={{ marginRight: spacing[2] }} />
             <TextInput
               style={[styles.searchInput, { color: theme.textPrimary }]}
-              placeholder="Search categories..."
+              placeholder={t('editEntry.searchCategories')}
               placeholderTextColor={theme.textSecondary}
               value={categoryFilter}
               onChangeText={setCategoryFilter}
@@ -806,7 +806,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
             ) : (
               <View style={styles.emptyState}>
                 <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
-                  No results found
+                  {t('editEntry.noResults')}
                 </Text>
               </View>
             )}
@@ -824,14 +824,14 @@ export const EditEntry: React.FC<EditEntryProps> = ({
         <View style={styles.addModalOverlay}>
           <View style={[styles.addModalContent, { backgroundColor: theme.surface }]}>
             <Text style={[styles.addModalTitle, { color: theme.textPrimary }]}>
-              Add New Category
+              {t('editEntry.addCategory')}
             </Text>
             <Text style={[styles.addModalSubtitle, { color: theme.textSecondary }]}>
-              Type: {selectedType?.name}
+              {selectedType?.name}
             </Text>
             <TextInput
               style={[styles.addModalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
-              placeholder="Category name"
+              placeholder={t('editEntry.categoryName')}
               placeholderTextColor={theme.textSecondary}
               value={newCategoryName}
               onChangeText={setNewCategoryName}
@@ -842,14 +842,14 @@ export const EditEntry: React.FC<EditEntryProps> = ({
                 style={[styles.addModalButton, { borderColor: theme.border }]}
                 onPress={() => { setAddCategoryModalVisible(false); setNewCategoryName(''); }}
               >
-                <Text style={[styles.addModalButtonText, { color: theme.textSecondary }]}>Cancel</Text>
+                <Text style={[styles.addModalButtonText, { color: theme.textSecondary }]}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.addModalButton, { backgroundColor: theme.accentPrimary }]}
                 onPress={handleAddCategory}
                 disabled={!newCategoryName.trim()}
               >
-                <Text style={[styles.addModalButtonText, { color: '#fff' }]}>Add</Text>
+                <Text style={[styles.addModalButtonText, { color: '#fff' }]}>{t('common.add')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -866,11 +866,11 @@ export const EditEntry: React.FC<EditEntryProps> = ({
         <View style={[styles.modalContainer, { backgroundColor: theme.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
-              Select Items
+              {t('editEntry.selectItems')}
             </Text>
             <TouchableOpacity onPress={handleItemsDone}>
               <Text style={[styles.doneButton, { color: theme.accentPrimary }]}>
-                Done
+                {t('common.done')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -880,7 +880,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
             <Ionicons name="search" size={20} color={theme.textSecondary} style={{ marginRight: spacing[2] }} />
             <TextInput
               style={[styles.searchInput, { color: theme.textPrimary }]}
-              placeholder="Search items..."
+              placeholder={t('editEntry.searchItems')}
               placeholderTextColor={theme.textSecondary}
               value={itemsFilter}
               onChangeText={setItemsFilter}
@@ -898,7 +898,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
             </TouchableOpacity>
           </View>
           
-          {/* Save as Bundle Button (when 2+ items selected) */}
+          {/* Bundle creation prompt (when 2+ items selected) */}
           {selectedItems.length >= 2 && (
             <TouchableOpacity
               style={[styles.saveBundleButton, { backgroundColor: theme.accentPrimary + '15', borderColor: theme.accentPrimary }]}
@@ -907,7 +907,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
             >
               <Ionicons name="layers-outline" size={20} color={theme.accentPrimary} />
               <Text style={[styles.saveBundleButtonText, { color: theme.accentPrimary }]}>
-                Save {selectedItems.length} items as Bundle
+                {t('editEntry.bundleItems', { count: selectedItems.length })}
               </Text>
             </TouchableOpacity>
           )}
@@ -952,7 +952,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
                         </Text>
                         {item.isBundle && (
                           <Text style={[styles.bundleBadge, { color: theme.textSecondary }]}>
-                            {' '}Bundle
+                            {' '}{t('editEntry.bundleBadge')}
                           </Text>
                         )}
                       </View>
@@ -963,7 +963,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
             ) : (
               <View style={styles.emptyState}>
                 <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
-                  No results found
+                  {t('editEntry.noResults')}
                 </Text>
               </View>
             )}
@@ -981,14 +981,14 @@ export const EditEntry: React.FC<EditEntryProps> = ({
         <View style={styles.addModalOverlay}>
           <View style={[styles.addModalContent, { backgroundColor: theme.surface }]}>
             <Text style={[styles.addModalTitle, { color: theme.textPrimary }]}>
-              Add New Item
+              {t('editEntry.addItem')}
             </Text>
             <Text style={[styles.addModalSubtitle, { color: theme.textSecondary }]}>
-              Category: {selectedCategory?.name}
+              {selectedCategory?.name}
             </Text>
             <TextInput
               style={[styles.addModalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
-              placeholder="Item name"
+              placeholder={t('editEntry.itemName')}
               placeholderTextColor={theme.textSecondary}
               value={newItemName}
               onChangeText={setNewItemName}
@@ -999,21 +999,21 @@ export const EditEntry: React.FC<EditEntryProps> = ({
                 style={[styles.addModalButton, { borderColor: theme.border }]}
                 onPress={() => { setAddItemModalVisible(false); setNewItemName(''); }}
               >
-                <Text style={[styles.addModalButtonText, { color: theme.textSecondary }]}>Cancel</Text>
+                <Text style={[styles.addModalButtonText, { color: theme.textSecondary }]}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.addModalButton, { backgroundColor: theme.accentPrimary }]}
                 onPress={handleAddItem}
                 disabled={!newItemName.trim()}
               >
-                <Text style={[styles.addModalButtonText, { color: '#fff' }]}>Add</Text>
+                <Text style={[styles.addModalButtonText, { color: '#fff' }]}>{t('common.add')}</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* Save as Bundle Modal */}
+      {/* Create Bundle Modal */}
       <Modal
         visible={saveBundleModalVisible}
         animationType="fade"
@@ -1023,14 +1023,14 @@ export const EditEntry: React.FC<EditEntryProps> = ({
         <View style={styles.addModalOverlay}>
           <View style={[styles.addModalContent, { backgroundColor: theme.surface }]}>
             <Text style={[styles.addModalTitle, { color: theme.textPrimary }]}>
-              Save as Bundle
+              {t('editEntry.createBundle')}
             </Text>
             <Text style={[styles.addModalSubtitle, { color: theme.textSecondary }]}>
-              {selectedItems.length} items: {selectedItems.map(i => i.name).join(', ')}
+              {t('editEntry.groupItems', { count: selectedItems.length, items: selectedItems.map(i => i.name).join(', ') })}
             </Text>
             <TextInput
               style={[styles.addModalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
-              placeholder="Bundle name"
+              placeholder={t('editEntry.bundleNamePlaceholder')}
               placeholderTextColor={theme.textSecondary}
               value={newBundleName}
               onChangeText={setNewBundleName}
@@ -1041,14 +1041,14 @@ export const EditEntry: React.FC<EditEntryProps> = ({
                 style={[styles.addModalButton, { borderColor: theme.border }]}
                 onPress={() => { setSaveBundleModalVisible(false); setNewBundleName(''); }}
               >
-                <Text style={[styles.addModalButtonText, { color: theme.textSecondary }]}>Cancel</Text>
+                <Text style={[styles.addModalButtonText, { color: theme.textSecondary }]}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.addModalButton, { backgroundColor: theme.accentPrimary }]}
                 onPress={handleSaveBundle}
                 disabled={!newBundleName.trim()}
               >
-                <Text style={[styles.addModalButtonText, { color: '#fff' }]}>Save</Text>
+                <Text style={[styles.addModalButtonText, { color: '#fff' }]}>{t('common.create')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1067,13 +1067,13 @@ export const EditEntry: React.FC<EditEntryProps> = ({
             <View style={[styles.dateTimeModalContent, { backgroundColor: theme.surface }]}>
               <View style={[styles.dateTimeModalHeader, { borderBottomColor: theme.border }]}>
                 <TouchableOpacity onPress={setToNow}>
-                  <Text style={[styles.dateTimeModalButton, { color: theme.accentPrimary }]}>Now</Text>
+                  <Text style={[styles.dateTimeModalButton, { color: theme.accentPrimary }]}>{t('editEntry.now')}</Text>
                 </TouchableOpacity>
                 <Text style={[styles.dateTimeModalTitle, { color: theme.textPrimary }]}>
-                  Set Date & Time
+                  {t('editEntry.setDateTime')}
                 </Text>
                 <TouchableOpacity onPress={() => setDateTimeModalVisible(false)}>
-                  <Text style={[styles.dateTimeModalButton, { color: theme.accentPrimary }]}>Done</Text>
+                  <Text style={[styles.dateTimeModalButton, { color: theme.accentPrimary }]}>{t('common.done')}</Text>
                 </TouchableOpacity>
               </View>
               <DateTimePicker
