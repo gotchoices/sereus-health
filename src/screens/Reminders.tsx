@@ -77,13 +77,10 @@ export default function Reminders({ onBack }: RemindersProps) {
         {/* Placeholder for future settings */}
         <View style={[styles.placeholderSection, { borderTopColor: theme.border }]}>
           <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>
-            Future reminder options:
+            {t('reminders.futureTitle')}
           </Text>
           <Text style={[styles.placeholderSubtext, { color: theme.textSecondary }]}>
-            • Smart reminders based on patterns{'\n'}
-            • Quiet hours (no notifications at night){'\n'}
-            • Specific reminders for meal times{'\n'}
-            • Custom notification messages
+            {t('reminders.futureList')}
           </Text>
         </View>
       </ScrollView>

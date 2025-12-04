@@ -86,6 +86,14 @@ type TranslationKey =
   | 'configureCatalog.filter'
   | 'configureCatalog.tabs.items'
   | 'configureCatalog.tabs.bundles'
+  | 'configureCatalog.empty.itemsHint'
+  | 'configureCatalog.empty.bundlesHint'
+  | 'configureCatalog.itemCount'
+  | 'configureCatalog.itemCountPlural'
+  | 'configureCatalog.comingSoon'
+  | 'configureCatalog.typeActivity'
+  | 'configureCatalog.typeCondition'
+  | 'configureCatalog.typeOutcome'
   | 'catalog.title'
   | 'catalog.categories'
   | 'catalog.items'
@@ -134,12 +142,19 @@ type TranslationKey =
   | 'graphView.share'
   | 'graphView.shareSuccess'
   | 'graphView.shareError'
+  | 'graphView.visualization'
+  | 'graphView.chartPending'
+  | 'graphView.legend'
+  | 'graphView.created'
+  | 'graphView.items'
+  | 'graphView.dateRange'
   
   // Settings screen
   | 'settings.title'
   | 'settings.sereusConnections'
   | 'settings.reminders'
   | 'settings.futureFeatures'
+  | 'settings.futureList'
   
   // Sereus screen
   | 'sereus.title'
@@ -150,12 +165,24 @@ type TranslationKey =
   | 'sereus.scanQR'
   | 'sereus.emptyTitle'
   | 'sereus.emptyNodes'
+  | 'sereus.emptyHint'
+  | 'sereus.qrNotReady'
+  | 'sereus.copied'
+  | 'sereus.peerIdCopied'
+  | 'sereus.revokeAccess'
+  | 'sereus.revokeConfirm'
+  | 'sereus.removeConfirm'
+  | 'sereus.guestBadge'
+  | 'sereus.accessibilityRevoke'
+  | 'sereus.accessibilityRemove'
   
   // Reminders screen
   | 'reminders.title'
   | 'reminders.interval'
   | 'reminders.off'
   | 'reminders.hours'
+  | 'reminders.futureTitle'
+  | 'reminders.futureList'
   
   // SelectionList component
   | 'selectionList.filterPlaceholder'
@@ -258,6 +285,14 @@ const translations: Record<TranslationKey, string> = {
   'configureCatalog.filter': 'Filter...',
   'configureCatalog.tabs.items': 'Items',
   'configureCatalog.tabs.bundles': 'Bundles',
+  'configureCatalog.empty.itemsHint': 'Add items to start building your catalog',
+  'configureCatalog.empty.bundlesHint': 'Create bundles to group items together',
+  'configureCatalog.itemCount': '{count} item',
+  'configureCatalog.itemCountPlural': '{count} items',
+  'configureCatalog.comingSoon': 'Edit functionality coming soon.',
+  'configureCatalog.typeActivity': 'Activity',
+  'configureCatalog.typeCondition': 'Condition',
+  'configureCatalog.typeOutcome': 'Outcome',
   'catalog.title': 'Catalog',
   'catalog.categories': 'Categories',
   'catalog.items': 'Items',
@@ -306,12 +341,19 @@ const translations: Record<TranslationKey, string> = {
   'graphView.share': 'Share',
   'graphView.shareSuccess': 'Graph shared successfully',
   'graphView.shareError': 'Failed to share graph',
+  'graphView.visualization': 'Graph Visualization',
+  'graphView.chartPending': 'Chart library integration pending.\nShare button will export graph as image.',
+  'graphView.legend': 'Legend',
+  'graphView.created': 'Created',
+  'graphView.items': 'Items',
+  'graphView.dateRange': 'Date Range',
   
   // Settings screen
   'settings.title': 'Settings',
   'settings.sereusConnections': 'Sereus Connections',
   'settings.reminders': 'Reminders',
   'settings.futureFeatures': 'Coming Soon',
+  'settings.futureList': '• AI Agent Configuration\n• App Preferences\n• Data Management\n• About',
   
   // Sereus screen
   'sereus.title': 'Sereus Connections',
@@ -322,12 +364,24 @@ const translations: Record<TranslationKey, string> = {
   'sereus.scanQR': 'Scan QR Code',
   'sereus.emptyTitle': 'No nodes connected',
   'sereus.emptyNodes': 'No nodes yet',
+  'sereus.emptyHint': 'Scan a QR code to add nodes to your network',
+  'sereus.qrNotReady': 'QR scanning integration not yet complete. For now, add nodes by scanning QR codes with your phone camera app.',
+  'sereus.copied': 'Copied',
+  'sereus.peerIdCopied': 'Peer ID copied to clipboard',
+  'sereus.revokeAccess': 'Revoke Access',
+  'sereus.revokeConfirm': 'Revoke {name}\'s access to your data?',
+  'sereus.removeConfirm': 'Removing your own node may affect data redundancy. Continue?',
+  'sereus.guestBadge': 'Guest',
+  'sereus.accessibilityRevoke': 'Revoke access',
+  'sereus.accessibilityRemove': 'Remove node',
   
   // Reminders screen
   'reminders.title': 'Reminders',
   'reminders.interval': 'Remind me if I haven\'t logged anything in:',
   'reminders.off': 'Off',
   'reminders.hours': '{count} hours',
+  'reminders.futureTitle': 'Future reminder options:',
+  'reminders.futureList': '• Smart reminders based on patterns\n• Quiet hours (no notifications at night)\n• Specific reminders for meal times\n• Custom notification messages',
   
   // SelectionList component
   'selectionList.filterPlaceholder': 'Filter...',

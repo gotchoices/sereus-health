@@ -88,11 +88,10 @@ export default function GraphView({ graph, onBack }: GraphViewProps) {
           <View style={styles.graphPlaceholder}>
             <Ionicons name="stats-chart" size={64} color={theme.textSecondary} />
             <Text style={[styles.placeholderTitle, { color: theme.textPrimary }]}>
-              Graph Visualization
+              {t('graphView.visualization')}
             </Text>
             <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>
-              Chart library integration pending.{'\n'}
-              Share button will export graph as image.
+              {t('graphView.chartPending')}
             </Text>
           </View>
           
@@ -107,7 +106,7 @@ export default function GraphView({ graph, onBack }: GraphViewProps) {
         {/* Legend */}
         <View style={[styles.legendContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.legendTitle, { color: theme.textPrimary }]}>
-            Legend
+            {t('graphView.legend')}
           </Text>
           {graph.items.map((item, index) => (
             <View key={item.id} style={styles.legendItem}>
@@ -131,7 +130,7 @@ export default function GraphView({ graph, onBack }: GraphViewProps) {
         <View style={[styles.infoContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.infoRow}>
             <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>
-              Created
+              {t('graphView.created')}
             </Text>
             <Text style={[styles.infoValue, { color: theme.textPrimary }]}>
               {new Date(graph.createdAt).toLocaleDateString()}
@@ -139,7 +138,7 @@ export default function GraphView({ graph, onBack }: GraphViewProps) {
           </View>
           <View style={styles.infoRow}>
             <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>
-              Items
+              {t('graphView.items')}
             </Text>
             <Text style={[styles.infoValue, { color: theme.textPrimary }]}>
               {graph.items.length}
@@ -147,7 +146,7 @@ export default function GraphView({ graph, onBack }: GraphViewProps) {
           </View>
           <View style={styles.infoRow}>
             <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>
-              Date Range
+              {t('graphView.dateRange')}
             </Text>
             <Text style={[styles.infoValue, { color: theme.textPrimary }]}>
               {formatDateRange(graph.dateRange.start, graph.dateRange.end)}

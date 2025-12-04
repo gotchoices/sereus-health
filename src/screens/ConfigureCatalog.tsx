@@ -83,8 +83,8 @@ export default function ConfigureCatalog({
   const handleAddItem = () => {
     Alert.alert(
       t('configureCatalog.addItem'),
-      'Item creation will be implemented with EditItem screen.',
-      [{ text: 'OK' }]
+      t('configureCatalog.comingSoon'),
+      [{ text: t('common.close') }]
     );
   };
   
@@ -92,8 +92,8 @@ export default function ConfigureCatalog({
   const handleAddBundle = () => {
     Alert.alert(
       t('configureCatalog.addBundle'),
-      'Bundle creation will be implemented with EditBundle screen.',
-      [{ text: 'OK' }]
+      t('configureCatalog.comingSoon'),
+      [{ text: t('common.close') }]
     );
   };
   
@@ -101,8 +101,8 @@ export default function ConfigureCatalog({
   const handleItemPress = (item: CatalogItem) => {
     Alert.alert(
       item.name,
-      `Category: ${item.category}\nType: ${item.type}\n\nEdit functionality coming soon.`,
-      [{ text: 'OK' }]
+      `${item.category} • ${item.type}\n\n${t('configureCatalog.comingSoon')}`,
+      [{ text: t('common.close') }]
     );
   };
   
@@ -113,8 +113,8 @@ export default function ConfigureCatalog({
       .join(', ');
     Alert.alert(
       bundle.name,
-      `Contains: ${itemNames}\n\nEdit functionality coming soon.`,
-      [{ text: 'OK' }]
+      `${itemNames}\n\n${t('configureCatalog.comingSoon')}`,
+      [{ text: t('common.close') }]
     );
   };
   
@@ -152,7 +152,9 @@ export default function ConfigureCatalog({
           <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
         </View>
         <Text style={[styles.itemCategory, { color: theme.textSecondary }]}>
-          {itemCount} {itemCount === 1 ? 'item' : 'items'}
+          {itemCount === 1 
+            ? t('configureCatalog.itemCount', { count: itemCount })
+            : t('configureCatalog.itemCountPlural', { count: itemCount })}
         </Text>
       </TouchableOpacity>
     );
@@ -197,8 +199,8 @@ export default function ConfigureCatalog({
         </Text>
         <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
           {showBundles 
-            ? 'Create bundles to group items together'
-            : 'Add items to start building your catalog'}
+            ? t('configureCatalog.empty.bundlesHint')
+            : t('configureCatalog.empty.itemsHint')}
         </Text>
         <TouchableOpacity
           style={[styles.emptyAddButton, { backgroundColor: theme.accentPrimary }]}
@@ -295,28 +297,35 @@ export default function ConfigureCatalog({
       {/* Type Filter (only for items) */}
       {!showBundles && (
         <View style={[styles.typeBar, { borderBottomColor: theme.border }]}>
-          {(['Activity', 'Condition', 'Outcome'] as ItemType[]).map((type) => (
-            <TouchableOpacity
-              key={type}
-              style={[
-                styles.typeChip,
-                {
-                  backgroundColor: selectedType === type ? getTypeBadgeColor(type) : theme.surface,
-                  borderColor: getTypeBadgeColor(type),
-                },
-              ]}
-              onPress={() => setSelectedType(type)}
-            >
-              <Text
+          {(['Activity', 'Condition', 'Outcome'] as ItemType[]).map((type) => {
+            const typeLabel = type === 'Activity' 
+              ? t('configureCatalog.typeActivity')
+              : type === 'Condition' 
+              ? t('configureCatalog.typeCondition')
+              : t('configureCatalog.typeOutcome');
+            return (
+              <TouchableOpacity
+                key={type}
                 style={[
-                  styles.typeChipText,
-                  { color: selectedType === type ? '#fff' : getTypeBadgeColor(type) },
+                  styles.typeChip,
+                  {
+                    backgroundColor: selectedType === type ? getTypeBadgeColor(type) : theme.surface,
+                    borderColor: getTypeBadgeColor(type),
+                  },
                 ]}
+                onPress={() => setSelectedType(type)}
               >
-                {type}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.typeChipText,
+                    { color: selectedType === type ? '#fff' : getTypeBadgeColor(type) },
+                  ]}
+                >
+                  {typeLabel}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       )}
       

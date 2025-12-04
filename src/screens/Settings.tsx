@@ -97,10 +97,7 @@ export default function Settings({
             {t('settings.futureFeatures')}
           </Text>
           <Text style={[styles.placeholderSubtext, { color: theme.textSecondary }]}>
-            • AI Agent Configuration{'\n'}
-            • App Preferences{'\n'}
-            • Data Management{'\n'}
-            • About
+            {t('settings.futureList')}
           </Text>
         </View>
       </ScrollView>

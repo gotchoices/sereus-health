@@ -54,23 +54,23 @@ export default function SereusConnections({
     // Flow: Launch camera → Scan QR → Parse deep link → Show add-node confirmation
     Alert.alert(
       t('sereus.scanQR'),
-      'QR scanning integration not yet complete. For now, add nodes by scanning QR codes with your phone camera app.',
-      [{ text: 'OK' }]
+      t('sereus.qrNotReady'),
+      [{ text: t('common.close') }]
     );
   };
   
   const handleCopyPeerId = (peerId: string) => {
     Clipboard.setString(peerId);
     // Simple feedback - could use a toast in production
-    Alert.alert('Copied', 'Peer ID copied to clipboard');
+    Alert.alert(t('sereus.copied'), t('sereus.peerIdCopied'));
   };
   
   const handleRemoveNode = (node: SereusNode) => {
     const isGuest = node.type === 'guest';
-    const title = isGuest ? 'Revoke Access' : t('sereus.removeNode');
+    const title = isGuest ? t('sereus.revokeAccess') : t('sereus.removeNode');
     const message = isGuest 
-      ? `Revoke ${node.name}'s access to your data?`
-      : 'Removing your own node may affect data redundancy. Continue?';
+      ? t('sereus.revokeConfirm', { name: node.name })
+      : t('sereus.removeConfirm');
     
     Alert.alert(
       title,
@@ -127,7 +127,7 @@ export default function SereusConnections({
               {isGuest && (
                 <View style={[styles.typeBadge, { backgroundColor: theme.accentPrimary + '20' }]}>
                   <Text style={[styles.typeBadgeText, { color: theme.accentPrimary }]}>
-                    Guest
+                    {t('sereus.guestBadge')}
                   </Text>
                 </View>
               )}
@@ -158,7 +158,7 @@ export default function SereusConnections({
             onPress={() => handleRemoveNode(node)}
             hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
             style={styles.removeButton}
-            accessibilityLabel={isGuest ? 'Revoke access' : 'Remove node'}
+            accessibilityLabel={isGuest ? t('sereus.accessibilityRevoke') : t('sereus.accessibilityRemove')}
           >
             <Ionicons 
               name={isGuest ? 'unlink' : 'trash-outline'} 
@@ -196,7 +196,7 @@ export default function SereusConnections({
         {t('sereus.emptyTitle')}
       </Text>
       <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-        Scan a QR code to add nodes to your network
+        {t('sereus.emptyHint')}
       </Text>
       
       <TouchableOpacity
