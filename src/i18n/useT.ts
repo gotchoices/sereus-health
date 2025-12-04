@@ -191,6 +191,7 @@ type TranslationKey =
   | 'editItem.name'
   | 'editItem.namePlaceholder'
   | 'editItem.nameRequired'
+  | 'editItem.typeRequired'
   | 'editItem.description'
   | 'editItem.descriptionPlaceholder'
   | 'editItem.type'
@@ -222,6 +223,7 @@ type TranslationKey =
   | 'editBundle.name'
   | 'editBundle.namePlaceholder'
   | 'editBundle.nameRequired'
+  | 'editBundle.typeRequired'
   | 'editBundle.type'
   | 'editBundle.itemsInBundle'
   | 'editBundle.noItems'
@@ -232,6 +234,9 @@ type TranslationKey =
   | 'editBundle.alreadyInBundle'
   | 'editBundle.itemsRequired'
   | 'editBundle.bundleSaved'
+  
+  // TypeSelector component
+  | 'typeSelector.selectType'
   
   // SelectionList component
   | 'selectionList.filterPlaceholder'
@@ -442,6 +447,7 @@ const translations: Record<TranslationKey, string> = {
   'editItem.name': 'Name',
   'editItem.namePlaceholder': 'e.g., Omelette, Running, Headache',
   'editItem.nameRequired': 'Please enter an item name',
+  'editItem.typeRequired': 'Please select a type',
   'editItem.description': 'Description (optional)',
   'editItem.descriptionPlaceholder': 'Add notes about this item...',
   'editItem.type': 'Type',
@@ -473,6 +479,7 @@ const translations: Record<TranslationKey, string> = {
   'editBundle.name': 'Name',
   'editBundle.namePlaceholder': 'e.g., BLT, Morning Routine',
   'editBundle.nameRequired': 'Please enter a bundle name',
+  'editBundle.typeRequired': 'Please select a type',
   'editBundle.type': 'Type',
   'editBundle.itemsInBundle': 'Items in Bundle',
   'editBundle.noItems': 'No items yet. Tap + to add items.',
@@ -483,6 +490,9 @@ const translations: Record<TranslationKey, string> = {
   'editBundle.alreadyInBundle': 'already in bundle',
   'editBundle.itemsRequired': 'Please add at least one item to the bundle',
   'editBundle.bundleSaved': 'Bundle saved successfully',
+  
+  // TypeSelector component
+  'typeSelector.selectType': 'Select Type',
   
   // SelectionList component
   'selectionList.filterPlaceholder': 'Filter...',

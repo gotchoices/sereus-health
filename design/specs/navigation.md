@@ -31,6 +31,17 @@ Sitemap (high-level)
 - CATALOG Tab (stack)
   - `ConfigureCatalog` (root)  
     - Manage categories, items, bundles, and quantifiers.
+    - Actions:
+      - Tap item: navigate to `EditItem` to edit that item.
+      - Tap bundle: navigate to `EditBundle` to edit that bundle.
+      - "Add" button (Items view): navigate to `EditItem` in create mode.
+      - "Add" button (Bundles view): navigate to `EditBundle` in create mode.
+  - `EditItem` (push from `ConfigureCatalog`)  
+    - Create or edit a catalog item.
+    - Includes category selection (with inline create) and quantifier management.
+  - `EditBundle` (push from `ConfigureCatalog`)  
+    - Create or edit a bundle.
+    - Includes item picker for bundle members.
 
 - SETTINGS Tab (stack)
   - `Settings` (root)  
@@ -50,10 +61,12 @@ Deep Links
 - Base patterns (screen-level):
   - `health://screen/LogHistory`
   - `health://screen/EditEntry`
+  - `health://screen/ConfigureCatalog`
+  - `health://screen/EditItem`
+  - `health://screen/EditBundle`
   - `health://screen/Graphs`
   - `health://screen/GraphCreate`
   - `health://screen/GraphView`
-  - `health://screen/ConfigureCatalog`
   - `health://screen/Settings`
   - `health://screen/SereusConnections`
   - `health://screen/Reminders`
@@ -65,6 +78,12 @@ Deep Links
     - `EditEntry`:  
       - `mode`: one of `new`, `edit`, `clone`.  
       - `entryId`: optional ID of the entry to edit/clone.
+    - `EditItem`:  
+      - `itemId`: optional ID of item to edit (omit for create mode).
+      - `typeId`: optional type ID to pre-select (for create mode).
+    - `EditBundle`:  
+      - `bundleId`: optional ID of bundle to edit (omit for create mode).
+      - `typeId`: optional type ID to pre-select (for create mode).
     - `Graphs`:  
       - No additional params (shows list of all saved graphs).
     - `GraphCreate`:  
@@ -81,10 +100,12 @@ Deep Links
 Route Options
 - LogHistory: title "History"
 - EditEntry: title "New Entry" | "Edit Entry" | "Clone Entry" (based on mode)
+- ConfigureCatalog: title "Catalog"
+- EditItem: title "Add Item" | "Edit Item" (based on mode)
+- EditBundle: title "Add Bundle" | "Edit Bundle" (based on mode)
 - Graphs: title "Graphs"
 - GraphCreate: title "Create Graph"
 - GraphView: title "{Graph Name}" (dynamic based on graph)
-- ConfigureCatalog: title "Catalog"
 - Settings: title "Settings"
 - SereusConnections: title "Sereus Connections"
 - Reminders: title "Reminders"
@@ -97,6 +118,8 @@ Back Navigation
   - From `GraphCreate` → back to `Graphs`
   - From `GraphView` → back to `Graphs` (if from list) or `GraphCreate` (if just generated)
 - CATALOG tab:
+  - From `EditItem` → back to `ConfigureCatalog`
+  - From `EditBundle` → back to `ConfigureCatalog`
   - Tab root (`ConfigureCatalog`) has no back action (already at root).
 - SETTINGS tab stack:
   - From `SereusConnections` → back to `Settings`

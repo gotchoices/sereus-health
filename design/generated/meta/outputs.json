@@ -12,9 +12,9 @@
       ],
       "depHashes": {
         "design/generated/screens/LogHistory.md": "b68e36de6b8dab00ab6274b4be295e5398b2851fbe727aab2d278e1336cc9108",
-        "design/specs/screens/index.md": "7948b13ac54ae3d364929133f1985e7ba1d8307bcaebda50442f61438d48365b",
+        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
         "design/specs/screens/log-history.md": "78bf222507785b26b6487c3f8e37dc1fe861c67dd8a0b4dc1ee5b258ad55acea",
-        "design/specs/navigation.md": "234e3d4f87a49bd92500497023b717ac1db7aaa756a0d6906808513745c78358",
+        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
         "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755"
       }
     },
@@ -31,9 +31,9 @@
       ],
       "depHashes": {
         "design/generated/screens/EditEntry.md": "49601fd385e340c5cba0279e0cf5e150e6f170b9f7c9cfa03d8960be63381447",
-        "design/specs/screens/index.md": "7948b13ac54ae3d364929133f1985e7ba1d8307bcaebda50442f61438d48365b",
+        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
         "design/specs/screens/edit-entry.md": "6b279312428726706ac1d765b31bd9d60ef014a07b9bb3554556161ac0529b33",
-        "design/specs/navigation.md": "234e3d4f87a49bd92500497023b717ac1db7aaa756a0d6906808513745c78358",
+        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
         "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755",
         "design/specs/global/inline-taxonomy.md": "720e6ab1e134f78b98a4d1d02e6b243ec335559578e7e7997955eff86e1ac5d4"
       }
@@ -44,13 +44,47 @@
       "dependsOn": [
         "design/generated/screens/ConfigureCatalog.md",
         "design/specs/screens/index.md",
+        "design/specs/screens/configure-catalog.md",
         "design/specs/navigation.md",
         "design/specs/global/general.md"
       ],
       "depHashes": {
         "design/generated/screens/ConfigureCatalog.md": "cdd462b094f3ae3ac3643ed65086e06ab2381d09615aad4291dad24984e9b257",
-        "design/specs/screens/index.md": "735a1cc3cb14efdfccc1d8715b5e15fe98c468eaa0999d0c710145876898dac3",
-        "design/specs/navigation.md": "234e3d4f87a49bd92500497023b717ac1db7aaa756a0d6906808513745c78358",
+        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
+        "design/specs/screens/configure-catalog.md": "37bab970da5cdb1fa94989720d088cd621119074dd7a94def9d8ce0bcc8a39c2",
+        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
+        "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755"
+      }
+    },
+    {
+      "route": "EditItem",
+      "output": "src/screens/EditItem.tsx",
+      "dependsOn": [
+        "design/specs/screens/index.md",
+        "design/specs/screens/edit-item.md",
+        "design/specs/navigation.md",
+        "design/specs/global/general.md"
+      ],
+      "depHashes": {
+        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
+        "design/specs/screens/edit-item.md": "1646da7feb642b17f92f659555f32d7cb9349d81683434adf02f387b2e1fac89",
+        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
+        "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755"
+      }
+    },
+    {
+      "route": "EditBundle",
+      "output": "src/screens/EditBundle.tsx",
+      "dependsOn": [
+        "design/specs/screens/index.md",
+        "design/specs/screens/edit-bundle.md",
+        "design/specs/navigation.md",
+        "design/specs/global/general.md"
+      ],
+      "depHashes": {
+        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
+        "design/specs/screens/edit-bundle.md": "4c7d9fd0628cdcd1e309049e70d5157702f7dd53bd7734ded5dd662e7d535f76",
+        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
         "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755"
       }
     },
@@ -65,8 +99,8 @@
       ],
       "depHashes": {
         "design/generated/screens/Graphs.md": "1064d4aadbc6ae58c44b6c996a3e481f401b93ff34bb95184f19baad19c63336",
-        "design/specs/screens/index.md": "7948b13ac54ae3d364929133f1985e7ba1d8307bcaebda50442f61438d48365b",
-        "design/specs/navigation.md": "234e3d4f87a49bd92500497023b717ac1db7aaa756a0d6906808513745c78358",
+        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
+        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
         "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755"
       }
     },
@@ -81,8 +115,8 @@
       ],
       "depHashes": {
         "design/generated/screens/GraphCreate.md": "87f3a2fe52e76c6245c30b105cc184d2fe61c5960100de2151d8b4cf787b1f1d",
-        "design/specs/screens/index.md": "7948b13ac54ae3d364929133f1985e7ba1d8307bcaebda50442f61438d48365b",
-        "design/specs/navigation.md": "234e3d4f87a49bd92500497023b717ac1db7aaa756a0d6906808513745c78358",
+        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
+        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
         "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755"
       }
     },
@@ -97,8 +131,8 @@
       ],
       "depHashes": {
         "design/generated/screens/GraphView.md": "159939820ac1096f1d6ffa3c9e4e8b44efd2a095793fed01a6e7195aecbd1e7e",
-        "design/specs/screens/index.md": "7948b13ac54ae3d364929133f1985e7ba1d8307bcaebda50442f61438d48365b",
-        "design/specs/navigation.md": "234e3d4f87a49bd92500497023b717ac1db7aaa756a0d6906808513745c78358",
+        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
+        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
         "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755"
       }
     },
@@ -111,8 +145,8 @@
         "design/specs/global/general.md"
       ],
       "depHashes": {
-        "design/specs/screens/index.md": "7948b13ac54ae3d364929133f1985e7ba1d8307bcaebda50442f61438d48365b",
-        "design/specs/navigation.md": "234e3d4f87a49bd92500497023b717ac1db7aaa756a0d6906808513745c78358",
+        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
+        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
         "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755"
       }
     },
@@ -128,8 +162,8 @@
       ],
       "depHashes": {
         "design/specs/screens/sereus-connections.md": "ba6dc62730e9cd7e9701e16625efab6aee2cf79cbe45e30cad45965a43bbc648",
-        "design/specs/screens/index.md": "7948b13ac54ae3d364929133f1985e7ba1d8307bcaebda50442f61438d48365b",
-        "design/specs/navigation.md": "234e3d4f87a49bd92500497023b717ac1db7aaa756a0d6906808513745c78358",
+        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
+        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
         "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755",
         "design/stories/07-networking.md": "1ba4164e9b93b4976e8f962f605c6459006842bfb3edfbdefa9ddb4eef2420c7"
       }
@@ -146,8 +180,8 @@
       ],
       "depHashes": {
         "design/generated/screens/Reminders.md": "ea04f98d093469e3a145080d7b9ea60f1b41d80118a3c9bfb4cb14365d5af6a8",
-        "design/specs/screens/index.md": "7948b13ac54ae3d364929133f1985e7ba1d8307bcaebda50442f61438d48365b",
-        "design/specs/navigation.md": "234e3d4f87a49bd92500497023b717ac1db7aaa756a0d6906808513745c78358",
+        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
+        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
         "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755",
         "design/stories/08-reminders.md": "6a24afeaa611baf8d4253a6102e34caef592a6c93455ac320b3595f534696c08"
       }

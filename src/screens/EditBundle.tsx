@@ -14,6 +14,8 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
+import { TypeSelector } from '../components/TypeSelector';
+import { LogType } from '../data/types';
 
 interface EditBundleProps {
   bundleId?: string;
@@ -35,8 +37,6 @@ interface BundleMemberData {
   categoryName: string;
   displayOrder: number;
 }
-
-type ItemType = 'Activity' | 'Condition' | 'Outcome';
 
 // Mock items for each type/category
 const MOCK_ITEMS: Record<string, { id: string; name: string; category: string }[]> = {
@@ -84,10 +84,7 @@ export default function EditBundle({
   
   // Form state
   const [name, setName] = useState('');
-  const [selectedType, setSelectedType] = useState<ItemType>(
-    initialTypeId === 'type-condition' ? 'Condition' :
-    initialTypeId === 'type-outcome' ? 'Outcome' : 'Activity'
-  );
+  const [selectedTypeId, setSelectedTypeId] = useState(initialTypeId || '');
   const [bundleItems, setBundleItems] = useState<BundleMemberData[]>([]);
   
   // Modal state
@@ -95,19 +92,16 @@ export default function EditBundle({
   const [itemFilter, setItemFilter] = useState('');
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   
-  // Get type ID from type name
-  const getTypeId = (type: ItemType): string => {
-    switch (type) {
-      case 'Activity': return 'type-activity';
-      case 'Condition': return 'type-condition';
-      case 'Outcome': return 'type-outcome';
-    }
+  // Handle type change
+  const handleTypeChange = (typeId: string, _type: LogType) => {
+    setSelectedTypeId(typeId);
+    setBundleItems([]); // Clear items when type changes
   };
   
   // Get items for selected type
   const availableItems = useMemo(() => {
-    return MOCK_ITEMS[getTypeId(selectedType)] || [];
-  }, [selectedType]);
+    return MOCK_ITEMS[selectedTypeId] || [];
+  }, [selectedTypeId]);
   
   // Filter items
   const filteredItems = useMemo(() => {
@@ -136,20 +130,14 @@ export default function EditBundle({
     return new Set(bundleItems.map(i => i.itemId));
   }, [bundleItems]);
   
-  // Get type badge color
-  const getTypeBadgeColor = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'activity': return theme.accentActivity;
-      case 'condition': return theme.accentCondition;
-      case 'outcome': return theme.accentOutcome;
-      default: return theme.textSecondary;
-    }
-  };
-  
   // Handle save
   const handleSave = () => {
     if (!name.trim()) {
       Alert.alert(t('common.error'), t('editBundle.nameRequired'));
+      return;
+    }
+    if (!selectedTypeId) {
+      Alert.alert(t('common.error'), t('editBundle.typeRequired'));
       return;
     }
     if (bundleItems.length === 0) {
@@ -160,7 +148,7 @@ export default function EditBundle({
     const bundleData: BundleData = {
       id: bundleId,
       name: name.trim(),
-      typeId: getTypeId(selectedType),
+      typeId: selectedTypeId,
       items: bundleItems,
     };
     
@@ -247,43 +235,13 @@ export default function EditBundle({
         </View>
         
         {/* Type */}
-        <View style={styles.field}>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>
-            {t('editBundle.type')} <Text style={{ color: theme.error }}>*</Text>
-          </Text>
-          <View style={styles.typeChips}>
-            {(['Activity', 'Condition', 'Outcome'] as ItemType[]).map((type) => (
-              <TouchableOpacity
-                key={type}
-                style={[
-                  styles.typeChip,
-                  {
-                    backgroundColor: selectedType === type ? getTypeBadgeColor(type) : theme.surface,
-                    borderColor: getTypeBadgeColor(type),
-                    opacity: isEditing ? 0.6 : 1,
-                  },
-                ]}
-                onPress={() => {
-                  if (!isEditing) {
-                    setSelectedType(type);
-                    // Clear items when type changes
-                    setBundleItems([]);
-                  }
-                }}
-                disabled={isEditing}
-              >
-                <Text
-                  style={[
-                    styles.typeChipText,
-                    { color: selectedType === type ? '#fff' : getTypeBadgeColor(type) },
-                  ]}
-                >
-                  {t(`configureCatalog.type${type}` as any)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+        <TypeSelector
+          selectedTypeId={selectedTypeId}
+          onTypeChange={handleTypeChange}
+          disabled={isEditing}
+          label={t('editBundle.type')}
+          required
+        />
         
         {/* Bundle Items */}
         <View style={styles.section}>
@@ -475,20 +433,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
-  },
-  typeChips: {
-    flexDirection: 'row',
-    gap: spacing[2],
-  },
-  typeChip: {
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[1],
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  typeChipText: {
-    ...typography.small,
-    fontWeight: '600',
   },
   section: {
     marginTop: spacing[2],

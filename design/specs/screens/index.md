@@ -18,7 +18,6 @@ Screens
 | ConfigureCatalog   | ConfigureCatalog  | Manage categories, items, bundles, quantifiers      | happy, empty, error |
 | EditItem           | EditItem          | Create/edit item with category and quantifiers      | happy, error        |
 | EditBundle         | EditBundle        | Create/edit bundle with member items                | happy, error        |
-| EditCategory       | EditCategory      | Create/edit category (modal or inline)              | happy               |
 | Graphs             | Graphs            | Browse saved/named graphs                            | happy, empty        |
 | GraphCreate        | GraphCreate       | Select items + date range, generate new graph       | happy              |
 | GraphView          | GraphView         | Display and share a specific graph                   | happy              |

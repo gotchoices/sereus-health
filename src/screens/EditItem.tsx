@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
+import { TypeSelector } from '../components/TypeSelector';
+import { LogType } from '../data/types';
 
 interface EditItemProps {
   itemId?: string;
@@ -38,8 +40,6 @@ interface QuantifierData {
   maxValue?: number;
   units?: string;
 }
-
-type ItemType = 'Activity' | 'Condition' | 'Outcome';
 
 // Mock categories for each type
 const MOCK_CATEGORIES: Record<string, { id: string; name: string }[]> = {
@@ -74,10 +74,7 @@ export default function EditItem({
   // Form state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedType, setSelectedType] = useState<ItemType>(
-    initialTypeId === 'type-condition' ? 'Condition' :
-    initialTypeId === 'type-outcome' ? 'Outcome' : 'Activity'
-  );
+  const [selectedTypeId, setSelectedTypeId] = useState(initialTypeId || '');
   const [categoryId, setCategoryId] = useState('');
   const [quantifiers, setQuantifiers] = useState<QuantifierData[]>([]);
   
@@ -95,19 +92,16 @@ export default function EditItem({
   const [qMaxValue, setQMaxValue] = useState('');
   const [qUnits, setQUnits] = useState('');
   
-  // Get type ID from type name
-  const getTypeId = (type: ItemType): string => {
-    switch (type) {
-      case 'Activity': return 'type-activity';
-      case 'Condition': return 'type-condition';
-      case 'Outcome': return 'type-outcome';
-    }
-  };
-  
   // Get categories for selected type
   const categories = useMemo(() => {
-    return MOCK_CATEGORIES[getTypeId(selectedType)] || [];
-  }, [selectedType]);
+    return MOCK_CATEGORIES[selectedTypeId] || [];
+  }, [selectedTypeId]);
+  
+  // Handle type change
+  const handleTypeChange = (typeId: string, _type: LogType) => {
+    setSelectedTypeId(typeId);
+    setCategoryId(''); // Reset category when type changes
+  };
   
   // Filter categories
   const filteredCategories = useMemo(() => {
@@ -122,20 +116,14 @@ export default function EditItem({
     return cat?.name || '';
   }, [categories, categoryId]);
   
-  // Get type badge color
-  const getTypeBadgeColor = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'activity': return theme.accentActivity;
-      case 'condition': return theme.accentCondition;
-      case 'outcome': return theme.accentOutcome;
-      default: return theme.textSecondary;
-    }
-  };
-  
   // Handle save
   const handleSave = () => {
     if (!name.trim()) {
       Alert.alert(t('common.error'), t('editItem.nameRequired'));
+      return;
+    }
+    if (!selectedTypeId) {
+      Alert.alert(t('common.error'), t('editItem.typeRequired'));
       return;
     }
     if (!categoryId) {
@@ -147,7 +135,7 @@ export default function EditItem({
       id: itemId,
       name: name.trim(),
       description: description.trim(),
-      typeId: getTypeId(selectedType),
+      typeId: selectedTypeId,
       categoryId,
       quantifiers,
     };
@@ -274,37 +262,13 @@ export default function EditItem({
         </View>
         
         {/* Type */}
-        <View style={styles.field}>
-          <Text style={[styles.label, { color: theme.textSecondary }]}>
-            {t('editItem.type')} <Text style={{ color: theme.error }}>*</Text>
-          </Text>
-          <View style={styles.typeChips}>
-            {(['Activity', 'Condition', 'Outcome'] as ItemType[]).map((type) => (
-              <TouchableOpacity
-                key={type}
-                style={[
-                  styles.typeChip,
-                  {
-                    backgroundColor: selectedType === type ? getTypeBadgeColor(type) : theme.surface,
-                    borderColor: getTypeBadgeColor(type),
-                    opacity: isEditing ? 0.6 : 1,
-                  },
-                ]}
-                onPress={() => !isEditing && setSelectedType(type)}
-                disabled={isEditing}
-              >
-                <Text
-                  style={[
-                    styles.typeChipText,
-                    { color: selectedType === type ? '#fff' : getTypeBadgeColor(type) },
-                  ]}
-                >
-                  {t(`configureCatalog.type${type}` as any)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+        <TypeSelector
+          selectedTypeId={selectedTypeId}
+          onTypeChange={handleTypeChange}
+          disabled={isEditing}
+          label={t('editItem.type')}
+          required
+        />
         
         {/* Category */}
         <View style={styles.field}>
@@ -635,20 +599,6 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 80,
     textAlignVertical: 'top',
-  },
-  typeChips: {
-    flexDirection: 'row',
-    gap: spacing[2],
-  },
-  typeChip: {
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[1],
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  typeChipText: {
-    ...typography.small,
-    fontWeight: '600',
   },
   selector: {
     flexDirection: 'row',
