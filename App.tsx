@@ -212,6 +212,7 @@ function AppContent(): React.JSX.Element {
         return (
           <ConfigureCatalog 
             onBack={handleBack}
+            onNavigateTab={handleNavigateTab}
           />
         );
       

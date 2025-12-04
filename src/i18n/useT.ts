@@ -53,7 +53,13 @@ type TranslationKey =
   | 'configureCatalog.header.title'
   | 'configureCatalog.help.items'
   | 'configureCatalog.empty.items'
+  | 'configureCatalog.empty.bundles'
   | 'configureCatalog.label.bundlesContainingSelection'
+  | 'configureCatalog.addItem'
+  | 'configureCatalog.addBundle'
+  | 'configureCatalog.filter'
+  | 'configureCatalog.tabs.items'
+  | 'configureCatalog.tabs.bundles'
   | 'catalog.title'
   | 'catalog.categories'
   | 'catalog.items'
@@ -191,7 +197,13 @@ const translations: Record<TranslationKey, string> = {
   'configureCatalog.header.title': 'Configure Catalog',
   'configureCatalog.help.items': 'Select items to see which bundles contain them',
   'configureCatalog.empty.items': 'No items yet',
+  'configureCatalog.empty.bundles': 'No bundles yet',
   'configureCatalog.label.bundlesContainingSelection': 'Bundles containing selected items:',
+  'configureCatalog.addItem': 'Add Item',
+  'configureCatalog.addBundle': 'Add Bundle',
+  'configureCatalog.filter': 'Filter...',
+  'configureCatalog.tabs.items': 'Items',
+  'configureCatalog.tabs.bundles': 'Bundles',
   'catalog.title': 'Catalog',
   'catalog.categories': 'Categories',
   'catalog.items': 'Items',
