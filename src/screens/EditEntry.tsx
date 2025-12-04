@@ -82,6 +82,18 @@ export const EditEntry: React.FC<EditEntryProps> = ({
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [itemsModalVisible, setItemsModalVisible] = useState(false);
   
+  // Inline add modal state
+  const [addTypeModalVisible, setAddTypeModalVisible] = useState(false);
+  const [addCategoryModalVisible, setAddCategoryModalVisible] = useState(false);
+  const [addItemModalVisible, setAddItemModalVisible] = useState(false);
+  const [saveBundleModalVisible, setSaveBundleModalVisible] = useState(false);
+  
+  // New entity name state
+  const [newTypeName, setNewTypeName] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newItemName, setNewItemName] = useState('');
+  const [newBundleName, setNewBundleName] = useState('');
+  
   // Search filter state
   const [typeFilter, setTypeFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -170,10 +182,13 @@ export const EditEntry: React.FC<EditEntryProps> = ({
     setSelectedItems([]);
     
     // Auto-select most common category for new type
-    const commonCategory = getMostCommonCategory(type.id, variant);
-    if (commonCategory) {
-      setSelectedCategory(commonCategory);
-    }
+    getMostCommonCategory(type.id)
+      .then(commonCategory => {
+        if (commonCategory) {
+          setSelectedCategory(commonCategory);
+        }
+      })
+      .catch(console.error);
   };
 
   const handleCategorySelect = (category: CategoryStat) => {
@@ -199,6 +214,89 @@ export const EditEntry: React.FC<EditEntryProps> = ({
   const handleItemsDone = () => {
     setItemsModalVisible(false);
     setItemsFilter('');
+  };
+
+  // Inline add handlers
+  const handleAddType = () => {
+    if (!newTypeName.trim()) return;
+    
+    // Create new type (in real app, this would call API/database)
+    const newType: TypeStat = {
+      id: `type-${Date.now()}`,
+      name: newTypeName.trim(),
+      usageCount: 0,
+    };
+    
+    // Add to list and select it
+    setAllTypes(prev => [...prev, newType]);
+    setSelectedType(newType);
+    setNewTypeName('');
+    setAddTypeModalVisible(false);
+    setTypeModalVisible(false);
+    
+    // Reset dependent selections
+    setSelectedCategory(null);
+    setSelectedItems([]);
+  };
+
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim() || !selectedType) return;
+    
+    const newCategory: CategoryStat = {
+      id: `cat-${Date.now()}`,
+      name: newCategoryName.trim(),
+      typeId: selectedType.id,
+      usageCount: 0,
+    };
+    
+    setAllCategories(prev => [...prev, newCategory]);
+    setSelectedCategory(newCategory);
+    setNewCategoryName('');
+    setAddCategoryModalVisible(false);
+    setCategoryModalVisible(false);
+    
+    // Reset items
+    setSelectedItems([]);
+  };
+
+  const handleAddItem = () => {
+    if (!newItemName.trim() || !selectedCategory) return;
+    
+    const newItem: ItemStat = {
+      id: `item-${Date.now()}`,
+      name: newItemName.trim(),
+      categoryId: selectedCategory.id,
+      usageCount: 0,
+      isBundle: false,
+    };
+    
+    setAllItems(prev => [...prev, newItem]);
+    setSelectedItems(prev => [...prev, newItem]);
+    setNewItemName('');
+    setAddItemModalVisible(false);
+  };
+
+  const handleSaveBundle = () => {
+    if (!newBundleName.trim() || selectedItems.length < 2) return;
+    
+    // Create bundle (in real app, this would call API/database)
+    const newBundle: ItemStat = {
+      id: `bundle-${Date.now()}`,
+      name: newBundleName.trim(),
+      categoryId: selectedCategory?.id || '',
+      usageCount: 0,
+      isBundle: true,
+      bundleItemIds: selectedItems.map(i => i.id),
+    };
+    
+    // Add bundle to items list (for future use)
+    setAllItems(prev => [...prev, newBundle]);
+    
+    setNewBundleName('');
+    setSaveBundleModalVisible(false);
+    
+    // Show confirmation
+    console.log('Bundle created:', newBundle);
   };
 
   const handleSave = () => {
@@ -499,7 +597,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
             </TouchableOpacity>
           </View>
           
-          {/* Search Filter */}
+          {/* Search Filter with Add Button */}
           <View style={[styles.searchContainer, { backgroundColor: theme.background, borderBottomColor: theme.border }]}>
             <Ionicons name="search" size={20} color={theme.textSecondary} style={{ marginRight: spacing[2] }} />
             <TextInput
@@ -510,10 +608,16 @@ export const EditEntry: React.FC<EditEntryProps> = ({
               onChangeText={setTypeFilter}
             />
             {typeFilter.length > 0 && (
-              <TouchableOpacity onPress={() => setTypeFilter('')}>
+              <TouchableOpacity onPress={() => setTypeFilter('')} style={{ marginRight: spacing[2] }}>
                 <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             )}
+            <TouchableOpacity
+              onPress={() => setAddTypeModalVisible(true)}
+              hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+            >
+              <Ionicons name="add-circle" size={28} color={theme.accentPrimary} />
+            </TouchableOpacity>
           </View>
           
           <ScrollView style={styles.modalContent}>
@@ -547,6 +651,45 @@ export const EditEntry: React.FC<EditEntryProps> = ({
         </View>
       </Modal>
 
+      {/* Add Type Modal */}
+      <Modal
+        visible={addTypeModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setAddTypeModalVisible(false)}
+      >
+        <View style={styles.addModalOverlay}>
+          <View style={[styles.addModalContent, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.addModalTitle, { color: theme.textPrimary }]}>
+              Add New Type
+            </Text>
+            <TextInput
+              style={[styles.addModalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
+              placeholder="Type name"
+              placeholderTextColor={theme.textSecondary}
+              value={newTypeName}
+              onChangeText={setNewTypeName}
+              autoFocus
+            />
+            <View style={styles.addModalButtons}>
+              <TouchableOpacity
+                style={[styles.addModalButton, { borderColor: theme.border }]}
+                onPress={() => { setAddTypeModalVisible(false); setNewTypeName(''); }}
+              >
+                <Text style={[styles.addModalButtonText, { color: theme.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.addModalButton, { backgroundColor: theme.accentPrimary }]}
+                onPress={handleAddType}
+                disabled={!newTypeName.trim()}
+              >
+                <Text style={[styles.addModalButtonText, { color: '#fff' }]}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Category Picker Modal */}
       <Modal
         visible={categoryModalVisible}
@@ -564,7 +707,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
             </TouchableOpacity>
           </View>
           
-          {/* Search Filter */}
+          {/* Search Filter with Add Button */}
           <View style={[styles.searchContainer, { backgroundColor: theme.background, borderBottomColor: theme.border }]}>
             <Ionicons name="search" size={20} color={theme.textSecondary} style={{ marginRight: spacing[2] }} />
             <TextInput
@@ -575,10 +718,16 @@ export const EditEntry: React.FC<EditEntryProps> = ({
               onChangeText={setCategoryFilter}
             />
             {categoryFilter.length > 0 && (
-              <TouchableOpacity onPress={() => setCategoryFilter('')}>
+              <TouchableOpacity onPress={() => setCategoryFilter('')} style={{ marginRight: spacing[2] }}>
                 <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             )}
+            <TouchableOpacity
+              onPress={() => setAddCategoryModalVisible(true)}
+              hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+            >
+              <Ionicons name="add-circle" size={28} color={theme.accentPrimary} />
+            </TouchableOpacity>
           </View>
           
           <ScrollView style={styles.modalContent}>
@@ -612,6 +761,48 @@ export const EditEntry: React.FC<EditEntryProps> = ({
         </View>
       </Modal>
 
+      {/* Add Category Modal */}
+      <Modal
+        visible={addCategoryModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setAddCategoryModalVisible(false)}
+      >
+        <View style={styles.addModalOverlay}>
+          <View style={[styles.addModalContent, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.addModalTitle, { color: theme.textPrimary }]}>
+              Add New Category
+            </Text>
+            <Text style={[styles.addModalSubtitle, { color: theme.textSecondary }]}>
+              Type: {selectedType?.name}
+            </Text>
+            <TextInput
+              style={[styles.addModalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
+              placeholder="Category name"
+              placeholderTextColor={theme.textSecondary}
+              value={newCategoryName}
+              onChangeText={setNewCategoryName}
+              autoFocus
+            />
+            <View style={styles.addModalButtons}>
+              <TouchableOpacity
+                style={[styles.addModalButton, { borderColor: theme.border }]}
+                onPress={() => { setAddCategoryModalVisible(false); setNewCategoryName(''); }}
+              >
+                <Text style={[styles.addModalButtonText, { color: theme.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.addModalButton, { backgroundColor: theme.accentPrimary }]}
+                onPress={handleAddCategory}
+                disabled={!newCategoryName.trim()}
+              >
+                <Text style={[styles.addModalButtonText, { color: '#fff' }]}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Items Picker Modal */}
       <Modal
         visible={itemsModalVisible}
@@ -631,7 +822,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
             </TouchableOpacity>
           </View>
           
-          {/* Search Filter */}
+          {/* Search Filter with Add Button */}
           <View style={[styles.searchContainer, { backgroundColor: theme.background, borderBottomColor: theme.border }]}>
             <Ionicons name="search" size={20} color={theme.textSecondary} style={{ marginRight: spacing[2] }} />
             <TextInput
@@ -642,11 +833,31 @@ export const EditEntry: React.FC<EditEntryProps> = ({
               onChangeText={setItemsFilter}
             />
             {itemsFilter.length > 0 && (
-              <TouchableOpacity onPress={() => setItemsFilter('')}>
+              <TouchableOpacity onPress={() => setItemsFilter('')} style={{ marginRight: spacing[2] }}>
                 <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             )}
+            <TouchableOpacity
+              onPress={() => setAddItemModalVisible(true)}
+              hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+            >
+              <Ionicons name="add-circle" size={28} color={theme.accentPrimary} />
+            </TouchableOpacity>
           </View>
+          
+          {/* Save as Bundle Button (when 2+ items selected) */}
+          {selectedItems.length >= 2 && (
+            <TouchableOpacity
+              style={[styles.saveBundleButton, { backgroundColor: theme.accentPrimary + '15', borderColor: theme.accentPrimary }]}
+              onPress={() => setSaveBundleModalVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="layers-outline" size={20} color={theme.accentPrimary} />
+              <Text style={[styles.saveBundleButtonText, { color: theme.accentPrimary }]}>
+                Save {selectedItems.length} items as Bundle
+              </Text>
+            </TouchableOpacity>
+          )}
           
           <ScrollView style={styles.modalContent}>
             {filteredItems.length > 0 ? (
@@ -704,6 +915,90 @@ export const EditEntry: React.FC<EditEntryProps> = ({
               </View>
             )}
           </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Add Item Modal */}
+      <Modal
+        visible={addItemModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setAddItemModalVisible(false)}
+      >
+        <View style={styles.addModalOverlay}>
+          <View style={[styles.addModalContent, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.addModalTitle, { color: theme.textPrimary }]}>
+              Add New Item
+            </Text>
+            <Text style={[styles.addModalSubtitle, { color: theme.textSecondary }]}>
+              Category: {selectedCategory?.name}
+            </Text>
+            <TextInput
+              style={[styles.addModalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
+              placeholder="Item name"
+              placeholderTextColor={theme.textSecondary}
+              value={newItemName}
+              onChangeText={setNewItemName}
+              autoFocus
+            />
+            <View style={styles.addModalButtons}>
+              <TouchableOpacity
+                style={[styles.addModalButton, { borderColor: theme.border }]}
+                onPress={() => { setAddItemModalVisible(false); setNewItemName(''); }}
+              >
+                <Text style={[styles.addModalButtonText, { color: theme.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.addModalButton, { backgroundColor: theme.accentPrimary }]}
+                onPress={handleAddItem}
+                disabled={!newItemName.trim()}
+              >
+                <Text style={[styles.addModalButtonText, { color: '#fff' }]}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Save as Bundle Modal */}
+      <Modal
+        visible={saveBundleModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setSaveBundleModalVisible(false)}
+      >
+        <View style={styles.addModalOverlay}>
+          <View style={[styles.addModalContent, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.addModalTitle, { color: theme.textPrimary }]}>
+              Save as Bundle
+            </Text>
+            <Text style={[styles.addModalSubtitle, { color: theme.textSecondary }]}>
+              {selectedItems.length} items: {selectedItems.map(i => i.name).join(', ')}
+            </Text>
+            <TextInput
+              style={[styles.addModalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
+              placeholder="Bundle name"
+              placeholderTextColor={theme.textSecondary}
+              value={newBundleName}
+              onChangeText={setNewBundleName}
+              autoFocus
+            />
+            <View style={styles.addModalButtons}>
+              <TouchableOpacity
+                style={[styles.addModalButton, { borderColor: theme.border }]}
+                onPress={() => { setSaveBundleModalVisible(false); setNewBundleName(''); }}
+              >
+                <Text style={[styles.addModalButtonText, { color: theme.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.addModalButton, { backgroundColor: theme.accentPrimary }]}
+                onPress={handleSaveBundle}
+                disabled={!newBundleName.trim()}
+              >
+                <Text style={[styles.addModalButtonText, { color: '#fff' }]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
     </View>
@@ -876,6 +1171,65 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     ...typography.body,
+  },
+  saveBundleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing[2],
+    marginHorizontal: spacing[3],
+    marginTop: spacing[2],
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: spacing[2],
+  },
+  saveBundleButtonText: {
+    ...typography.small,
+    fontWeight: '600',
+  },
+  addModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing[4],
+  },
+  addModalContent: {
+    width: '100%',
+    borderRadius: 12,
+    padding: spacing[4],
+  },
+  addModalTitle: {
+    ...typography.title,
+    fontWeight: '700',
+    marginBottom: spacing[2],
+  },
+  addModalSubtitle: {
+    ...typography.small,
+    marginBottom: spacing[3],
+  },
+  addModalInput: {
+    ...typography.body,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: spacing[3],
+  },
+  addModalButtons: {
+    flexDirection: 'row',
+    gap: spacing[2],
+  },
+  addModalButton: {
+    flex: 1,
+    paddingVertical: spacing[2],
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  addModalButtonText: {
+    ...typography.body,
+    fontWeight: '600',
   },
 });
 

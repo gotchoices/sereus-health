@@ -24,14 +24,18 @@
       "dependsOn": [
         "design/generated/screens/EditEntry.md",
         "design/specs/screens/index.md",
+        "design/specs/screens/edit-entry.md",
         "design/specs/navigation.md",
-        "design/specs/global/general.md"
+        "design/specs/global/general.md",
+        "design/specs/global/inline-taxonomy.md"
       ],
       "depHashes": {
         "design/generated/screens/EditEntry.md": "49601fd385e340c5cba0279e0cf5e150e6f170b9f7c9cfa03d8960be63381447",
         "design/specs/screens/index.md": "7948b13ac54ae3d364929133f1985e7ba1d8307bcaebda50442f61438d48365b",
+        "design/specs/screens/edit-entry.md": "6b279312428726706ac1d765b31bd9d60ef014a07b9bb3554556161ac0529b33",
         "design/specs/navigation.md": "234e3d4f87a49bd92500497023b717ac1db7aaa756a0d6906808513745c78358",
-        "design/specs/global/general.md": "a5c898e99f225496fceffc920648a8e21a7a73605271d5de5451b752dcf2b581"
+        "design/specs/global/general.md": "a5c898e99f225496fceffc920648a8e21a7a73605271d5de5451b752dcf2b581",
+        "design/specs/global/inline-taxonomy.md": "720e6ab1e134f78b98a4d1d02e6b243ec335559578e7e7997955eff86e1ac5d4"
       }
     },
     {

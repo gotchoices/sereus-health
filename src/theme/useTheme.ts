@@ -12,6 +12,7 @@ export interface Theme {
   textSecondary: string;
   border: string;
   bannerError: string;
+  error: string;  // For error text, delete icons
   // Accent colors for type badges, icons, etc.
   accentActivity: string;
   accentCondition: string;
@@ -26,6 +27,7 @@ const lightTheme: Theme = {
   textSecondary: '#555555',
   border: '#dddddd',
   bannerError: '#ffeeee',
+  error: '#D32F2F',             // Red for errors
   // Accent colors (semantic, not in ui.md but needed for badges/icons)
   accentActivity: '#4A90E2',    // Blue
   accentCondition: '#F5A623',   // Orange
@@ -40,6 +42,7 @@ const darkTheme: Theme = {
   textSecondary: '#bbbbbb',
   border: '#333333',
   bannerError: '#330000',
+  error: '#EF5350',             // Lighter red for dark mode
   // Accent colors (slightly adjusted for dark mode visibility)
   accentActivity: '#5FA3EE',
   accentCondition: '#FFB84D',

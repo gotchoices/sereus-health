@@ -26,14 +26,17 @@ export interface TypeStat {
 export interface CategoryStat {
   id: string;
   name: string;
+  typeId?: string;  // Optional - only set for newly created categories
   usageCount: number;
 }
 
 export interface ItemStat {
   id: string;
   name: string;
+  categoryId?: string;  // Optional - only set for newly created items
   usageCount: number;
   isBundle: boolean;
+  bundleItemIds?: string[];
 }
 
 interface StatsData {
