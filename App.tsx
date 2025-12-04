@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, Linking } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { VariantProvider } from './src/mock';
 import LogHistory from './src/screens/LogHistory';
@@ -58,6 +58,95 @@ function AppContent(): React.JSX.Element {
   
   // Navigation stack for proper back navigation
   const [screenStack, setScreenStack] = useState<Screen[]>(['LogHistory']);
+
+  // Parse deep link URL and navigate
+  const handleDeepLink = useCallback((url: string | null) => {
+    console.log('[DeepLink] Received URL:', url);
+    if (!url) return;
+    
+    try {
+      // Parse URL: health://screen/ScreenName?param=value
+      // Using regex for more reliable parsing with custom schemes
+      const match = url.match(/^health:\/\/screen\/(\w+)(\?.*)?$/);
+      if (!match) {
+        console.log('[DeepLink] URL did not match pattern');
+        return;
+      }
+      
+      const screenName = match[1] as Screen;
+      const queryString = match[2] || '';
+      const params: Record<string, string> = {};
+      
+      // Parse query params
+      if (queryString) {
+        const searchParams = new URLSearchParams(queryString.substring(1));
+        searchParams.forEach((value, key) => {
+          params[key] = value;
+        });
+      }
+      
+      console.log('[DeepLink] Parsed screen:', screenName, 'params:', params);
+      
+      // Validate screen name
+      const validScreens: Screen[] = [
+        'LogHistory', 'EditEntry', 'ConfigureCatalog', 'EditItem', 'EditBundle',
+        'Graphs', 'GraphCreate', 'GraphView', 'Settings', 'SereusConnections', 'Reminders'
+      ];
+      
+      if (validScreens.includes(screenName)) {
+        // Set params based on screen type
+        if (screenName === 'EditEntry') {
+          setEditParams({
+            mode: (params.mode as 'new' | 'edit' | 'clone') || 'new',
+            entryId: params.entryId,
+          });
+        } else if (screenName === 'EditItem') {
+          setEditItemParams({
+            itemId: params.itemId,
+            typeId: params.typeId,
+          });
+        } else if (screenName === 'EditBundle') {
+          setEditBundleParams({
+            bundleId: params.bundleId,
+            typeId: params.typeId,
+          });
+        } else if (screenName === 'GraphView' && params.graphId) {
+          setCurrentGraphId(params.graphId);
+        }
+        
+        // Navigate to screen
+        console.log('[DeepLink] Navigating to:', screenName);
+        setScreenStack([screenName]);
+        setCurrentScreen(screenName);
+        
+        // Update tab based on screen
+        if (['LogHistory', 'EditEntry'].includes(screenName)) {
+          setCurrentTab('home');
+        } else if (['ConfigureCatalog', 'EditItem', 'EditBundle'].includes(screenName)) {
+          setCurrentTab('catalog');
+        } else if (['Settings', 'SereusConnections', 'Reminders'].includes(screenName)) {
+          setCurrentTab('settings');
+        }
+      } else {
+        console.log('[DeepLink] Invalid screen name:', screenName);
+      }
+    } catch (e) {
+      console.warn('Failed to parse deep link:', url, e);
+    }
+  }, []);
+
+  // Handle deep links on mount and when app receives new URLs
+  useEffect(() => {
+    // Handle initial URL (cold start)
+    Linking.getInitialURL().then(handleDeepLink);
+    
+    // Handle URL when app is already running
+    const subscription = Linking.addEventListener('url', (event) => {
+      handleDeepLink(event.url);
+    });
+    
+    return () => subscription.remove();
+  }, [handleDeepLink]);
 
   // Push a screen onto the stack
   const pushScreen = (screen: Screen) => {
@@ -208,9 +297,26 @@ function AppContent(): React.JSX.Element {
       case 'GraphView': {
         const graph = getCurrentGraph();
         if (!graph) {
-          // Fallback if graph not found
-          handleBack();
-          return null;
+          // Create a placeholder graph for deep link screenshots
+          const placeholderGraph: Graph = {
+            id: currentGraphId || 'placeholder',
+            name: 'Sample Graph',
+            items: [
+              { id: 'item-1', name: 'Sample Item 1', category: 'Sample' },
+              { id: 'item-2', name: 'Sample Item 2', category: 'Sample' },
+            ],
+            dateRange: {
+              start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+              end: new Date().toISOString(),
+            },
+            createdAt: new Date().toISOString(),
+          };
+          return (
+            <GraphView
+              graph={placeholderGraph}
+              onBack={handleBack}
+            />
+          );
         }
         return (
           <GraphView
@@ -286,9 +392,9 @@ function AppContent(): React.JSX.Element {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {renderScreen()}
-    </SafeAreaView>
+      <SafeAreaView style={styles.container}>
+        {renderScreen()}
+      </SafeAreaView>
   );
 }
 
