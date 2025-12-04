@@ -1,11 +1,35 @@
 {
   "items": [
-    { "id": "item-carrots", "name": "Carrots", "type": "Activity", "category": "Eating" },
-    { "id": "item-lettuce", "name": "Lettuce", "type": "Activity", "category": "Eating" },
+    { "id": "item-omelette", "name": "Omelette", "type": "Activity", "category": "Eating" },
+    { "id": "item-toast", "name": "Toast", "type": "Activity", "category": "Eating" },
+    { "id": "item-orange-juice", "name": "Orange Juice", "type": "Activity", "category": "Eating" },
     { "id": "item-bacon", "name": "Bacon", "type": "Activity", "category": "Eating" },
+    { "id": "item-lettuce", "name": "Lettuce", "type": "Activity", "category": "Eating" },
     { "id": "item-tomato", "name": "Tomato", "type": "Activity", "category": "Eating" },
-    { "id": "item-bread", "name": "Bread", "type": "Activity", "category": "Eating" },
-    { "id": "item-mayo", "name": "Mayonnaise", "type": "Activity", "category": "Eating" }
+    { "id": "item-running", "name": "Running", "type": "Activity", "category": "Exercise" },
+    { "id": "item-weights", "name": "Weights", "type": "Activity", "category": "Exercise" },
+    { "id": "item-yoga", "name": "Yoga", "type": "Activity", "category": "Exercise" },
+    { "id": "item-reading", "name": "Reading", "type": "Activity", "category": "Recreation" },
+    { "id": "item-gaming", "name": "Gaming", "type": "Activity", "category": "Recreation" },
+    { "id": "item-hiking", "name": "Hiking", "type": "Activity", "category": "Recreation" },
+    { "id": "item-work-deadline", "name": "Work Deadline", "type": "Condition", "category": "Stress" },
+    { "id": "item-family-visit", "name": "Family Visit", "type": "Condition", "category": "Stress" },
+    { "id": "item-traffic", "name": "Traffic", "type": "Condition", "category": "Stress" },
+    { "id": "item-hot-humid", "name": "Hot & Humid", "type": "Condition", "category": "Weather" },
+    { "id": "item-cold-rainy", "name": "Cold & Rainy", "type": "Condition", "category": "Weather" },
+    { "id": "item-sunny", "name": "Sunny & Clear", "type": "Condition", "category": "Weather" },
+    { "id": "item-office-noise", "name": "Office Noise", "type": "Condition", "category": "Environment" },
+    { "id": "item-pollen", "name": "High Pollen", "type": "Condition", "category": "Environment" },
+    { "id": "item-headache", "name": "Headache", "type": "Outcome", "category": "Pain" },
+    { "id": "item-stomach-pain", "name": "Stomach Pain", "type": "Outcome", "category": "Pain" },
+    { "id": "item-joint-pain", "name": "Joint Pain", "type": "Outcome", "category": "Pain" },
+    { "id": "item-good-sleep", "name": "Slept Well", "type": "Outcome", "category": "Health" },
+    { "id": "item-rested", "name": "Feeling Rested", "type": "Outcome", "category": "Health" },
+    { "id": "item-poor-sleep", "name": "Slept Poorly", "type": "Outcome", "category": "Health" },
+    { "id": "item-energetic", "name": "Energetic", "type": "Outcome", "category": "Well-being" },
+    { "id": "item-focused", "name": "Focused", "type": "Outcome", "category": "Well-being" },
+    { "id": "item-anxious", "name": "Anxious", "type": "Outcome", "category": "Well-being" },
+    { "id": "item-brain-fog", "name": "Brain Fog", "type": "Outcome", "category": "Well-being" }
   ],
   "bundles": [
     {
@@ -14,9 +38,16 @@
       "itemIds": [
         "item-bacon",
         "item-lettuce",
-        "item-tomato",
-        "item-bread",
-        "item-mayo"
+        "item-tomato"
+      ]
+    },
+    {
+      "id": "bundle-morning-routine",
+      "name": "Morning Routine",
+      "itemIds": [
+        "item-omelette",
+        "item-toast",
+        "item-orange-juice"
       ]
     }
   ]

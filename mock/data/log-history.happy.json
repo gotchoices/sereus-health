@@ -377,12 +377,12 @@
     {
       "id": "entry-01",
       "timestamp": "2025-11-26T10:00:00Z",
-      "type": "Condition",
+      "type": "Outcome",
       "items": [
         {
           "id": "item-energy-level",
           "name": "Energy Level",
-          "category": "Environment"
+          "category": "Well-being"
         }
       ],
       "bundles": [],

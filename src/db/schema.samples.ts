@@ -15,7 +15,8 @@ const logger = createLogger('DB Samples');
  */
 export const SAMPLE_DATA = {
 	items: [
-		// Eating items
+		// === ACTIVITY ITEMS ===
+		// Eating (cat-eating) - what you consume
 		{ id: 'item-omelette', category_id: 'cat-eating', name: 'Omelette', description: null },
 		{ id: 'item-toast', category_id: 'cat-eating', name: 'Toast', description: null },
 		{ id: 'item-orange-juice', category_id: 'cat-eating', name: 'Orange Juice', description: null },
@@ -24,13 +25,35 @@ export const SAMPLE_DATA = {
 		{ id: 'item-tomato', category_id: 'cat-eating', name: 'Tomato', description: null },
 		{ id: 'item-bread', category_id: 'cat-eating', name: 'Bread', description: null },
 		{ id: 'item-mayo', category_id: 'cat-eating', name: 'Mayonnaise', description: null },
-		// Exercise items
+		// Exercise (cat-exercise) - physical activity
 		{ id: 'item-running', category_id: 'cat-exercise', name: 'Running', description: null },
 		{ id: 'item-weights', category_id: 'cat-exercise', name: 'Weights', description: null },
 		{ id: 'item-yoga', category_id: 'cat-exercise', name: 'Yoga', description: null },
-		// Pain items (with quantifiers)
+		// Recreation (cat-recreation) - leisure activities
+		{ id: 'item-reading', category_id: 'cat-recreation', name: 'Reading', description: null },
+		{ id: 'item-walking', category_id: 'cat-recreation', name: 'Walking', description: null },
+		
+		// === CONDITION ITEMS === (circumstances that may affect outcomes)
+		// Stress (cat-stress) - mental/emotional pressures
+		{ id: 'item-work-stress', category_id: 'cat-stress', name: 'Work Stress', description: null },
+		{ id: 'item-time-pressure', category_id: 'cat-stress', name: 'Time Pressure', description: null },
+		// Weather (cat-weather) - environmental conditions
+		{ id: 'item-hot-weather', category_id: 'cat-weather', name: 'Hot Weather', description: null },
+		{ id: 'item-cold-weather', category_id: 'cat-weather', name: 'Cold Weather', description: null },
+		// Environment (cat-environment) - surroundings
+		{ id: 'item-noise', category_id: 'cat-environment', name: 'Noise', description: null },
+		{ id: 'item-air-quality', category_id: 'cat-environment', name: 'Poor Air Quality', description: null },
+		
+		// === OUTCOME ITEMS === (results you want to track/correlate)
+		// Pain (cat-pain) - physical discomfort
 		{ id: 'item-headache', category_id: 'cat-pain', name: 'Headache', description: null },
 		{ id: 'item-stomach-pain', category_id: 'cat-pain', name: 'Stomach Pain', description: null },
+		// Health (cat-health) - physical state
+		{ id: 'item-good-sleep', category_id: 'cat-health', name: 'Good Sleep', description: null },
+		{ id: 'item-rested', category_id: 'cat-health', name: 'Feeling Rested', description: null },
+		// Well-being (cat-wellbeing) - mental/emotional state
+		{ id: 'item-energy-level', category_id: 'cat-wellbeing', name: 'Energy Level', description: null },
+		{ id: 'item-mood', category_id: 'cat-wellbeing', name: 'Mood', description: null },
 	],
 	
 	item_quantifiers: [
@@ -52,27 +75,41 @@ export const SAMPLE_DATA = {
 	],
 	
 	log_entries: [
+		// Activities
 		{ id: 'entry-breakfast', timestamp: '2025-11-26T08:00:00Z', type_id: 'type-activity', comment: 'Good breakfast to start the day' },
 		{ id: 'entry-morning-run', timestamp: '2025-11-26T09:30:00Z', type_id: 'type-activity', comment: 'Morning jog in the park' },
 		{ id: 'entry-lunch', timestamp: '2025-11-26T12:15:00Z', type_id: 'type-activity', comment: null },
+		// Conditions (circumstances that may affect outcomes)
+		{ id: 'entry-work-stress', timestamp: '2025-11-26T10:00:00Z', type_id: 'type-condition', comment: 'Deadline pressure at work' },
+		{ id: 'entry-hot-day', timestamp: '2025-11-26T13:00:00Z', type_id: 'type-condition', comment: 'Very warm afternoon' },
+		// Outcomes (results to track/correlate)
 		{ id: 'entry-headache', timestamp: '2025-11-26T14:00:00Z', type_id: 'type-outcome', comment: 'Started after lunch' },
+		{ id: 'entry-good-sleep', timestamp: '2025-11-27T07:00:00Z', type_id: 'type-outcome', comment: 'Woke up feeling great' },
 	],
 	
 	log_entry_items: [
-		// Breakfast
+		// Breakfast (Activity)
 		{ entry_id: 'entry-breakfast', item_id: 'item-omelette', source_bundle_id: null },
 		{ entry_id: 'entry-breakfast', item_id: 'item-toast', source_bundle_id: null },
 		{ entry_id: 'entry-breakfast', item_id: 'item-orange-juice', source_bundle_id: null },
-		// Morning run
+		// Morning run (Activity)
 		{ entry_id: 'entry-morning-run', item_id: 'item-running', source_bundle_id: null },
-		// Lunch (BLT bundle)
+		// Lunch (Activity - BLT bundle)
 		{ entry_id: 'entry-lunch', item_id: 'item-bacon', source_bundle_id: 'bundle-blt' },
 		{ entry_id: 'entry-lunch', item_id: 'item-lettuce', source_bundle_id: 'bundle-blt' },
 		{ entry_id: 'entry-lunch', item_id: 'item-tomato', source_bundle_id: 'bundle-blt' },
 		{ entry_id: 'entry-lunch', item_id: 'item-bread', source_bundle_id: 'bundle-blt' },
 		{ entry_id: 'entry-lunch', item_id: 'item-mayo', source_bundle_id: 'bundle-blt' },
-		// Headache
+		// Work stress (Condition)
+		{ entry_id: 'entry-work-stress', item_id: 'item-work-stress', source_bundle_id: null },
+		{ entry_id: 'entry-work-stress', item_id: 'item-time-pressure', source_bundle_id: null },
+		// Hot day (Condition)
+		{ entry_id: 'entry-hot-day', item_id: 'item-hot-weather', source_bundle_id: null },
+		// Headache (Outcome)
 		{ entry_id: 'entry-headache', item_id: 'item-headache', source_bundle_id: null },
+		// Good sleep (Outcome)
+		{ entry_id: 'entry-good-sleep', item_id: 'item-good-sleep', source_bundle_id: null },
+		{ entry_id: 'entry-good-sleep', item_id: 'item-rested', source_bundle_id: null },
 	],
 	
 	log_entry_quantifier_values: [

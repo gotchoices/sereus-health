@@ -36,10 +36,47 @@
       { "id": "item-weights", "name": "Weights", "usageCount": 20, "isBundle": false },
       { "id": "item-yoga", "name": "Yoga", "usageCount": 15, "isBundle": false }
     ],
+    "cat-recreation": [
+      { "id": "item-reading", "name": "Reading", "usageCount": 18, "isBundle": false },
+      { "id": "item-gaming", "name": "Gaming", "usageCount": 12, "isBundle": false },
+      { "id": "item-hiking", "name": "Hiking", "usageCount": 8, "isBundle": false },
+      { "id": "item-photography", "name": "Photography", "usageCount": 5, "isBundle": false }
+    ],
+    "cat-stress": [
+      { "id": "item-work-deadline", "name": "Work Deadline", "usageCount": 22, "isBundle": false },
+      { "id": "item-family-visit", "name": "Family Visit", "usageCount": 12, "isBundle": false },
+      { "id": "item-traffic", "name": "Traffic", "usageCount": 10, "isBundle": false },
+      { "id": "item-money-worries", "name": "Money Worries", "usageCount": 8, "isBundle": false }
+    ],
+    "cat-weather": [
+      { "id": "item-hot-humid", "name": "Hot & Humid", "usageCount": 15, "isBundle": false },
+      { "id": "item-cold-rainy", "name": "Cold & Rainy", "usageCount": 12, "isBundle": false },
+      { "id": "item-windy", "name": "Windy", "usageCount": 6, "isBundle": false },
+      { "id": "item-sunny", "name": "Sunny & Clear", "usageCount": 4, "isBundle": false }
+    ],
+    "cat-environment": [
+      { "id": "item-office-noise", "name": "Office Noise", "usageCount": 10, "isBundle": false },
+      { "id": "item-pollen", "name": "High Pollen", "usageCount": 8, "isBundle": false },
+      { "id": "item-smoke", "name": "Smoke/Fumes", "usageCount": 5, "isBundle": false },
+      { "id": "item-blue-light", "name": "Blue Light (screens)", "usageCount": 4, "isBundle": false }
+    ],
     "cat-pain": [
       { "id": "item-headache", "name": "Headache", "usageCount": 20, "isBundle": false },
       { "id": "item-stomach-pain", "name": "Stomach Pain", "usageCount": 15, "isBundle": false },
       { "id": "item-joint-pain", "name": "Joint Pain", "usageCount": 10, "isBundle": false }
+    ],
+    "cat-health": [
+      { "id": "item-good-sleep", "name": "Slept Well", "usageCount": 18, "isBundle": false },
+      { "id": "item-rested", "name": "Feeling Rested", "usageCount": 12, "isBundle": false },
+      { "id": "item-hydrated", "name": "Well Hydrated", "usageCount": 8, "isBundle": false },
+      { "id": "item-poor-sleep", "name": "Slept Poorly", "usageCount": 6, "isBundle": false }
+    ],
+    "cat-wellbeing": [
+      { "id": "item-energetic", "name": "Energetic", "usageCount": 14, "isBundle": false },
+      { "id": "item-focused", "name": "Focused", "usageCount": 10, "isBundle": false },
+      { "id": "item-calm", "name": "Calm", "usageCount": 8, "isBundle": false },
+      { "id": "item-anxious", "name": "Anxious", "usageCount": 6, "isBundle": false },
+      { "id": "item-brain-fog", "name": "Brain Fog", "usageCount": 4, "isBundle": false }
     ]
   }
 }
