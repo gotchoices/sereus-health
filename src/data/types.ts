@@ -3,9 +3,11 @@
  * 
  * Provides access to log entry types (Activity, Condition, Outcome, custom).
  * Switches between Quereus SQL and mock data based on USE_QUEREUS flag.
+ * Variant is determined internally via getVariant() - callers don't need to know.
  */
 
 import { USE_QUEREUS } from '../db/config';
+import { getVariant } from '../mock';
 // import { ensureDatabaseInitialized } from '../db/init';
 
 // Import mock data
@@ -34,7 +36,7 @@ const DEFAULT_TYPE_COLOR = '#6B7280'; // Gray
 /**
  * Get all types, sorted by display order
  */
-export async function getTypes(variant: string = 'happy'): Promise<LogType[]> {
+export async function getTypes(): Promise<LogType[]> {
   if (USE_QUEREUS) {
     // TODO: Implement Quereus query
     // await ensureDatabaseInitialized();
@@ -51,6 +53,7 @@ export async function getTypes(variant: string = 'happy'): Promise<LogType[]> {
   }
   
   // Use mock data
+  const variant = getVariant();
   const data = typesVariants[variant] || typesVariants.happy;
   return [...data.types].sort((a, b) => {
     if (a.displayOrder !== b.displayOrder) {
@@ -63,8 +66,8 @@ export async function getTypes(variant: string = 'happy'): Promise<LogType[]> {
 /**
  * Get a single type by ID
  */
-export async function getTypeById(typeId: string, variant: string = 'happy'): Promise<LogType | null> {
-  const types = await getTypes(variant);
+export async function getTypeById(typeId: string): Promise<LogType | null> {
+  const types = await getTypes();
   return types.find(t => t.id === typeId) || null;
 }
 
@@ -78,8 +81,8 @@ export function getTypeColor(type: LogType | null): string {
 /**
  * Get color for a type ID (convenience function)
  */
-export async function getTypeColorById(typeId: string, variant: string = 'happy'): Promise<string> {
-  const type = await getTypeById(typeId, variant);
+export async function getTypeColorById(typeId: string): Promise<string> {
+  const type = await getTypeById(typeId);
   return getTypeColor(type);
 }
 

@@ -20,14 +20,12 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
-import { useVariant } from '../mock';
 import { 
   getSereusConnections, 
   formatPeerId, 
   getDeviceIcon,
   getStatusInfo,
   type SereusNode,
-  type SereusConnectionsVariant,
 } from '../data/sereusConnections';
 
 interface SereusConnectionsProps {
@@ -39,15 +37,14 @@ export default function SereusConnections({
 }: SereusConnectionsProps) {
   const theme = useTheme();
   const t = useT();
-  const variant = useVariant() as SereusConnectionsVariant;
   const [cadreNodes, setCadreNodes] = useState<SereusNode[]>([]);
   const [guestNodes, setGuestNodes] = useState<SereusNode[]>([]);
   
   useEffect(() => {
-    const data = getSereusConnections(variant);
+    const data = getSereusConnections();
     setCadreNodes(data.cadreNodes);
     setGuestNodes(data.guestNodes);
-  }, [variant]);
+  }, []);
   
   const handleScanQR = () => {
     // TODO: Implement with react-native-vision-camera or similar

@@ -1,3 +1,4 @@
+import { getVariant } from '../mock';
 import happyJson from '../../mock/data/edit-entry.happy.json';
 import errorJson from '../../mock/data/edit-entry.error.json';
 
@@ -26,16 +27,16 @@ const errorData = errorJson as EditEntryModel;
  * Get edit entry data
  * 
  * Note: Will eventually use Quereus. Currently uses mock data.
+ * Variant is determined internally from deep link context.
  * 
  * @param mode - Entry mode ('new', 'edit', 'clone')
  * @param entryId - ID of entry to edit/clone (ignored for 'new')
- * @param variant - Mock variant to use ('happy', 'error')
  */
 export function getEditEntry(
   mode: 'new' | 'edit' | 'clone' = 'new',
   _entryId?: string,
-  variant: EditEntryVariant = 'happy',
 ): EditEntryModel {
+  const variant = getVariant();
   if (variant === 'error') {
     return { ...errorData, mode };
   }

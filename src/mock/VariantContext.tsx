@@ -10,6 +10,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { Linking } from 'react-native';
 import { mockMode, defaultVariant, isValidVariant, type Variant } from './config';
+import { setCurrentVariant } from './useVariant';
 
 interface VariantContextValue {
   /** Whether app is in mock mode */
@@ -113,6 +114,11 @@ export function VariantProvider({ children, initialVariant }: VariantProviderPro
       subscription.remove();
     };
   }, [handleUrl]);
+
+  // Sync variant to module-level state for data adapters
+  useEffect(() => {
+    setCurrentVariant(variant);
+  }, [variant]);
 
   const value: VariantContextValue = {
     mockMode,

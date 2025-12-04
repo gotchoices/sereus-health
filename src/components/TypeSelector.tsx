@@ -17,7 +17,6 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { getTypes, LogType, getTypeColor } from '../data/types';
-import { useVariant } from '../mock';
 
 interface TypeSelectorProps {
   /** Currently selected type ID */
@@ -41,7 +40,6 @@ export function TypeSelector({
 }: TypeSelectorProps) {
   const theme = useTheme();
   const t = useT();
-  const variant = useVariant();
   
   const [types, setTypes] = useState<LogType[]>([]);
   const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -49,11 +47,11 @@ export function TypeSelector({
   // Load types on mount
   useEffect(() => {
     async function loadTypes() {
-      const loadedTypes = await getTypes(variant);
+      const loadedTypes = await getTypes();
       setTypes(loadedTypes);
     }
     loadTypes();
-  }, [variant]);
+  }, []);
   
   // Get selected type object
   const selectedType = types.find(t => t.id === selectedTypeId) || null;

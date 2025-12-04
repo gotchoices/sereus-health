@@ -13,7 +13,6 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
-import { useVariant } from '../mock';
 import { getConfigureCatalog, CatalogItem, CatalogBundle } from '../data/configureCatalog';
 import { getTypes, LogType, getTypeColor } from '../data/types';
 
@@ -32,9 +31,8 @@ export default function ConfigureCatalog({
 }: ConfigureCatalogProps) {
   const theme = useTheme();
   const t = useT();
-  const variant = useVariant();
   
-  const catalog = getConfigureCatalog(variant);
+  const catalog = getConfigureCatalog();
   
   // Dynamic types from database
   const [types, setTypes] = useState<LogType[]>([]);
@@ -47,14 +45,14 @@ export default function ConfigureCatalog({
   // Load types on mount
   useEffect(() => {
     async function loadTypes() {
-      const loadedTypes = await getTypes(variant);
+      const loadedTypes = await getTypes();
       setTypes(loadedTypes);
       if (loadedTypes.length > 0 && !selectedTypeId) {
         setSelectedTypeId(loadedTypes[0].id);
       }
     }
     loadTypes();
-  }, [variant]);
+  }, []);
   
   // Get selected type object
   const selectedType = useMemo(() => {

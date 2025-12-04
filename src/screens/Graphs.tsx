@@ -19,7 +19,6 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
-import { useVariant } from '../mock';
 import { getGraphs, formatDateRange, type Graph } from '../data/graphs';
 
 interface GraphsProps {
@@ -39,7 +38,6 @@ export default function Graphs({
 }: GraphsProps) {
   const theme = useTheme();
   const t = useT();
-  const variant = useVariant();
   const [localGraphs, setLocalGraphs] = useState<Graph[]>([]);
   
   // Use props graphs if provided, otherwise load from mock
@@ -48,10 +46,10 @@ export default function Graphs({
   // Load initial graphs from mock data only if not managed by parent
   useEffect(() => {
     if (!propsGraphs) {
-      const initialGraphs = getGraphs(variant);
+      const initialGraphs = getGraphs();
       setLocalGraphs(initialGraphs);
     }
-  }, [variant, propsGraphs]);
+  }, [propsGraphs]);
   
   const handleCloseGraph = (graphId: string) => {
     if (onCloseGraph) {

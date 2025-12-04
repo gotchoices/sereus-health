@@ -1,3 +1,4 @@
+import { getVariant } from '../mock';
 import happyJson from '../../mock/data/configure-catalog.happy.json';
 import emptyJson from '../../mock/data/configure-catalog.empty.json';
 import errorJson from '../../mock/data/configure-catalog.error.json';
@@ -32,12 +33,10 @@ const errorData = errorJson as ConfigureCatalogModel;
  * Get catalog configuration
  * 
  * Note: Will eventually use Quereus. Currently uses mock data.
- * 
- * @param variant - Mock variant to use ('happy', 'empty', 'error')
+ * Variant is determined internally via getVariant().
  */
-export function getConfigureCatalog(
-  variant: ConfigureCatalogVariant = 'happy',
-): ConfigureCatalogModel {
+export function getConfigureCatalog(): ConfigureCatalogModel {
+  const variant = getVariant();
   if (variant === 'empty') {
     return emptyData;
   }
@@ -86,14 +85,10 @@ export interface ItemDetails {
  * Get item details by ID
  * 
  * @param itemId - The item ID to look up
- * @param variant - Mock variant to use
  * @returns Item details or null if not found
  */
-export function getItemById(
-  itemId: string,
-  variant: ConfigureCatalogVariant = 'happy',
-): ItemDetails | null {
-  const catalog = getConfigureCatalog(variant);
+export function getItemById(itemId: string): ItemDetails | null {
+  const catalog = getConfigureCatalog();
   const item = catalog.items.find(i => i.id === itemId);
   
   if (!item) {
@@ -114,14 +109,10 @@ export function getItemById(
  * Get bundle details by ID
  * 
  * @param bundleId - The bundle ID to look up
- * @param variant - Mock variant to use
  * @returns Bundle details or null if not found
  */
-export function getBundleById(
-  bundleId: string,
-  variant: ConfigureCatalogVariant = 'happy',
-): CatalogBundle | null {
-  const catalog = getConfigureCatalog(variant);
+export function getBundleById(bundleId: string): CatalogBundle | null {
+  const catalog = getConfigureCatalog();
   return catalog.bundles.find(b => b.id === bundleId) || null;
 }
 

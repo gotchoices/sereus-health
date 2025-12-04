@@ -17,7 +17,6 @@ import { useT } from '../i18n/useT';
 import { TypeSelector } from '../components/TypeSelector';
 import { LogType } from '../data/types';
 import { getBundleById, getConfigureCatalog } from '../data/configureCatalog';
-import { useVariant } from '../mock';
 
 interface EditBundleProps {
   bundleId?: string;
@@ -88,7 +87,6 @@ export default function EditBundle({
 }: EditBundleProps) {
   const theme = useTheme();
   const t = useT();
-  const variant = useVariant();
   
   const isEditing = Boolean(bundleId);
   
@@ -106,13 +104,13 @@ export default function EditBundle({
   // Load existing bundle data when editing
   useEffect(() => {
     if (bundleId) {
-      const bundleData = getBundleById(bundleId, variant as any);
+      const bundleData = getBundleById(bundleId);
       if (bundleData) {
         setName(bundleData.name);
         setSelectedTypeId(TYPE_NAME_TO_ID[bundleData.type] || '');
         
         // Load bundle items from the catalog
-        const catalog = getConfigureCatalog(variant as any);
+        const catalog = getConfigureCatalog();
         const items: BundleMemberData[] = bundleData.itemIds
           .map((itemId, index) => {
             const item = catalog.items.find(i => i.id === itemId);
@@ -132,7 +130,7 @@ export default function EditBundle({
       }
       setIsLoading(false);
     }
-  }, [bundleId, variant]);
+  }, [bundleId]);
   
   // Handle type change
   const handleTypeChange = (typeId: string, _type: LogType) => {

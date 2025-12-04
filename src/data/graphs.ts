@@ -3,11 +3,13 @@
  * 
  * Provides data for Graphs screen.
  * Uses Appeus mock data system for variants.
+ * Variant is determined internally via getVariant() - callers don't need to know.
  * 
  * Note: Graphs are ephemeral in MVP - they exist only while app is running.
  * This adapter provides initial mock data; actual graph storage is in-memory React state.
  */
 
+import { getVariant } from '../mock';
 import happyData from '../../mock/data/graphs.happy.json';
 import emptyData from '../../mock/data/graphs.empty.json';
 
@@ -40,15 +42,15 @@ const mockVariants: Record<string, MockData> = {
 export type GraphsVariant = 'happy' | 'empty';
 
 /**
- * Get initial graphs for a variant
+ * Get initial graphs
  * Used to seed the ephemeral graph store on mount
  * 
  * Note: Graphs are ephemeral in MVP - no Quereus storage.
  * This function provides mock data for development/scenarios.
- * 
- * @param variant - Mock variant to use ('happy', 'empty')
+ * Variant is determined internally from deep link context.
  */
-export function getGraphs(variant: GraphsVariant = 'happy'): Graph[] {
+export function getGraphs(): Graph[] {
+	const variant = getVariant();
 	const mockData = mockVariants[variant] || mockVariants.happy;
 	return mockData.graphs || [];
 }

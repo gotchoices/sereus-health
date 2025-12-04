@@ -1,8 +1,9 @@
 /**
- * useVariant Hook
+ * Variant State Module
  * 
- * Convenience hook for accessing the current mock variant.
- * Used by screens and data adapters to get variant from context.
+ * Provides variant state for both React components and data adapters.
+ * The VariantProvider syncs React context to module-level state so
+ * data adapters can access the current variant without React hooks.
  * 
  * @see appeus/reference/mock-variants.md
  */
@@ -10,26 +11,48 @@
 import { useVariantContext } from './VariantContext';
 import { mockMode, defaultVariant, type Variant } from './config';
 
+// Module-level state - synced by VariantProvider
+let currentVariant: Variant = defaultVariant;
+
 /**
- * Hook to get the current variant
+ * Set the current variant (called by VariantProvider)
+ * @internal
+ */
+export function setCurrentVariant(variant: Variant): void {
+  currentVariant = variant;
+}
+
+/**
+ * Get the current variant for use in data adapters
  * 
- * Returns the variant from deep link context, or default if not in mock mode.
+ * This reads from module-level state that is synced by VariantProvider.
+ * Data adapters should call this internally, not receive variant as a parameter.
  * 
- * Usage in screens:
- * ```tsx
- * function LogHistory() {
- *   const variant = useVariant();
+ * Usage in data adapters:
+ * ```ts
+ * export async function getLogHistory(): Promise<LogEntry[]> {
+ *   const variant = getVariant();
  *   // variant comes from deep link automatically
  * }
  * ```
+ */
+export function getVariant(): Variant {
+  return currentVariant;
+}
+
+/**
+ * Hook to get the current variant (for React components that need it)
+ * 
+ * Most screens should NOT use this - data adapters handle variants internally.
+ * Only use if you need variant for UI logic (e.g., showing a "demo mode" badge).
  */
 export function useVariant(): Variant {
   try {
     const { mockMode: isMockMode, variant } = useVariantContext();
     return isMockMode ? variant : defaultVariant;
   } catch {
-    // If outside provider (shouldn't happen in normal use), return default
-    return defaultVariant;
+    // If outside provider, return module-level state
+    return currentVariant;
   }
 }
 
@@ -60,20 +83,5 @@ export function useVariantParams(): {
       mockMode,
     };
   }
-}
-
-/**
- * Get variant for use outside React components (e.g., in data adapters)
- * 
- * This is a fallback for cases where hooks can't be used.
- * Prefer useVariant() in components.
- * 
- * @param variantOverride - Explicit variant override (for non-hook usage)
- */
-export function getVariant(variantOverride?: string): Variant {
-  if (variantOverride && ['happy', 'empty', 'error'].includes(variantOverride)) {
-    return variantOverride as Variant;
-  }
-  return defaultVariant;
 }
 

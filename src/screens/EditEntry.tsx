@@ -40,6 +40,7 @@ import {
   type CategoryStat,
   type ItemStat,
 } from '../data/editEntryStats';
+import { getLogEntryById } from '../data/logHistory';
 
 // Sentinel for "All Categories" option
 const ALL_CATEGORIES_SENTINEL: CategoryStat = {
@@ -52,14 +53,12 @@ interface EditEntryProps {
   mode?: 'new' | 'edit' | 'clone';
   entryId?: string;
   onBack: () => void;
-  variant?: string;
   // For future React Navigation compatibility
   navigation?: any;
   route?: {
     params?: {
       mode?: 'new' | 'edit' | 'clone';
       entryId?: string;
-      variant?: string;
     };
   };
 }
@@ -68,7 +67,6 @@ export const EditEntry: React.FC<EditEntryProps> = ({
   mode: modeProp,
   entryId: entryIdProp,
   onBack,
-  variant: variantProp,
   navigation,
   route,
 }) => {
@@ -78,7 +76,6 @@ export const EditEntry: React.FC<EditEntryProps> = ({
   // Support both direct props and route params
   const mode = modeProp ?? route?.params?.mode ?? 'new';
   const entryId = entryIdProp ?? route?.params?.entryId;
-  const variant = variantProp ?? route?.params?.variant ?? 'happy';
 
   // Form state
   const [selectedType, setSelectedType] = useState<TypeStat | null>(null);
@@ -139,15 +136,15 @@ export const EditEntry: React.FC<EditEntryProps> = ({
     if (selectedCategory) {
       if (selectedCategory.id === ALL_CATEGORIES_SENTINEL.id && selectedType) {
         // "All Categories" selected - load all items for this type
-        getAllItemsForType(selectedType.id, variant).then(setAllItems).catch(console.error);
+        getAllItemsForType(selectedType.id).then(setAllItems).catch(console.error);
       } else {
         // Specific category selected
-        getItemStats(selectedCategory.id, variant).then(setAllItems).catch(console.error);
+        getItemStats(selectedCategory.id).then(setAllItems).catch(console.error);
       }
     } else {
       setAllItems([]);
     }
-  }, [selectedCategory, selectedType, variant]);
+  }, [selectedCategory, selectedType]);
 
   // Filtered data for pickers
   const filteredTypes = useMemo(() => {
@@ -183,7 +180,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
     return allItems.filter(item => item.name.toLowerCase().includes(query));
   }, [allItems, itemsFilter]);
 
-  // Smart defaults (new mode only) - async now
+  // Smart defaults (new mode) or load existing entry (edit/clone modes)
   useEffect(() => {
     if (mode === 'new') {
       // Auto-select most common type
@@ -203,10 +200,70 @@ export const EditEntry: React.FC<EditEntryProps> = ({
           }
         })
         .catch(console.error);
+    } else if ((mode === 'edit' || mode === 'clone') && entryId) {
+      // Load existing entry data
+      loadEntryData(entryId);
     }
-    // For edit/clone modes, data would be loaded from entryId
-    // TODO: Load existing entry data
-  }, [mode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, entryId]);
+  
+  // Function to load entry data for edit/clone modes
+  const loadEntryData = async (id: string) => {
+    try {
+      const entry = await getLogEntryById(id);
+      if (!entry) {
+        console.warn('Entry not found:', id);
+        return;
+      }
+      
+      // Set comment and timestamp
+      setComment(entry.comment || '');
+      setTimestamp(new Date(entry.timestamp));
+      
+      // Find and set the type
+      const types = await getTypeStats();
+      const matchingType = types.find(t => t.name.toLowerCase() === entry.type.toLowerCase());
+      if (matchingType) {
+        setSelectedType(matchingType);
+        
+        // Load categories for this type
+        const categories = await getCategoryStats(matchingType.id);
+        
+        // Find the category from the first item (entries typically have one category)
+        if (entry.items.length > 0) {
+          const firstItemCategory = entry.items[0].category;
+          const matchingCategory = categories.find(c => c.name.toLowerCase() === firstItemCategory.toLowerCase());
+          if (matchingCategory) {
+            setSelectedCategory(matchingCategory);
+            
+            // Load items for this category
+            const items = await getItemStats(matchingCategory.id);
+            
+            // Map entry items to ItemStat objects
+            const matchingItems: ItemStat[] = [];
+            for (const entryItem of entry.items) {
+              const matchingItem = items.find(i => i.id === entryItem.id || i.name.toLowerCase() === entryItem.name.toLowerCase());
+              if (matchingItem) {
+                matchingItems.push(matchingItem);
+              } else {
+                // Item not in category list - create a temporary ItemStat
+                matchingItems.push({
+                  id: entryItem.id,
+                  name: entryItem.name,
+                  categoryId: matchingCategory.id,
+                  usageCount: 0,
+                  isBundle: false,
+                });
+              }
+            }
+            setSelectedItems(matchingItems);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load entry data:', err);
+    }
+  };
 
   // Handlers
   const handleTypeSelect = (type: TypeStat) => {

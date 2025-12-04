@@ -3,11 +3,14 @@
  * 
  * Provides data for LogHistory screen.
  * Switches between Quereus SQL and Appeus mock data based on USE_QUEREUS flag.
+ * 
+ * Variant is determined internally via getVariant() - callers don't need to know.
  */
 
 import { USE_QUEREUS } from '../db/config';
 import { ensureDatabaseInitialized } from '../db/init';
 import { getAllLogEntries, type LogEntry as DbLogEntry } from '../db/logEntries';
+import { getVariant } from '../mock';
 
 // Import static mock data variants
 import happyData from '../../mock/data/log-history.happy.json';
@@ -51,7 +54,7 @@ const mockVariants: Record<string, MockData> = {
 	error: errorData,
 };
 
-// Screen-expected format
+// Screen-expected format (summary for list display)
 export interface LogEntry {
 	id: string;
 	timestamp: string;
@@ -61,10 +64,34 @@ export interface LogEntry {
 	comment?: string;
 }
 
+// Detailed entry format (for editing)
+export interface LogEntryDetail {
+	id: string;
+	timestamp: string;
+	type: string;
+	items: Array<{
+		id: string;
+		name: string;
+		category: string;
+	}>;
+	bundles: Array<{
+		id: string;
+		name: string;
+	}>;
+	quantifiers: Array<{
+		itemId: string;
+		name: string;
+		value: number;
+		units: string;
+	}>;
+	comment: string | null;
+}
+
 /**
  * Get log history using Appeus mock data system (internal)
  */
-async function getLogHistoryFromMock(variant: string = 'happy'): Promise<LogEntry[]> {
+async function getLogHistoryFromMock(): Promise<LogEntry[]> {
+	const variant = getVariant();
 	const mockData = mockVariants[variant] || mockVariants.happy;
 	const rawEntries = mockData.entries || [];
 	
@@ -82,13 +109,12 @@ async function getLogHistoryFromMock(variant: string = 'happy'): Promise<LogEntr
 /**
  * Get log history - public API for screens
  * Switches between SQL and mock based on USE_QUEREUS flag
- * 
- * @param variant - Mock variant to use ('happy', 'empty', 'error'). Ignored when USE_QUEREUS=true.
+ * Variant is determined internally from deep link context.
  */
-export async function getLogHistory(variant: string = 'happy'): Promise<LogEntry[]> {
+export async function getLogHistory(): Promise<LogEntry[]> {
 	if (!USE_QUEREUS) {
 		// Use Appeus mock data system
-		return getLogHistoryFromMock(variant);
+		return getLogHistoryFromMock();
 	}
 	
 	// Use Quereus SQL - ensure DB is initialized first
@@ -116,4 +142,48 @@ export async function getLogHistory(variant: string = 'happy'): Promise<LogEntry
 			comment: entry.comment || undefined,
 		};
 	});
+}
+
+/**
+ * Get detailed entry by ID for editing
+ */
+async function getLogEntryByIdFromMock(entryId: string): Promise<LogEntryDetail | null> {
+	const variant = getVariant();
+	const mockData = mockVariants[variant] || mockVariants.happy;
+	const rawEntries = mockData.entries || [];
+	
+	const entry = rawEntries.find((e: MockLogEntry) => e.id === entryId);
+	if (!entry) return null;
+	
+	return {
+		id: entry.id,
+		timestamp: entry.timestamp,
+		type: entry.type,
+		items: entry.items.map((item: MockItem) => ({
+			id: item.id,
+			name: item.name,
+			category: item.category,
+		})),
+		bundles: entry.bundles.map((bundle: MockBundle) => ({
+			id: bundle.id,
+			name: bundle.name,
+		})),
+		quantifiers: entry.quantifiers,
+		comment: entry.comment,
+	};
+}
+
+/**
+ * Get detailed entry by ID - public API for screens
+ * Used for edit/clone modes
+ * Variant is determined internally from deep link context.
+ */
+export async function getLogEntryById(entryId: string): Promise<LogEntryDetail | null> {
+	if (!USE_QUEREUS) {
+		return getLogEntryByIdFromMock(entryId);
+	}
+	
+	// TODO: Implement Quereus version when needed
+	// For now, fall back to mock data
+	return getLogEntryByIdFromMock(entryId);
 }

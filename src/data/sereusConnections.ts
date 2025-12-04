@@ -3,10 +3,12 @@
  * 
  * Provides data for SereusConnections screen.
  * Uses Appeus mock data system for variants.
+ * Variant is determined internally via getVariant() - callers don't need to know.
  * 
  * @see design/specs/screens/sereus-connections.md
  */
 
+import { getVariant } from '../mock';
 import happyData from '../../mock/data/sereus-connections.happy.json';
 import emptyData from '../../mock/data/sereus-connections.empty.json';
 
@@ -34,17 +36,17 @@ const mockVariants: Record<string, MockData> = {
 export type SereusConnectionsVariant = 'happy' | 'empty';
 
 /**
- * Get Sereus nodes for a variant
+ * Get Sereus nodes
  * 
  * Note: Sereus connections will eventually come from Sereus fabric.
  * This function provides mock data for development/scenarios.
- * 
- * @param variant - Mock variant to use ('happy', 'empty')
+ * Variant is determined internally from deep link context.
  */
-export function getSereusConnections(variant: SereusConnectionsVariant = 'happy'): {
+export function getSereusConnections(): {
 	cadreNodes: SereusNode[];
 	guestNodes: SereusNode[];
 } {
+	const variant = getVariant();
 	const mockData = mockVariants[variant] || mockVariants.happy;
 	return {
 		cadreNodes: mockData.cadreNodes || [],
