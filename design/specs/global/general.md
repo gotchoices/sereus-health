@@ -98,6 +98,19 @@ These are cross-cutting behaviors and assumptions that apply across multiple scr
 - Sereus Health should **default to the device's system appearance settings** (light/dark) and follow them where possible, rather than forcing a theme globally.  
 - Screen layouts and colors should be implemented so they remain legible and pleasant in both light and dark modes; any deviations from system theme should be called out explicitly in screen specs.
 
+### Date and Time Pickers
+
+- **Native pickers**  
+  - Use `@react-native-community/datetimepicker` for all date and time selection UI.  
+  - This provides native spinning wheel pickers on iOS and material design dialogs on Android.  
+  - On iOS, use `display="spinner"` for the classic wheel interface; `mode="datetime"` can combine date and time in one picker.  
+  - On Android, `mode="date"` and `mode="time"` must be used separately (no combined datetime mode).
+
+- **Picker presentation**  
+  - Present the picker inline within a modal rather than as a standalone screen.  
+  - Include a "Now" button for quick reset to current date/time.  
+  - Allow confirmation/dismissal via modal controls.
+
 ### Internationalization and Iconography
 
 - **Internationalization (i18n)**  

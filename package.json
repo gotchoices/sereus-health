@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@quereus/quereus": "portal:../quereus/packages/quereus",
+    "@react-native-community/datetimepicker": "^8.5.0",
     "@react-native/new-app-screen": "0.82.1",
     "@ungap/structured-clone": "^1.2.0",
     "react": "19.1.1",

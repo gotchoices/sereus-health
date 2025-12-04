@@ -23,7 +23,9 @@ import {
   StyleSheet,
   ScrollView,
   Modal,
+  Platform,
 } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
@@ -87,6 +89,12 @@ export const EditEntry: React.FC<EditEntryProps> = ({
   const [addCategoryModalVisible, setAddCategoryModalVisible] = useState(false);
   const [addItemModalVisible, setAddItemModalVisible] = useState(false);
   const [saveBundleModalVisible, setSaveBundleModalVisible] = useState(false);
+  const [dateTimeModalVisible, setDateTimeModalVisible] = useState(false);
+  
+  // Date/time picker state (for Android which needs separate date/time pickers)
+  const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   
   // New entity name state
   const [newTypeName, setNewTypeName] = useState('');
@@ -297,6 +305,50 @@ export const EditEntry: React.FC<EditEntryProps> = ({
     
     // Show confirmation
     console.log('Bundle created:', newBundle);
+  };
+
+  // Date/time picker handlers
+  const handleDateTimeChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      // Android shows modal dialogs - dismiss on any action
+      if (pickerMode === 'date') {
+        setShowDatePicker(false);
+        if (event.type === 'set' && selectedDate) {
+          // Date selected - update and show time picker
+          setTimestamp(selectedDate);
+          // Show time picker after date is selected
+          setTimeout(() => {
+            setPickerMode('time');
+            setShowTimePicker(true);
+          }, 100);
+        }
+      } else {
+        setShowTimePicker(false);
+        if (event.type === 'set' && selectedDate) {
+          setTimestamp(selectedDate);
+        }
+      }
+    } else {
+      // iOS - picker stays visible, just update value
+      if (selectedDate) {
+        setTimestamp(selectedDate);
+      }
+    }
+  };
+
+  const openDateTimePicker = () => {
+    if (Platform.OS === 'android') {
+      // Android: start with date picker
+      setPickerMode('date');
+      setShowDatePicker(true);
+    } else {
+      // iOS: use modal with inline picker
+      setDateTimeModalVisible(true);
+    }
+  };
+
+  const setToNow = () => {
+    setTimestamp(new Date());
   };
 
   const handleSave = () => {
@@ -519,6 +571,7 @@ export const EditEntry: React.FC<EditEntryProps> = ({
               styles.selector,
               { backgroundColor: theme.surface, borderColor: theme.border },
             ]}
+            onPress={openDateTimePicker}
             activeOpacity={0.7}
           >
             <Ionicons
@@ -1001,6 +1054,60 @@ export const EditEntry: React.FC<EditEntryProps> = ({
           </View>
         </View>
       </Modal>
+
+      {/* iOS Date/Time Picker Modal (with native spinner) */}
+      {Platform.OS === 'ios' && (
+        <Modal
+          visible={dateTimeModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setDateTimeModalVisible(false)}
+        >
+          <View style={styles.dateTimeModalOverlay}>
+            <View style={[styles.dateTimeModalContent, { backgroundColor: theme.surface }]}>
+              <View style={[styles.dateTimeModalHeader, { borderBottomColor: theme.border }]}>
+                <TouchableOpacity onPress={setToNow}>
+                  <Text style={[styles.dateTimeModalButton, { color: theme.accentPrimary }]}>Now</Text>
+                </TouchableOpacity>
+                <Text style={[styles.dateTimeModalTitle, { color: theme.textPrimary }]}>
+                  Set Date & Time
+                </Text>
+                <TouchableOpacity onPress={() => setDateTimeModalVisible(false)}>
+                  <Text style={[styles.dateTimeModalButton, { color: theme.accentPrimary }]}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={timestamp}
+                mode="datetime"
+                display="spinner"
+                onChange={handleDateTimeChange}
+                style={styles.iosDateTimePicker}
+                textColor={theme.textPrimary}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* Android Date Picker (shows as native dialog) */}
+      {Platform.OS === 'android' && showDatePicker && (
+        <DateTimePicker
+          value={timestamp}
+          mode="date"
+          display="default"
+          onChange={handleDateTimeChange}
+        />
+      )}
+
+      {/* Android Time Picker (shows as native dialog) */}
+      {Platform.OS === 'android' && showTimePicker && (
+        <DateTimePicker
+          value={timestamp}
+          mode="time"
+          display="default"
+          onChange={handleDateTimeChange}
+        />
+      )}
     </View>
   );
 };
@@ -1230,6 +1337,36 @@ const styles = StyleSheet.create({
   addModalButtonText: {
     ...typography.body,
     fontWeight: '600',
+  },
+  // iOS DateTimePicker Modal styles
+  dateTimeModalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  dateTimeModalContent: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: spacing[4],
+  },
+  dateTimeModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[3],
+    borderBottomWidth: 1,
+  },
+  dateTimeModalTitle: {
+    ...typography.body,
+    fontWeight: '600',
+  },
+  dateTimeModalButton: {
+    ...typography.body,
+    fontWeight: '600',
+  },
+  iosDateTimePicker: {
+    height: 216,
   },
 });
 
