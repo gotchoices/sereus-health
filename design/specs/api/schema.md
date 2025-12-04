@@ -174,6 +174,12 @@ Top-level classification for log entries (Activity, Condition, Outcome, user-def
 - `id` (UUID, PK)
 - `name` (TEXT, NOT NULL, UNIQUE)
   - Examples: "Activity", "Condition", "Outcome", "Medication"
+- `color` (TEXT, NULL)
+  - Hex color for UI display (e.g., '#3B82F6')
+  - If null, use default/fallback color
+- `display_order` (INTEGER, NOT NULL, default 0)
+  - Controls ordering in type selectors
+  - Lower numbers appear first
 
 **Constraints:**
 - Primary key: `id`
@@ -181,9 +187,10 @@ Top-level classification for log entries (Activity, Condition, Outcome, user-def
 
 **Notes:**
 - Story 02:11 says types are editable by user
-- Initial seed: Activity, Condition, Outcome
-- UI ordering: Hardcoded in application (Activity, Condition, Outcome) or alphabetical
+- Initial seed: Activity, Condition, Outcome (with distinct colors)
+- UI ordering: By `display_order` ascending, then alphabetical by name
 - Updates trigger taxonomy lifecycle logic (general.md)
+- Users can create custom types (e.g., "Medication", "Supplements", "Social")
 
 ---
 

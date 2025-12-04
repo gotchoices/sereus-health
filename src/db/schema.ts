@@ -31,7 +31,9 @@ declare schema main using (default_vtab_module = 'memory') {
   -- Top-level types (Activity, Condition, Outcome, custom)
   table types (
     id text primary key,
-    name text unique
+    name text unique,
+    color text null,
+    display_order integer default 0
   );
 
   -- Categories organized under types (flat, no hierarchy)
@@ -144,9 +146,9 @@ declare schema main using (default_vtab_module = 'memory') {
  */
 export const PRODUCTION_SEEDS = {
 	types: [
-		{ id: 'type-activity', name: 'Activity' },
-		{ id: 'type-condition', name: 'Condition' },
-		{ id: 'type-outcome', name: 'Outcome' },
+		{ id: 'type-activity', name: 'Activity', color: '#3B82F6', display_order: 1 },    // Blue
+		{ id: 'type-condition', name: 'Condition', color: '#F59E0B', display_order: 2 },  // Amber
+		{ id: 'type-outcome', name: 'Outcome', color: '#22C55E', display_order: 3 },      // Green
 	],
 	categories: [
 		// Activity categories
@@ -201,7 +203,8 @@ export async function applyProductionSeeds(db: Database): Promise<void> {
 		
 		// Insert types
 		for (const type of PRODUCTION_SEEDS.types) {
-			await db.exec('INSERT INTO types (id, name) VALUES (?, ?)', [type.id, type.name]);
+			await db.exec('INSERT INTO types (id, name, color, display_order) VALUES (?, ?, ?, ?)', 
+				[type.id, type.name, type.color, type.display_order]);
 		}
 		logger.info(`Inserted ${PRODUCTION_SEEDS.types.length} types`);
 		

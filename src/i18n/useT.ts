@@ -94,6 +94,7 @@ type TranslationKey =
   | 'configureCatalog.typeActivity'
   | 'configureCatalog.typeCondition'
   | 'configureCatalog.typeOutcome'
+  | 'configureCatalog.selectType'
   | 'catalog.title'
   | 'catalog.categories'
   | 'catalog.items'
@@ -344,6 +345,7 @@ const translations: Record<TranslationKey, string> = {
   'configureCatalog.typeActivity': 'Activity',
   'configureCatalog.typeCondition': 'Condition',
   'configureCatalog.typeOutcome': 'Outcome',
+  'configureCatalog.selectType': 'Select Type',
   'catalog.title': 'Catalog',
   'catalog.categories': 'Categories',
   'catalog.items': 'Items',

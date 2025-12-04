@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,14 @@ import {
   StyleSheet,
   StatusBar,
   Alert,
+  Modal,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { useVariant } from '../mock';
 import { getConfigureCatalog, CatalogItem, CatalogBundle } from '../data/configureCatalog';
+import { getTypes, LogType, getTypeColor } from '../data/types';
 
 interface ConfigureCatalogProps {
   onBack?: () => void;
@@ -21,8 +23,6 @@ interface ConfigureCatalogProps {
   onNavigateEditItem?: (params: { itemId?: string; typeId?: string }) => void;
   onNavigateEditBundle?: (params: { bundleId?: string; typeId?: string }) => void;
 }
-
-type ItemType = 'Activity' | 'Condition' | 'Outcome';
 
 export default function ConfigureCatalog({
   onBack,
@@ -32,19 +32,41 @@ export default function ConfigureCatalog({
 }: ConfigureCatalogProps) {
   const theme = useTheme();
   const t = useT();
-  const { variant } = useVariant();
+  const variant = useVariant();
   
-  const catalog = getConfigureCatalog(variant as 'happy' | 'empty' | 'error');
+  const catalog = getConfigureCatalog(variant);
   
-  const [selectedType, setSelectedType] = useState<ItemType>('Activity');
+  // Dynamic types from database
+  const [types, setTypes] = useState<LogType[]>([]);
+  const [selectedTypeId, setSelectedTypeId] = useState<string>('');
+  const [typePickerVisible, setTypePickerVisible] = useState(false);
   const [filterText, setFilterText] = useState('');
   const [filterVisible, setFilterVisible] = useState(false);
   const [showBundles, setShowBundles] = useState(false);
   
+  // Load types on mount
+  useEffect(() => {
+    async function loadTypes() {
+      const loadedTypes = await getTypes(variant);
+      setTypes(loadedTypes);
+      if (loadedTypes.length > 0 && !selectedTypeId) {
+        setSelectedTypeId(loadedTypes[0].id);
+      }
+    }
+    loadTypes();
+  }, [variant]);
+  
+  // Get selected type object
+  const selectedType = useMemo(() => {
+    return types.find(t => t.id === selectedTypeId) || null;
+  }, [types, selectedTypeId]);
+  
   // Filter items by type and search text
   const filteredItems = useMemo(() => {
+    if (!selectedType) return [];
+    
     let items = catalog.items.filter(
-      (item) => item.type.toLowerCase() === selectedType.toLowerCase()
+      (item) => item.type.toLowerCase() === selectedType.name.toLowerCase()
     );
     
     if (filterText.trim()) {
@@ -61,8 +83,10 @@ export default function ConfigureCatalog({
   
   // Filter bundles by type and search text
   const filteredBundles = useMemo(() => {
+    if (!selectedType) return [];
+    
     let bundles = catalog.bundles.filter(
-      (bundle) => bundle.type.toLowerCase() === selectedType.toLowerCase()
+      (bundle) => bundle.type.toLowerCase() === selectedType.name.toLowerCase()
     );
     
     if (filterText.trim()) {
@@ -75,33 +99,16 @@ export default function ConfigureCatalog({
     return bundles;
   }, [catalog.bundles, selectedType, filterText]);
   
-  // Get type badge color
-  const getTypeBadgeColor = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'activity':
-        return theme.accentActivity;
-      case 'condition':
-        return theme.accentCondition;
-      case 'outcome':
-        return theme.accentOutcome;
-      default:
-        return theme.textSecondary;
-    }
-  };
-  
-  // Get type ID from type name
-  const getTypeId = (type: ItemType): string => {
-    switch (type) {
-      case 'Activity': return 'type-activity';
-      case 'Condition': return 'type-condition';
-      case 'Outcome': return 'type-outcome';
-    }
+  // Get color for a type (by name, for items/bundles that store type as string)
+  const getTypeBadgeColor = (typeName: string): string => {
+    const type = types.find(t => t.name.toLowerCase() === typeName.toLowerCase());
+    return getTypeColor(type || null);
   };
   
   // Handle add item
   const handleAddItem = () => {
-    if (onNavigateEditItem) {
-      onNavigateEditItem({ typeId: getTypeId(selectedType) });
+    if (onNavigateEditItem && selectedTypeId) {
+      onNavigateEditItem({ typeId: selectedTypeId });
     } else {
       Alert.alert(
         t('configureCatalog.addItem'),
@@ -113,8 +120,8 @@ export default function ConfigureCatalog({
   
   // Handle add bundle
   const handleAddBundle = () => {
-    if (onNavigateEditBundle) {
-      onNavigateEditBundle({ typeId: getTypeId(selectedType) });
+    if (onNavigateEditBundle && selectedTypeId) {
+      onNavigateEditBundle({ typeId: selectedTypeId });
     } else {
       Alert.alert(
         t('configureCatalog.addBundle'),
@@ -329,38 +336,21 @@ export default function ConfigureCatalog({
         </TouchableOpacity>
       </View>
       
-      {/* Type Filter (applies to both items and bundles) */}
-      <View style={[styles.typeBar, { borderBottomColor: theme.border }]}>
-        {(['Activity', 'Condition', 'Outcome'] as ItemType[]).map((type) => {
-          const typeLabel = type === 'Activity' 
-            ? t('configureCatalog.typeActivity')
-            : type === 'Condition' 
-            ? t('configureCatalog.typeCondition')
-            : t('configureCatalog.typeOutcome');
-          return (
-            <TouchableOpacity
-              key={type}
-              style={[
-                styles.typeChip,
-                {
-                  backgroundColor: selectedType === type ? getTypeBadgeColor(type) : theme.surface,
-                  borderColor: getTypeBadgeColor(type),
-                },
-              ]}
-              onPress={() => setSelectedType(type)}
-            >
-              <Text
-                style={[
-                  styles.typeChipText,
-                  { color: selectedType === type ? '#fff' : getTypeBadgeColor(type) },
-                ]}
-              >
-                {typeLabel}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      {/* Type Selector Dropdown */}
+      <TouchableOpacity
+        style={[styles.typeSelector, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}
+        onPress={() => setTypePickerVisible(true)}
+      >
+        <View style={styles.typeSelectorContent}>
+          {selectedType && (
+            <View style={[styles.typeColorDot, { backgroundColor: getTypeColor(selectedType) }]} />
+          )}
+          <Text style={[styles.typeSelectorText, { color: theme.textPrimary }]}>
+            {selectedType?.name || t('configureCatalog.selectType')}
+          </Text>
+        </View>
+        <Ionicons name="chevron-down" size={20} color={theme.textSecondary} />
+      </TouchableOpacity>
       
       {/* Content List */}
       {showBundles ? (
@@ -416,6 +406,44 @@ export default function ConfigureCatalog({
           </Text>
         </TouchableOpacity>
       </View>
+      
+      {/* Type Picker Dropdown */}
+      <Modal
+        visible={typePickerVisible}
+        animationType="none"
+        transparent={true}
+        onRequestClose={() => setTypePickerVisible(false)}
+      >
+        <TouchableOpacity 
+          style={styles.dropdownOverlay}
+          activeOpacity={1}
+          onPress={() => setTypePickerVisible(false)}
+        >
+          <View style={[styles.dropdownContent, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            {types.map((type) => (
+              <TouchableOpacity
+                key={type.id}
+                style={[
+                  styles.dropdownItem,
+                  selectedTypeId === type.id && { backgroundColor: theme.accentPrimary + '20' },
+                ]}
+                onPress={() => {
+                  setSelectedTypeId(type.id);
+                  setTypePickerVisible(false);
+                }}
+              >
+                <View style={[styles.typeColorDot, { backgroundColor: getTypeColor(type) }]} />
+                <Text style={[styles.dropdownItemText, { color: theme.textPrimary }]}>
+                  {type.name}
+                </Text>
+                {selectedTypeId === type.id && (
+                  <Ionicons name="checkmark" size={20} color={theme.accentPrimary} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -472,23 +500,56 @@ const styles = StyleSheet.create({
     ...typography.body,
     fontWeight: '600',
   },
-  typeBar: {
+  typeSelector: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing[2],
-    paddingVertical: spacing[2],
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
     borderBottomWidth: 1,
   },
-  typeChip: {
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[1],
-    borderRadius: 16,
-    borderWidth: 1,
+  typeSelectorContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  typeChipText: {
-    ...typography.small,
-    fontWeight: '600',
+  typeSelectorText: {
+    ...typography.body,
+    fontWeight: '500',
+  },
+  typeColorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: spacing[2],
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  dropdownContent: {
+    position: 'absolute',
+    top: 140, // Position below header + toggle bar + type selector area
+    left: spacing[3],
+    right: spacing[3],
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[3],
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(128, 128, 128, 0.2)',
+  },
+  dropdownItemText: {
+    ...typography.body,
+    flex: 1,
   },
   listContent: {
     padding: spacing[3],

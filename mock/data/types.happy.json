@@ -1,0 +1,8 @@
+{
+  "types": [
+    { "id": "type-activity", "name": "Activity", "color": "#3B82F6", "displayOrder": 1 },
+    { "id": "type-condition", "name": "Condition", "color": "#F59E0B", "displayOrder": 2 },
+    { "id": "type-outcome", "name": "Outcome", "color": "#22C55E", "displayOrder": 3 }
+  ]
+}
+
