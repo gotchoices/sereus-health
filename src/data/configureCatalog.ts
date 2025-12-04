@@ -47,4 +47,82 @@ export function getConfigureCatalog(
   return happyData;
 }
 
+// Type name to ID mapping
+const TYPE_NAME_TO_ID: Record<string, string> = {
+  'Activity': 'type-activity',
+  'Condition': 'type-condition',
+  'Outcome': 'type-outcome',
+};
+
+// Category name to ID mapping (simplified - in reality this would be in DB)
+const CATEGORY_NAME_TO_ID: Record<string, string> = {
+  'Eating': 'cat-eating',
+  'Exercise': 'cat-exercise',
+  'Recreation': 'cat-recreation',
+  'Stress': 'cat-stress',
+  'Weather': 'cat-weather',
+  'Environment': 'cat-environment',
+  'Pain': 'cat-pain',
+  'Health': 'cat-health',
+  'Well-being': 'cat-wellbeing',
+};
+
+export interface ItemDetails {
+  id: string;
+  name: string;
+  description?: string;
+  typeId: string;
+  categoryId: string;
+  quantifiers: Array<{
+    id: string;
+    name: string;
+    minValue?: number;
+    maxValue?: number;
+    units?: string;
+  }>;
+}
+
+/**
+ * Get item details by ID
+ * 
+ * @param itemId - The item ID to look up
+ * @param variant - Mock variant to use
+ * @returns Item details or null if not found
+ */
+export function getItemById(
+  itemId: string,
+  variant: ConfigureCatalogVariant = 'happy',
+): ItemDetails | null {
+  const catalog = getConfigureCatalog(variant);
+  const item = catalog.items.find(i => i.id === itemId);
+  
+  if (!item) {
+    return null;
+  }
+  
+  return {
+    id: item.id,
+    name: item.name,
+    description: undefined, // Mock data doesn't have description
+    typeId: TYPE_NAME_TO_ID[item.type] || '',
+    categoryId: CATEGORY_NAME_TO_ID[item.category] || '',
+    quantifiers: [], // Mock data doesn't have quantifiers
+  };
+}
+
+/**
+ * Get bundle details by ID
+ * 
+ * @param bundleId - The bundle ID to look up
+ * @param variant - Mock variant to use
+ * @returns Bundle details or null if not found
+ */
+export function getBundleById(
+  bundleId: string,
+  variant: ConfigureCatalogVariant = 'happy',
+): CatalogBundle | null {
+  const catalog = getConfigureCatalog(variant);
+  return catalog.bundles.find(b => b.id === bundleId) || null;
+}
+
 

@@ -16,6 +16,8 @@ import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { TypeSelector } from '../components/TypeSelector';
 import { LogType } from '../data/types';
+import { getItemById } from '../data/configureCatalog';
+import { useVariant } from '../mock';
 
 interface EditItemProps {
   itemId?: string;
@@ -68,6 +70,7 @@ export default function EditItem({
 }: EditItemProps) {
   const theme = useTheme();
   const t = useT();
+  const variant = useVariant();
   
   const isEditing = Boolean(itemId);
   
@@ -77,6 +80,28 @@ export default function EditItem({
   const [selectedTypeId, setSelectedTypeId] = useState(initialTypeId || '');
   const [categoryId, setCategoryId] = useState('');
   const [quantifiers, setQuantifiers] = useState<QuantifierData[]>([]);
+  const [isLoading, setIsLoading] = useState(!!itemId);
+  
+  // Load existing item data when editing
+  useEffect(() => {
+    if (itemId) {
+      const itemData = getItemById(itemId, variant as any);
+      if (itemData) {
+        setName(itemData.name);
+        setDescription(itemData.description || '');
+        setSelectedTypeId(itemData.typeId);
+        setCategoryId(itemData.categoryId);
+        setQuantifiers(itemData.quantifiers.map(q => ({
+          id: q.id,
+          name: q.name,
+          minValue: q.minValue,
+          maxValue: q.maxValue,
+          units: q.units,
+        })));
+      }
+      setIsLoading(false);
+    }
+  }, [itemId, variant]);
   
   // Modal state
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,8 @@ import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { TypeSelector } from '../components/TypeSelector';
 import { LogType } from '../data/types';
+import { getBundleById, getConfigureCatalog } from '../data/configureCatalog';
+import { useVariant } from '../mock';
 
 interface EditBundleProps {
   bundleId?: string;
@@ -71,6 +73,13 @@ const MOCK_ITEMS: Record<string, { id: string; name: string; category: string }[
   ],
 };
 
+// Type name to ID mapping
+const TYPE_NAME_TO_ID: Record<string, string> = {
+  'Activity': 'type-activity',
+  'Condition': 'type-condition',
+  'Outcome': 'type-outcome',
+};
+
 export default function EditBundle({
   bundleId,
   typeId: initialTypeId,
@@ -79,6 +88,7 @@ export default function EditBundle({
 }: EditBundleProps) {
   const theme = useTheme();
   const t = useT();
+  const variant = useVariant();
   
   const isEditing = Boolean(bundleId);
   
@@ -86,11 +96,43 @@ export default function EditBundle({
   const [name, setName] = useState('');
   const [selectedTypeId, setSelectedTypeId] = useState(initialTypeId || '');
   const [bundleItems, setBundleItems] = useState<BundleMemberData[]>([]);
+  const [isLoading, setIsLoading] = useState(!!bundleId);
   
   // Modal state
   const [itemPickerVisible, setItemPickerVisible] = useState(false);
   const [itemFilter, setItemFilter] = useState('');
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
+  
+  // Load existing bundle data when editing
+  useEffect(() => {
+    if (bundleId) {
+      const bundleData = getBundleById(bundleId, variant as any);
+      if (bundleData) {
+        setName(bundleData.name);
+        setSelectedTypeId(TYPE_NAME_TO_ID[bundleData.type] || '');
+        
+        // Load bundle items from the catalog
+        const catalog = getConfigureCatalog(variant as any);
+        const items: BundleMemberData[] = bundleData.itemIds
+          .map((itemId, index) => {
+            const item = catalog.items.find(i => i.id === itemId);
+            if (item) {
+              return {
+                itemId: item.id,
+                itemName: item.name,
+                categoryName: item.category,
+                displayOrder: index,
+              };
+            }
+            return null;
+          })
+          .filter((i): i is BundleMemberData => i !== null);
+        
+        setBundleItems(items);
+      }
+      setIsLoading(false);
+    }
+  }, [bundleId, variant]);
   
   // Handle type change
   const handleTypeChange = (typeId: string, _type: LogType) => {
