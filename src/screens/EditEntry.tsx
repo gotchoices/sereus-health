@@ -33,12 +33,20 @@ import {
   getTypeStats,
   getCategoryStats,
   getItemStats,
+  getAllItemsForType,
   getMostCommonType,
   getMostCommonCategory,
   type TypeStat,
   type CategoryStat,
   type ItemStat,
 } from '../data/editEntryStats';
+
+// Sentinel for "All Categories" option
+const ALL_CATEGORIES_SENTINEL: CategoryStat = {
+  id: '__all__',
+  name: '', // Will be replaced with t('category.all')
+  usageCount: 0,
+};
 
 interface EditEntryProps {
   mode?: 'new' | 'edit' | 'clone';
@@ -129,11 +137,17 @@ export const EditEntry: React.FC<EditEntryProps> = ({
   // Load items when category changes
   useEffect(() => {
     if (selectedCategory) {
-      getItemStats(selectedCategory.id).then(setAllItems).catch(console.error);
+      if (selectedCategory.id === ALL_CATEGORIES_SENTINEL.id && selectedType) {
+        // "All Categories" selected - load all items for this type
+        getAllItemsForType(selectedType.id, variant).then(setAllItems).catch(console.error);
+      } else {
+        // Specific category selected
+        getItemStats(selectedCategory.id, variant).then(setAllItems).catch(console.error);
+      }
     } else {
       setAllItems([]);
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, selectedType, variant]);
 
   // Filtered data for pickers
   const filteredTypes = useMemo(() => {
@@ -143,10 +157,25 @@ export const EditEntry: React.FC<EditEntryProps> = ({
   }, [allTypes, typeFilter]);
 
   const filteredCategories = useMemo(() => {
-    if (!categoryFilter.trim()) return allCategories;
-    const query = categoryFilter.toLowerCase();
-    return allCategories.filter(cat => cat.name.toLowerCase().includes(query));
-  }, [allCategories, categoryFilter]);
+    // Start with actual categories
+    let cats = allCategories;
+    
+    // Filter by search query if provided
+    if (categoryFilter.trim()) {
+      const query = categoryFilter.toLowerCase();
+      cats = allCategories.filter(cat => cat.name.toLowerCase().includes(query));
+    }
+    
+    // Prepend "All Categories" option (only if no filter, or filter matches "all")
+    const allCatsLabel = t('category.all');
+    const showAllOption = !categoryFilter.trim() || 
+      allCatsLabel.toLowerCase().includes(categoryFilter.toLowerCase());
+    
+    if (showAllOption) {
+      return [{ ...ALL_CATEGORIES_SENTINEL, name: allCatsLabel }, ...cats];
+    }
+    return cats;
+  }, [allCategories, categoryFilter, t]);
 
   const filteredItems = useMemo(() => {
     if (!itemsFilter.trim()) return allItems;

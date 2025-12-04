@@ -99,6 +99,32 @@ export async function getItemStats(categoryId: string, variant: string = 'happy'
 }
 
 /**
+ * Get usage statistics for ALL items within a type (across all categories)
+ * Returns items sorted by usage count (descending)
+ * Use this when "All Categories" is selected
+ */
+export async function getAllItemsForType(typeId: string, variant: string = 'happy'): Promise<ItemStat[]> {
+  if (USE_QUEREUS) {
+    await ensureDatabaseInitialized();
+    return quereusStats.getAllItemsForType(typeId);
+  }
+  
+  // Use mock data - combine items from all categories for this type
+  const data = statsVariants[variant] || statsVariants.happy;
+  const categoriesForType = data.categoryStats[typeId] || [];
+  
+  // Collect all items from all categories of this type
+  const allItems: ItemStat[] = [];
+  for (const cat of categoriesForType) {
+    const items = data.itemStats[cat.id] || [];
+    allItems.push(...items);
+  }
+  
+  // Sort by usage count descending
+  return allItems.sort((a, b) => b.usageCount - a.usageCount);
+}
+
+/**
  * Get the most commonly used type
  * Returns null if no usage data exists
  */

@@ -13,11 +13,12 @@ Create, edit, or clone a log entry. Guides user through type → category → it
 
 ### Step 2: Category Selection  
 - Categories filtered by selected type
+- **"All"** as first option—shows all items across all categories of this type
 - **"+ Add Category"** at bottom (inherits selected type)
 - Single select, then auto-advance to items
 
 ### Step 3: Item Selection
-- Items filtered by selected category
+- Items filtered by selected category (or all categories if "All" was selected)
 - **"+ Add Item"** at bottom (inherits selected category)
 - **Multi-select** with checkboxes
 - Filter/search input at top

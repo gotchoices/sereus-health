@@ -159,6 +159,69 @@ export async function getItemStats(categoryId: string): Promise<ItemStat[]> {
 }
 
 /**
+ * Get usage statistics for ALL items within a type (across all categories)
+ * Use this when "All Categories" is selected
+ */
+export async function getAllItemsForType(typeId: string): Promise<ItemStat[]> {
+	const db = await getDatabase();
+	
+	// Get all items from all categories of this type
+	const itemStmt = await db.prepare(`
+		SELECT 
+			i.id,
+			i.name,
+			COUNT(DISTINCT lei.entry_id) as usageCount,
+			0 as isBundle
+		FROM items i
+		JOIN categories c ON c.id = i.category_id
+		LEFT JOIN log_entry_items lei ON lei.item_id = i.id
+		WHERE c.type_id = ?
+		GROUP BY i.id, i.name
+	`);
+	const itemResults = await asyncIterableToArray(itemStmt.all([typeId]));
+	
+	// Get bundles of this type
+	const bundleStmt = await db.prepare(`
+		SELECT 
+			b.id,
+			b.name,
+			COUNT(DISTINCT lei.entry_id) as usageCount,
+			1 as isBundle
+		FROM bundles b
+		LEFT JOIN log_entry_items lei ON lei.source_bundle_id = b.id
+		WHERE b.type_id = ?
+		GROUP BY b.id, b.name
+	`);
+	const bundleResults = await asyncIterableToArray(bundleStmt.all([typeId]));
+	
+	// Combine and sort
+	const combined = [
+		...itemResults.map(row => ({
+			id: row.id as string,
+			name: row.name as string,
+			usageCount: (row.usageCount as number) || 0,
+			isBundle: false,
+		})),
+		...bundleResults.map(row => ({
+			id: row.id as string,
+			name: row.name as string,
+			usageCount: (row.usageCount as number) || 0,
+			isBundle: true,
+		})),
+	];
+	
+	// Sort by usage count desc, then name asc
+	combined.sort((a, b) => {
+		if (b.usageCount !== a.usageCount) {
+			return b.usageCount - a.usageCount;
+		}
+		return a.name.localeCompare(b.name);
+	});
+	
+	return combined;
+}
+
+/**
  * Get the most commonly used type
  * Returns null if no types exist
  */

@@ -58,6 +58,7 @@ Create or edit an individual catalog item, including its name, description, cate
 - Filter-as-you-type to find category
 - Inline "Create new category" option at bottom
 - Creating category also creates it in the database
+- Category is required when saving (cannot be empty)
 
 ### Quantifier Management
 - List existing quantifiers if editing

@@ -238,6 +238,9 @@ type TranslationKey =
   // TypeSelector component
   | 'typeSelector.selectType'
   
+  // Common category filter
+  | 'category.all'
+  
   // SelectionList component
   | 'selectionList.filterPlaceholder'
   | 'selectionList.clearFilter'
@@ -493,6 +496,9 @@ const translations: Record<TranslationKey, string> = {
   
   // TypeSelector component
   'typeSelector.selectType': 'Select Type',
+  
+  // Common category filter
+  'category.all': 'All Categories',
   
   // SelectionList component
   'selectionList.filterPlaceholder': 'Filter...',
