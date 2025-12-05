@@ -7,6 +7,7 @@ import {
   TextInput,
   StyleSheet,
   StatusBar,
+  Image,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
@@ -253,7 +254,10 @@ export default function LogHistory({
       
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
-        <Text style={[styles.appTitle, { color: theme.textPrimary }]}>{t('app.title')}</Text>
+        <View style={styles.headerLeft}>
+          <Image source={require('../assets/logo.png')} style={styles.logo} />
+          <Text style={[styles.appTitle, { color: theme.textPrimary }]}>{t('app.title')}</Text>
+        </View>
         <View style={styles.headerActions}>
           <TouchableOpacity
             onPress={() => setFilterVisible(!filterVisible)}
@@ -358,6 +362,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[3],  // 16
     paddingVertical: spacing[2],    // 8
     borderBottomWidth: 1,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],  // 8
+  },
+  logo: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
   },
   appTitle: {
     ...typography.title,

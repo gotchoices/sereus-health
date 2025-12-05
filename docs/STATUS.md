@@ -124,8 +124,20 @@ Once Quereus resolves the RN compatibility issues, perform these cleanup steps:
   - [ ] Remove this cleanup checklist
   - [ ] Document any remaining limitations or known issues
 
+### Build & Deployment
+
+- [x] **Create git repo and push**: Initialize git repository and push work to remote.
+- [ ] **Implement fastlane build system**: Set up fastlane similar to what exists in `devel/mypitch` for automated builds and deployment.
+- [ ] **Configure real keystore files**: Use real Android keystore files specified by environment variables (not committed to repo).
+- [x] **Integrate app logos**: Add app icons/logos for Android and iOS builds.
+- [ ] **Verify Quereus integration still works**: Confirm running the app with `USE_QUEREUS = true` still functions after recent changes.
+
+### Features
+
+- [ ] **CSV export**: Implement export feature per Story 04 - export all or filtered log records to CSV, with share option.
+
 ### Possible Future Enhancements (Post-MVP)
 
 - [ ] **Saved/named graph templates**: Allow Bob to save a configured graph (selected items, date range, options) under a name and reopen or tweak it later, instead of recreating it from scratch each time.
-- [ ] **AI-assisted insights portal**: Provide an in-app “analysis” or “insights” view where an AI agent can help Bob explore his data (e.g., “what seems correlated with my headaches?”) using his stored logs as context.
+- [ ] **AI-assisted insights portal**: Provide an in-app "analysis" or "insights" view where an AI agent can help Bob explore his data (e.g., "what seems correlated with my headaches?") using his stored logs as context.
 - [ ] **Built-in statistical/correlation analysis**: Add native statistical tools (e.g., basic correlation, trend detection, comparisons) so Bob can go beyond raw graphs, without exporting to external tools.

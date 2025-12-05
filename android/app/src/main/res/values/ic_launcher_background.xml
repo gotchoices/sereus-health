@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Peach background color for app icon -->
+    <color name="ic_launcher_background">#fdf8f0</color>
+</resources>
+
