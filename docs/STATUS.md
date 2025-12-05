@@ -127,8 +127,8 @@ Once Quereus resolves the RN compatibility issues, perform these cleanup steps:
 ### Build & Deployment
 
 - [x] **Create git repo and push**: Initialize git repository and push work to remote.
-- [ ] **Implement fastlane build system**: Set up fastlane similar to what exists in `devel/mypitch` for automated builds and deployment.
-- [ ] **Configure real keystore files**: Use real Android keystore files specified by environment variables (not committed to repo).
+- [x] **Implement fastlane build system**: Set up fastlane similar to what exists in `devel/mypitch` for automated builds and deployment.
+- [x] **Configure real keystore files**: Use real Android keystore files specified by environment variables (not committed to repo).
 - [x] **Integrate app logos**: Add app icons/logos for Android and iOS builds.
 - [ ] **Verify Quereus integration still works**: Confirm running the app with `USE_QUEREUS = true` still functions after recent changes.
 

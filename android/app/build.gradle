@@ -93,15 +93,23 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            // Use environment variables for production keystore
+            // Set SEREUS_STORE_FILE to the path of your keystore file
+            // Set SEREUS_STORE_PASSWORD to your keystore password
+            // Optionally set SEREUS_KEY_ALIAS (defaults to org.sereus.health)
+            keyAlias System.getenv("SEREUS_KEY_ALIAS") ?: "org.sereus.health"
+            storeFile file(System.getenv("SEREUS_STORE_FILE") ?: "release.keystore")
+            storePassword System.getenv("SEREUS_STORE_PASSWORD") ?: "not_set"
+            keyPassword System.getenv("SEREUS_STORE_PASSWORD") ?: "not_set"
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
