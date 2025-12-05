@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,9 +12,10 @@ import {
   Share,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { pick, types as docTypes, isErrorWithCode, errorCodes } from '@react-native-documents/picker';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
-import { getConfigureCatalog, CatalogItem, CatalogBundle } from '../data/configureCatalog';
+import { getConfigureCatalog, CatalogItem, CatalogBundle, importCatalogItems, type ImportCatalogItem } from '../data/configureCatalog';
 import { getTypes, LogType, getTypeColor } from '../data/types';
 
 interface ConfigureCatalogProps {
@@ -150,13 +151,88 @@ export default function ConfigureCatalog({
     }
   };
   
-  // Handle import (placeholder)
-  const handleImport = () => {
-    Alert.alert(
-      t('configureCatalog.importTitle'),
-      t('configureCatalog.importNotImplemented'),
-      [{ text: t('common.ok') }]
-    );
+  // Parse CSV content into catalog items
+  const parseCatalogCSV = (content: string): ImportCatalogItem[] => {
+    const lines = content.trim().split('\n');
+    if (lines.length < 2) return [];
+    
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const items: ImportCatalogItem[] = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+      
+      const type = values[headers.indexOf('type')] || 'Activity';
+      const category = values[headers.indexOf('category')] || 'General';
+      const name = values[headers.indexOf('name')] || values[headers.indexOf('item')] || '';
+      
+      if (name) {
+        items.push({ type, category, name });
+      }
+    }
+    
+    return items;
+  };
+  
+  // Reload catalog after import
+  const reloadCatalog = useCallback(() => {
+    // Force re-render by updating types
+    getTypes().then(setTypes);
+  }, []);
+  
+  // Handle import
+  const handleImport = async () => {
+    try {
+      const result = await pick({
+        type: [docTypes.plainText, docTypes.allFiles],
+      });
+      
+      const file = result[0];
+      if (!file.uri) {
+        Alert.alert(t('common.error'), 'No file selected');
+        return;
+      }
+      
+      const response = await fetch(file.uri);
+      const content = await response.text();
+      
+      const parsedItems = parseCatalogCSV(content);
+      
+      if (parsedItems.length === 0) {
+        Alert.alert(t('common.error'), t('configureCatalog.importEmpty'));
+        return;
+      }
+      
+      Alert.alert(
+        t('configureCatalog.importPreview'),
+        t('configureCatalog.importPreviewMessage', { count: parsedItems.length }),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('configureCatalog.importConfirm'),
+            onPress: async () => {
+              try {
+                const importResult = await importCatalogItems(parsedItems);
+                Alert.alert(
+                  t('common.saved'),
+                  t('configureCatalog.importSuccess', { count: importResult.imported })
+                );
+                reloadCatalog();
+              } catch (err) {
+                console.error('Import failed:', err);
+                Alert.alert(t('common.error'), t('configureCatalog.importFailed'));
+              }
+            },
+          },
+        ]
+      );
+    } catch (err) {
+      if (isErrorWithCode(err) && err.code === errorCodes.OPERATION_CANCELED) {
+        return;
+      }
+      console.error('Import error:', err);
+      Alert.alert(t('common.error'), t('configureCatalog.importFailed'));
+    }
   };
   
   // Show import/export menu

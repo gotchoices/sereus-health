@@ -384,3 +384,102 @@ export async function deleteLogEntry(entryId: string): Promise<void> {
 	`, [entryId]);
 }
 
+/**
+ * Input for inserting log entry using names (for import)
+ */
+export interface InsertLogEntryInput {
+	timestamp: string;
+	typeName: string;
+	categoryName: string;
+	items: Array<{ name: string; categoryName: string }>;
+	comment: string | null;
+}
+
+/**
+ * Get or create a type by name
+ */
+async function getOrCreateType(db: Database, typeName: string): Promise<string> {
+	const stmt = await db.prepare('SELECT id FROM types WHERE name = ?');
+	const row = await stmt.get([typeName]);
+	await stmt.finalize();
+	
+	if (row) {
+		return row.id as string;
+	}
+	
+	const id = `type-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 7)}`;
+	await db.exec('INSERT INTO types (id, name, display_order) VALUES (?, ?, ?)', [id, typeName, 999]);
+	return id;
+}
+
+/**
+ * Get or create a category by name and type
+ */
+async function getOrCreateCategory(db: Database, categoryName: string, typeId: string): Promise<string> {
+	const stmt = await db.prepare('SELECT id FROM categories WHERE name = ? AND type_id = ?');
+	const row = await stmt.get([categoryName, typeId]);
+	await stmt.finalize();
+	
+	if (row) {
+		return row.id as string;
+	}
+	
+	const id = `cat-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 7)}`;
+	await db.exec('INSERT INTO categories (id, name, type_id) VALUES (?, ?, ?)', [id, categoryName, typeId]);
+	return id;
+}
+
+/**
+ * Get or create an item by name and category
+ */
+async function getOrCreateItem(db: Database, itemName: string, categoryId: string): Promise<string> {
+	const stmt = await db.prepare('SELECT id FROM items WHERE name = ? AND category_id = ?');
+	const row = await stmt.get([itemName, categoryId]);
+	await stmt.finalize();
+	
+	if (row) {
+		return row.id as string;
+	}
+	
+	const id = `item-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 7)}`;
+	await db.exec('INSERT INTO items (id, name, category_id) VALUES (?, ?, ?)', [id, itemName, categoryId]);
+	return id;
+}
+
+/**
+ * Insert a log entry using names (for import)
+ * Creates types, categories, and items if they don't exist
+ */
+export async function insertLogEntry(input: InsertLogEntryInput): Promise<string> {
+	const db = await getDatabase();
+	const entryId = generateId('entry');
+	
+	await db.exec('BEGIN');
+	
+	try {
+		const typeId = await getOrCreateType(db, input.typeName);
+		
+		await db.exec(`
+			INSERT INTO log_entries (id, timestamp, type_id, comment)
+			VALUES (?, ?, ?, ?)
+		`, [entryId, input.timestamp, typeId, input.comment]);
+		
+		for (const itemInput of input.items) {
+			const catName = itemInput.categoryName || input.categoryName || 'General';
+			const categoryId = await getOrCreateCategory(db, catName, typeId);
+			const itemId = await getOrCreateItem(db, itemInput.name, categoryId);
+			
+			await db.exec(`
+				INSERT INTO log_entry_items (entry_id, item_id, source_bundle_id)
+				VALUES (?, ?, NULL)
+			`, [entryId, itemId]);
+		}
+		
+		await db.exec('COMMIT');
+		return entryId;
+	} catch (error) {
+		await db.exec('ROLLBACK');
+		throw error;
+	}
+}
+

@@ -187,3 +187,63 @@ export async function getLogEntryById(entryId: string): Promise<LogEntryDetail |
 	// For now, fall back to mock data
 	return getLogEntryByIdFromMock(entryId);
 }
+
+/**
+ * Import log entry structure (from CSV/YAML)
+ */
+export interface ImportLogEntry {
+	timestamp: string;
+	type: string;
+	category: string;
+	items: string[];
+	comment?: string;
+}
+
+/**
+ * Import result
+ */
+export interface ImportResult {
+	imported: number;
+	skipped: number;
+	errors: string[];
+}
+
+/**
+ * Import log entries from parsed data
+ */
+export async function importLogEntries(entries: ImportLogEntry[]): Promise<ImportResult> {
+	if (!USE_QUEREUS) {
+		// Mock mode: can't really import, just pretend
+		console.log('[Mock] Would import', entries.length, 'entries');
+		return { imported: entries.length, skipped: 0, errors: [] };
+	}
+	
+	await ensureDatabaseInitialized();
+	
+	// Import via Quereus
+	const { insertLogEntry } = await import('../db/logEntries');
+	
+	let imported = 0;
+	let skipped = 0;
+	const errors: string[] = [];
+	
+	for (const entry of entries) {
+		try {
+			// Check for duplicate (same timestamp + type + items)
+			// For now, just insert - idempotency can be added later
+			await insertLogEntry({
+				timestamp: entry.timestamp,
+				typeName: entry.type,
+				categoryName: entry.category,
+				items: entry.items.map(name => ({ name, categoryName: entry.category })),
+				comment: entry.comment || null,
+			});
+			imported++;
+		} catch (err) {
+			console.error('Failed to import entry:', err);
+			errors.push(`Failed to import entry at ${entry.timestamp}: ${err}`);
+		}
+	}
+	
+	return { imported, skipped, errors };
+}

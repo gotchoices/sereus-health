@@ -56,6 +56,6 @@ export async function resetDatabase(): Promise<void> {
 	const db = await getDatabase();
 	
 	// Re-apply schema with seed data
-	await applySchema(db, true);
+	await applySchema(db);
 }
 

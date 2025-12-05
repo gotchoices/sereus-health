@@ -1,3 +1,5 @@
+import { USE_QUEREUS } from '../db/config';
+import { ensureDatabaseInitialized } from '../db/init';
 import { getVariant } from '../mock';
 import happyJson from '../../mock/data/configure-catalog.happy.json';
 import emptyJson from '../../mock/data/configure-catalog.empty.json';
@@ -114,6 +116,59 @@ export function getItemById(itemId: string): ItemDetails | null {
 export function getBundleById(bundleId: string): CatalogBundle | null {
   const catalog = getConfigureCatalog();
   return catalog.bundles.find(b => b.id === bundleId) || null;
+}
+
+/**
+ * Import catalog item structure
+ */
+export interface ImportCatalogItem {
+  type: string;
+  category: string;
+  name: string;
+}
+
+/**
+ * Import result
+ */
+export interface ImportCatalogResult {
+  imported: number;
+  skipped: number;
+  errors: string[];
+}
+
+/**
+ * Import catalog items from parsed data
+ */
+export async function importCatalogItems(items: ImportCatalogItem[]): Promise<ImportCatalogResult> {
+  if (!USE_QUEREUS) {
+    // Mock mode: can't really import
+    console.log('[Mock] Would import', items.length, 'catalog items');
+    return { imported: items.length, skipped: 0, errors: [] };
+  }
+  
+  await ensureDatabaseInitialized();
+  
+  const { insertCatalogItem } = await import('../db/catalog');
+  
+  let imported = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+  
+  for (const item of items) {
+    try {
+      await insertCatalogItem({
+        typeName: item.type,
+        categoryName: item.category,
+        itemName: item.name,
+      });
+      imported++;
+    } catch (err) {
+      console.error('Failed to import item:', err);
+      errors.push(`Failed to import "${item.name}": ${err}`);
+    }
+  }
+  
+  return { imported, skipped, errors };
 }
 
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,9 +12,10 @@ import {
   Share,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { pick, types as docTypes, isErrorWithCode, errorCodes } from '@react-native-documents/picker';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
-import { getLogHistory, LogEntry } from '../data/logHistory';
+import { getLogHistory, LogEntry, importLogEntries, type ImportLogEntry } from '../data/logHistory';
 
 interface LogHistoryProps {
   onAddNew: () => void;
@@ -102,28 +103,23 @@ export default function LogHistory({
   
   // Generate CSV from entries
   const generateCSV = (entriesToExport: LogEntry[]): string => {
-    const headers = ['timestamp', 'type', 'category', 'item', 'comment'];
+    const headers = ['timestamp', 'type', 'item', 'comment'];
     const rows = [headers.join(',')];
     
     for (const entry of entriesToExport) {
+      const comment = `"${(entry.comment || '').replace(/"/g, '""')}"`;
+      
       // One row per item in the entry
       if (entry.items.length === 0) {
         // Entry with no items (just a comment/note)
-        rows.push([
-          entry.timestamp,
-          entry.type,
-          entry.category || '',
-          '',
-          `"${(entry.comment || '').replace(/"/g, '""')}"`,
-        ].join(','));
+        rows.push([entry.timestamp, entry.type, '', comment].join(','));
       } else {
         for (const item of entry.items) {
           rows.push([
             entry.timestamp,
             entry.type,
-            entry.category || '',
             `"${item.replace(/"/g, '""')}"`,
-            `"${(entry.comment || '').replace(/"/g, '""')}"`,
+            comment,
           ].join(','));
         }
       }
@@ -149,14 +145,119 @@ export default function LogHistory({
     }
   };
   
-  // Handle import (placeholder)
-  const handleImport = () => {
-    // TODO: Implement file picker and import logic
-    Alert.alert(
-      t('logHistory.importTitle'),
-      t('logHistory.importNotImplemented'),
-      [{ text: t('common.ok') }]
-    );
+  // Parse CSV content into entries
+  const parseCSV = (content: string): ImportLogEntry[] => {
+    const lines = content.trim().split('\n');
+    if (lines.length < 2) return []; // Need header + at least one row
+    
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const entries: ImportLogEntry[] = [];
+    const entryMap = new Map<string, ImportLogEntry>();
+    
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+      
+      const timestamp = values[headers.indexOf('timestamp')] || new Date().toISOString();
+      const type = values[headers.indexOf('type')] || 'Activity';
+      // Category is optional - may or may not be in CSV
+      const categoryIdx = headers.indexOf('category');
+      const category = categoryIdx >= 0 ? (values[categoryIdx] || 'General') : 'General';
+      const item = values[headers.indexOf('item')] || '';
+      const comment = values[headers.indexOf('comment')] || '';
+      
+      // Group by timestamp+type to combine items
+      const key = `${timestamp}-${type}`;
+      if (entryMap.has(key)) {
+        const existing = entryMap.get(key)!;
+        if (item && !existing.items.includes(item)) {
+          existing.items.push(item);
+        }
+      } else {
+        entryMap.set(key, {
+          timestamp,
+          type,
+          category,
+          items: item ? [item] : [],
+          comment: comment || undefined,
+        });
+      }
+    }
+    
+    return Array.from(entryMap.values());
+  };
+  
+  // Reload entries after import
+  const reloadEntries = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getLogHistory();
+      setEntries(data);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to reload log history:', err);
+      setError(t('logHistory.errorLoading'));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+  
+  // Handle import
+  const handleImport = async () => {
+    try {
+      const result = await pick({
+        type: [docTypes.plainText, docTypes.allFiles],
+      });
+      
+      const file = result[0];
+      if (!file.uri) {
+        Alert.alert(t('common.error'), 'No file selected');
+        return;
+      }
+      
+      // Read file content
+      const response = await fetch(file.uri);
+      const content = await response.text();
+      
+      // Parse based on content (CSV for now)
+      const parsedEntries = parseCSV(content);
+      
+      if (parsedEntries.length === 0) {
+        Alert.alert(t('common.error'), t('logHistory.importEmpty'));
+        return;
+      }
+      
+      // Show preview and confirm
+      Alert.alert(
+        t('logHistory.importPreview'),
+        t('logHistory.importPreviewMessage', { count: parsedEntries.length }),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('logHistory.importConfirm'),
+            onPress: async () => {
+              try {
+                const result = await importLogEntries(parsedEntries);
+                Alert.alert(
+                  t('common.saved'),
+                  t('logHistory.importSuccess', { count: result.imported })
+                );
+                reloadEntries();
+              } catch (err) {
+                console.error('Import failed:', err);
+                Alert.alert(t('common.error'), t('logHistory.importFailed'));
+              }
+            },
+          },
+        ]
+      );
+    } catch (err) {
+      if (isErrorWithCode(err) && err.code === errorCodes.OPERATION_CANCELED) {
+        // User cancelled, do nothing
+        return;
+      }
+      console.error('Import error:', err);
+      Alert.alert(t('common.error'), t('logHistory.importFailed'));
+    }
   };
   
   // Show import/export menu

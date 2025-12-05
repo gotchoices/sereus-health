@@ -38,6 +38,12 @@ type TranslationKey =
   | 'logHistory.exportFailed'
   | 'logHistory.importTitle'
   | 'logHistory.importNotImplemented'
+  | 'logHistory.importEmpty'
+  | 'logHistory.importPreview'
+  | 'logHistory.importPreviewMessage'
+  | 'logHistory.importConfirm'
+  | 'logHistory.importSuccess'
+  | 'logHistory.importFailed'
   | 'logHistory.filteredEntries'
   | 'logHistory.allEntries'
   
@@ -109,6 +115,12 @@ type TranslationKey =
   | 'configureCatalog.exportFailed'
   | 'configureCatalog.importTitle'
   | 'configureCatalog.importNotImplemented'
+  | 'configureCatalog.importEmpty'
+  | 'configureCatalog.importPreview'
+  | 'configureCatalog.importPreviewMessage'
+  | 'configureCatalog.importConfirm'
+  | 'configureCatalog.importSuccess'
+  | 'configureCatalog.importFailed'
   | 'catalog.title'
   | 'catalog.categories'
   | 'catalog.items'
@@ -174,6 +186,12 @@ type TranslationKey =
   | 'settings.backupFailed'
   | 'settings.restoreTitle'
   | 'settings.restoreNotImplemented'
+  | 'settings.restoreEmpty'
+  | 'settings.restorePreview'
+  | 'settings.restorePreviewMessage'
+  | 'settings.restoreConfirm'
+  | 'settings.restoreSuccess'
+  | 'settings.restoreFailed'
   | 'settings.futureFeatures'
   | 'settings.futureList'
   
@@ -317,6 +335,12 @@ const translations: Record<TranslationKey, string> = {
   'logHistory.exportFailed': 'Failed to export data',
   'logHistory.importTitle': 'Import',
   'logHistory.importNotImplemented': 'Import functionality coming soon. You\'ll be able to import log entries from CSV or YAML files.',
+  'logHistory.importEmpty': 'No entries found in file',
+  'logHistory.importPreview': 'Import Preview',
+  'logHistory.importPreviewMessage': 'Found {count} entries to import. Continue?',
+  'logHistory.importConfirm': 'Import',
+  'logHistory.importSuccess': 'Imported {count} entries',
+  'logHistory.importFailed': 'Failed to import entries',
   'logHistory.filteredEntries': 'Filtered Entries',
   'logHistory.allEntries': 'All Entries',
   
@@ -388,6 +412,12 @@ const translations: Record<TranslationKey, string> = {
   'configureCatalog.exportFailed': 'Failed to export catalog',
   'configureCatalog.importTitle': 'Import Catalog',
   'configureCatalog.importNotImplemented': 'Import functionality coming soon. You\'ll be able to import catalog items from CSV or YAML files.',
+  'configureCatalog.importEmpty': 'No items found in file',
+  'configureCatalog.importPreview': 'Import Preview',
+  'configureCatalog.importPreviewMessage': 'Found {count} items to import. Continue?',
+  'configureCatalog.importConfirm': 'Import',
+  'configureCatalog.importSuccess': 'Imported {count} items',
+  'configureCatalog.importFailed': 'Failed to import items',
   'catalog.title': 'Catalog',
   'catalog.categories': 'Categories',
   'catalog.items': 'Items',
@@ -453,6 +483,12 @@ const translations: Record<TranslationKey, string> = {
   'settings.backupFailed': 'Failed to create backup',
   'settings.restoreTitle': 'Import / Restore',
   'settings.restoreNotImplemented': 'Import functionality coming soon. You\'ll be able to restore from a backup file or import catalog/log data.',
+  'settings.restoreEmpty': 'No data found in file',
+  'settings.restorePreview': 'Restore Preview',
+  'settings.restorePreviewMessage': 'Found {catalogCount} catalog items and {logCount} log entries. Restore?',
+  'settings.restoreConfirm': 'Restore',
+  'settings.restoreSuccess': 'Restored {catalogCount} catalog items and {logCount} log entries',
+  'settings.restoreFailed': 'Failed to restore data',
   'settings.futureFeatures': 'Coming Soon',
   'settings.futureList': '• AI Agent Configuration\n• App Preferences\n• About',
   

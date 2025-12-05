@@ -9,10 +9,11 @@ import {
   Share,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { pick, types as docTypes, isErrorWithCode, errorCodes } from '@react-native-documents/picker';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
-import { getLogHistory } from '../data/logHistory';
-import { getConfigureCatalog } from '../data/configureCatalog';
+import { getLogHistory, importLogEntries, type ImportLogEntry } from '../data/logHistory';
+import { getConfigureCatalog, importCatalogItems, type ImportCatalogItem } from '../data/configureCatalog';
 
 interface SettingsProps {
   onNavigateTab: (tab: 'home' | 'catalog' | 'settings') => void;
@@ -28,7 +29,7 @@ export default function Settings({
   const theme = useTheme();
   const t = useT();
   
-  // Generate full backup as YAML
+  // Generate full backup as JSON (valid YAML)
   const generateBackupYAML = async (): Promise<string> => {
     const logs = await getLogHistory();
     const catalog = getConfigureCatalog();
@@ -44,7 +45,6 @@ export default function Settings({
         id: entry.id,
         timestamp: entry.timestamp,
         type: entry.type,
-        category: entry.category,
         items: entry.items,
         bundles: entry.bundles,
         comment: entry.comment,
@@ -54,7 +54,6 @@ export default function Settings({
       },
     };
     
-    // Simple YAML-like format (JSON is also valid YAML)
     return JSON.stringify(backup, null, 2);
   };
   
@@ -74,13 +73,118 @@ export default function Settings({
     }
   };
   
+  // Parse backup file and return counts
+  const parseBackup = (content: string): { 
+    catalog: ImportCatalogItem[];
+    logs: ImportLogEntry[];
+  } => {
+    try {
+      const data = JSON.parse(content);
+      
+      // Parse catalog items
+      const catalogItems: ImportCatalogItem[] = [];
+      if (data.catalog?.items) {
+        for (const item of data.catalog.items) {
+          catalogItems.push({
+            type: item.type || 'Activity',
+            category: item.category || 'General',
+            name: item.name,
+          });
+        }
+      }
+      
+      // Parse log entries
+      const logEntries: ImportLogEntry[] = [];
+      if (data.logs) {
+        for (const entry of data.logs) {
+          logEntries.push({
+            timestamp: entry.timestamp,
+            type: entry.type || 'Activity',
+            category: entry.category || 'General',
+            items: entry.items || [],
+            comment: entry.comment,
+          });
+        }
+      }
+      
+      return { catalog: catalogItems, logs: logEntries };
+    } catch (err) {
+      console.error('Failed to parse backup:', err);
+      return { catalog: [], logs: [] };
+    }
+  };
+  
   // Handle restore import
-  const handleRestore = () => {
-    Alert.alert(
-      t('settings.restoreTitle'),
-      t('settings.restoreNotImplemented'),
-      [{ text: t('common.ok') }]
-    );
+  const handleRestore = async () => {
+    try {
+      const result = await pick({
+        type: [docTypes.plainText, docTypes.allFiles],
+      });
+      
+      const file = result[0];
+      if (!file.uri) {
+        Alert.alert(t('common.error'), 'No file selected');
+        return;
+      }
+      
+      const response = await fetch(file.uri);
+      const content = await response.text();
+      
+      const { catalog, logs } = parseBackup(content);
+      
+      if (catalog.length === 0 && logs.length === 0) {
+        Alert.alert(t('common.error'), t('settings.restoreEmpty'));
+        return;
+      }
+      
+      // Show preview and confirm
+      Alert.alert(
+        t('settings.restorePreview'),
+        t('settings.restorePreviewMessage', { 
+          catalogCount: catalog.length, 
+          logCount: logs.length 
+        }),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('settings.restoreConfirm'),
+            onPress: async () => {
+              try {
+                let catalogImported = 0;
+                let logsImported = 0;
+                
+                if (catalog.length > 0) {
+                  const catResult = await importCatalogItems(catalog);
+                  catalogImported = catResult.imported;
+                }
+                
+                if (logs.length > 0) {
+                  const logResult = await importLogEntries(logs);
+                  logsImported = logResult.imported;
+                }
+                
+                Alert.alert(
+                  t('common.saved'),
+                  t('settings.restoreSuccess', { 
+                    catalogCount: catalogImported, 
+                    logCount: logsImported 
+                  })
+                );
+              } catch (err) {
+                console.error('Restore failed:', err);
+                Alert.alert(t('common.error'), t('settings.restoreFailed'));
+              }
+            },
+          },
+        ]
+      );
+    } catch (err) {
+      if (isErrorWithCode(err) && err.code === errorCodes.OPERATION_CANCELED) {
+        return;
+      }
+      console.error('Restore error:', err);
+      Alert.alert(t('common.error'), t('settings.restoreFailed'));
+    }
   };
   
   // Debug button handler - uncomment and implement when needed
