@@ -8,6 +8,8 @@ import {
   StyleSheet,
   StatusBar,
   Image,
+  Alert,
+  Share,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
@@ -96,6 +98,78 @@ export default function LogHistory({
       hour: 'numeric',
       minute: '2-digit',
     });
+  };
+  
+  // Generate CSV from entries
+  const generateCSV = (entriesToExport: LogEntry[]): string => {
+    const headers = ['timestamp', 'type', 'category', 'item', 'comment'];
+    const rows = [headers.join(',')];
+    
+    for (const entry of entriesToExport) {
+      // One row per item in the entry
+      if (entry.items.length === 0) {
+        // Entry with no items (just a comment/note)
+        rows.push([
+          entry.timestamp,
+          entry.type,
+          entry.category || '',
+          '',
+          `"${(entry.comment || '').replace(/"/g, '""')}"`,
+        ].join(','));
+      } else {
+        for (const item of entry.items) {
+          rows.push([
+            entry.timestamp,
+            entry.type,
+            entry.category || '',
+            `"${item.replace(/"/g, '""')}"`,
+            `"${(entry.comment || '').replace(/"/g, '""')}"`,
+          ].join(','));
+        }
+      }
+    }
+    
+    return rows.join('\n');
+  };
+  
+  // Handle export
+  const handleExport = async () => {
+    const csv = generateCSV(filteredEntries);
+    const count = filteredEntries.length;
+    const label = filterText.trim() ? t('logHistory.filteredEntries') : t('logHistory.allEntries');
+    
+    try {
+      await Share.share({
+        message: csv,
+        title: `Sereus Health - ${label} (${count})`,
+      });
+    } catch (err) {
+      console.error('Export failed:', err);
+      Alert.alert(t('common.error'), t('logHistory.exportFailed'));
+    }
+  };
+  
+  // Handle import (placeholder)
+  const handleImport = () => {
+    // TODO: Implement file picker and import logic
+    Alert.alert(
+      t('logHistory.importTitle'),
+      t('logHistory.importNotImplemented'),
+      [{ text: t('common.ok') }]
+    );
+  };
+  
+  // Show import/export menu
+  const showImportExportMenu = () => {
+    Alert.alert(
+      t('logHistory.dataOptions'),
+      undefined,
+      [
+        { text: t('logHistory.export'), onPress: handleExport },
+        { text: t('logHistory.import'), onPress: handleImport },
+        { text: t('common.cancel'), style: 'cancel' },
+      ]
+    );
   };
   
   // Get type badge color
@@ -300,6 +374,13 @@ export default function LogHistory({
               <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
             </TouchableOpacity>
           )}
+          <TouchableOpacity 
+            onPress={showImportExportMenu} 
+            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+            style={styles.filterMenuButton}
+          >
+            <Ionicons name="ellipsis-vertical" size={20} color={theme.textSecondary} />
+          </TouchableOpacity>
         </View>
       )}
       
@@ -391,6 +472,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[3],  // 16
     paddingVertical: spacing[2],    // 8
     borderBottomWidth: 1,
+  },
+  filterMenuButton: {
+    marginLeft: spacing[2],  // 8
+    padding: spacing[1],     // 4
   },
   filterIcon: {
     marginRight: spacing[2],  // 8

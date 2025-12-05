@@ -32,6 +32,14 @@ type TranslationKey =
   | 'logHistory.typeActivity'
   | 'logHistory.typeCondition'
   | 'logHistory.typeOutcome'
+  | 'logHistory.dataOptions'
+  | 'logHistory.export'
+  | 'logHistory.import'
+  | 'logHistory.exportFailed'
+  | 'logHistory.importTitle'
+  | 'logHistory.importNotImplemented'
+  | 'logHistory.filteredEntries'
+  | 'logHistory.allEntries'
   
   // EditEntry screen
   | 'editEntry.titleNew'
@@ -95,6 +103,12 @@ type TranslationKey =
   | 'configureCatalog.typeCondition'
   | 'configureCatalog.typeOutcome'
   | 'configureCatalog.selectType'
+  | 'configureCatalog.dataOptions'
+  | 'configureCatalog.export'
+  | 'configureCatalog.import'
+  | 'configureCatalog.exportFailed'
+  | 'configureCatalog.importTitle'
+  | 'configureCatalog.importNotImplemented'
   | 'catalog.title'
   | 'catalog.categories'
   | 'catalog.items'
@@ -154,6 +168,12 @@ type TranslationKey =
   | 'settings.title'
   | 'settings.sereusConnections'
   | 'settings.reminders'
+  | 'settings.dataManagement'
+  | 'settings.backup'
+  | 'settings.restore'
+  | 'settings.backupFailed'
+  | 'settings.restoreTitle'
+  | 'settings.restoreNotImplemented'
   | 'settings.futureFeatures'
   | 'settings.futureList'
   
@@ -291,6 +311,14 @@ const translations: Record<TranslationKey, string> = {
   'logHistory.typeActivity': 'Activity',
   'logHistory.typeCondition': 'Condition',
   'logHistory.typeOutcome': 'Outcome',
+  'logHistory.dataOptions': 'Data Options',
+  'logHistory.export': 'Export',
+  'logHistory.import': 'Import...',
+  'logHistory.exportFailed': 'Failed to export data',
+  'logHistory.importTitle': 'Import',
+  'logHistory.importNotImplemented': 'Import functionality coming soon. You\'ll be able to import log entries from CSV or YAML files.',
+  'logHistory.filteredEntries': 'Filtered Entries',
+  'logHistory.allEntries': 'All Entries',
   
   // EditEntry screen
   'editEntry.titleNew': 'New Entry',
@@ -354,6 +382,12 @@ const translations: Record<TranslationKey, string> = {
   'configureCatalog.typeCondition': 'Condition',
   'configureCatalog.typeOutcome': 'Outcome',
   'configureCatalog.selectType': 'Select Type',
+  'configureCatalog.dataOptions': 'Data Options',
+  'configureCatalog.export': 'Export Catalog',
+  'configureCatalog.import': 'Import...',
+  'configureCatalog.exportFailed': 'Failed to export catalog',
+  'configureCatalog.importTitle': 'Import Catalog',
+  'configureCatalog.importNotImplemented': 'Import functionality coming soon. You\'ll be able to import catalog items from CSV or YAML files.',
   'catalog.title': 'Catalog',
   'catalog.categories': 'Categories',
   'catalog.items': 'Items',
@@ -413,8 +447,14 @@ const translations: Record<TranslationKey, string> = {
   'settings.title': 'Settings',
   'settings.sereusConnections': 'Sereus Connections',
   'settings.reminders': 'Reminders',
+  'settings.dataManagement': 'Data Management',
+  'settings.backup': 'Export Backup',
+  'settings.restore': 'Import / Restore',
+  'settings.backupFailed': 'Failed to create backup',
+  'settings.restoreTitle': 'Import / Restore',
+  'settings.restoreNotImplemented': 'Import functionality coming soon. You\'ll be able to restore from a backup file or import catalog/log data.',
   'settings.futureFeatures': 'Coming Soon',
-  'settings.futureList': '• AI Agent Configuration\n• App Preferences\n• Data Management\n• About',
+  'settings.futureList': '• AI Agent Configuration\n• App Preferences\n• About',
   
   // Sereus screen
   'sereus.title': 'Sereus Connections',

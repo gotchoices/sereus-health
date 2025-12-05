@@ -5,10 +5,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Alert,
+  Share,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
+import { getLogHistory } from '../data/logHistory';
+import { getConfigureCatalog } from '../data/configureCatalog';
 
 interface SettingsProps {
   onNavigateTab: (tab: 'home' | 'catalog' | 'settings') => void;
@@ -23,6 +27,61 @@ export default function Settings({
 }: SettingsProps) {
   const theme = useTheme();
   const t = useT();
+  
+  // Generate full backup as YAML
+  const generateBackupYAML = async (): Promise<string> => {
+    const logs = await getLogHistory();
+    const catalog = getConfigureCatalog();
+    
+    const backup = {
+      version: 1,
+      exported_at: new Date().toISOString(),
+      catalog: {
+        items: catalog.items,
+        bundles: catalog.bundles,
+      },
+      logs: logs.map(entry => ({
+        id: entry.id,
+        timestamp: entry.timestamp,
+        type: entry.type,
+        category: entry.category,
+        items: entry.items,
+        bundles: entry.bundles,
+        comment: entry.comment,
+      })),
+      settings: {
+        // Future: reminder settings, preferences, etc.
+      },
+    };
+    
+    // Simple YAML-like format (JSON is also valid YAML)
+    return JSON.stringify(backup, null, 2);
+  };
+  
+  // Handle backup export
+  const handleBackup = async () => {
+    try {
+      const yaml = await generateBackupYAML();
+      const date = new Date().toISOString().split('T')[0];
+      
+      await Share.share({
+        message: yaml,
+        title: `Sereus Health Backup - ${date}`,
+      });
+    } catch (err) {
+      console.error('Backup failed:', err);
+      Alert.alert(t('common.error'), t('settings.backupFailed'));
+    }
+  };
+  
+  // Handle restore import
+  const handleRestore = () => {
+    Alert.alert(
+      t('settings.restoreTitle'),
+      t('settings.restoreNotImplemented'),
+      [{ text: t('common.ok') }]
+    );
+  };
   
   // Debug button handler - uncomment and implement when needed
   // const [testRunning, setTestRunning] = useState(false);
@@ -51,6 +110,21 @@ export default function Settings({
     },
   ];
   
+  const dataManagementSections = [
+    {
+      id: 'backup',
+      title: t('settings.backup'),
+      icon: 'download-outline',
+      onPress: handleBackup,
+    },
+    {
+      id: 'restore',
+      title: t('settings.restore'),
+      icon: 'push-outline',
+      onPress: handleRestore,
+    },
+  ];
+  
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
@@ -75,6 +149,30 @@ export default function Settings({
       {/* Settings List */}
       <ScrollView style={styles.content}>
         {settingsSections.map((section) => (
+          <TouchableOpacity
+            key={section.id}
+            style={[styles.settingsItem, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}
+            onPress={section.onPress}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingsItemLeft}>
+              <Ionicons name={section.icon} size={24} color={theme.textPrimary} />
+              <Text style={[styles.settingsItemText, { color: theme.textPrimary }]}>
+                {section.title}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+          </TouchableOpacity>
+        ))}
+        
+        {/* Data Management Section */}
+        <View style={[styles.sectionHeader, { borderTopColor: theme.border }]}>
+          <Text style={[styles.sectionHeaderText, { color: theme.textSecondary }]}>
+            {t('settings.dataManagement')}
+          </Text>
+        </View>
+        
+        {dataManagementSections.map((section) => (
           <TouchableOpacity
             key={section.id}
             style={[styles.settingsItem, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}
@@ -180,6 +278,19 @@ const styles = StyleSheet.create({
   settingsItemText: {
     ...typography.body,
     fontWeight: '500',
+  },
+  sectionHeader: {
+    marginTop: spacing[4],
+    paddingTop: spacing[3],
+    paddingBottom: spacing[2],
+    paddingHorizontal: spacing[3],
+    borderTopWidth: 1,
+  },
+  sectionHeaderText: {
+    ...typography.small,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   placeholderSection: {
     marginTop: spacing[4],   // 20

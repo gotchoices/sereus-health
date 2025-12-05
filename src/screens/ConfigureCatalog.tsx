@@ -9,6 +9,7 @@ import {
   StatusBar,
   Alert,
   Modal,
+  Share,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme, typography, spacing } from '../theme/useTheme';
@@ -101,6 +102,74 @@ export default function ConfigureCatalog({
   const getTypeBadgeColor = (typeName: string): string => {
     const type = types.find(t => t.name.toLowerCase() === typeName.toLowerCase());
     return getTypeColor(type || null);
+  };
+  
+  // Generate CSV from catalog data
+  const generateCatalogCSV = (): string => {
+    const headers = ['type', 'category', 'item', 'quantifier_name', 'quantifier_unit', 'quantifier_min', 'quantifier_max'];
+    const rows = [headers.join(',')];
+    
+    // Export items (filtered by current type if selected, or all)
+    const itemsToExport = selectedType 
+      ? filteredItems 
+      : catalog.items;
+    
+    for (const item of itemsToExport) {
+      // Item row without quantifiers
+      rows.push([
+        `"${item.type}"`,
+        `"${item.category}"`,
+        `"${item.name.replace(/"/g, '""')}"`,
+        '',
+        '',
+        '',
+        '',
+      ].join(','));
+      
+      // Quantifier rows (if any) - would need quantifier data from item
+      // For now, items don't include quantifier details in CatalogItem type
+    }
+    
+    return rows.join('\n');
+  };
+  
+  // Handle export
+  const handleExport = async () => {
+    const csv = generateCatalogCSV();
+    const typeName = selectedType?.name || 'All';
+    const count = selectedType ? filteredItems.length : catalog.items.length;
+    
+    try {
+      await Share.share({
+        message: csv,
+        title: `Sereus Health Catalog - ${typeName} (${count} items)`,
+      });
+    } catch (err) {
+      console.error('Export failed:', err);
+      Alert.alert(t('common.error'), t('configureCatalog.exportFailed'));
+    }
+  };
+  
+  // Handle import (placeholder)
+  const handleImport = () => {
+    Alert.alert(
+      t('configureCatalog.importTitle'),
+      t('configureCatalog.importNotImplemented'),
+      [{ text: t('common.ok') }]
+    );
+  };
+  
+  // Show import/export menu
+  const showImportExportMenu = () => {
+    Alert.alert(
+      t('configureCatalog.dataOptions'),
+      undefined,
+      [
+        { text: t('configureCatalog.export'), onPress: handleExport },
+        { text: t('configureCatalog.import'), onPress: handleImport },
+        { text: t('common.cancel'), style: 'cancel' },
+      ]
+    );
   };
   
   // Handle add item
@@ -254,7 +323,7 @@ export default function ConfigureCatalog({
       </View>
     );
   };
-  
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={theme.background === '#000000' ? 'light-content' : 'dark-content'} />
@@ -299,6 +368,13 @@ export default function ConfigureCatalog({
               <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
             </TouchableOpacity>
           )}
+          <TouchableOpacity 
+            onPress={showImportExportMenu} 
+            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+            style={styles.filterMenuButton}
+          >
+            <Ionicons name="ellipsis-vertical" size={20} color={theme.textSecondary} />
+          </TouchableOpacity>
         </View>
       )}
       
@@ -401,7 +477,7 @@ export default function ConfigureCatalog({
           <Ionicons name="settings" size={24} color={theme.textSecondary} />
           <Text style={[styles.tabLabel, { color: theme.textSecondary }]}>
             {t('navigation.settings')}
-          </Text>
+            </Text>
         </TouchableOpacity>
       </View>
       
@@ -433,7 +509,7 @@ export default function ConfigureCatalog({
                 <View style={[styles.typeColorDot, { backgroundColor: getTypeColor(type) }]} />
                 <Text style={[styles.dropdownItemText, { color: theme.textPrimary }]}>
                   {type.name}
-                </Text>
+              </Text>
                 {selectedTypeId === type.id && (
                   <Ionicons name="checkmark" size={20} color={theme.accentPrimary} />
                 )}
@@ -476,6 +552,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
     borderBottomWidth: 1,
+  },
+  filterMenuButton: {
+    marginLeft: spacing[2],
+    padding: spacing[1],
   },
   filterIcon: {
     marginRight: spacing[2],

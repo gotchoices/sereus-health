@@ -134,7 +134,9 @@ Once Quereus resolves the RN compatibility issues, perform these cleanup steps:
 
 ### Features
 
-- [ ] **CSV export**: Implement export feature per Story 04 - export all or filtered log records to CSV, with share option.
+- [ ] **Log import/export**: Per Story 04 - contextual CSV/YAML export (filtered or all), import historical data from spreadsheets.
+- [ ] **Catalog import/export**: Per Story 09 - contextual CSV/YAML export/import from Catalog screen, bulk populate from external sources.
+- [ ] **Full backup/restore**: Per Story 09 - complete YAML backup/restore from Settings.
 
 ### Possible Future Enhancements (Post-MVP)
 
