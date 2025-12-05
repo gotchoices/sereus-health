@@ -1,6 +1,10 @@
+<img src="docs/images/logo_c-p.svg" alt="Sereus Health" width="80" align="left" style="margin-right: 16px;">
+
 # Sereus Health
 
 A personal health tracking app that helps you discover correlations between your daily activities, conditions, and health outcomes.
+
+<br clear="left">
 
 ## Overview
 
