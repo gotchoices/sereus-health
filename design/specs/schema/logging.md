@@ -46,7 +46,6 @@ An Item present in a LogEntry. Bundles do **not** appear here as bundle referenc
 
 | Field | Type | Required | Description |
 |------|------|----------|-------------|
-| id | UUID | yes | Stable identifier |
 | logEntryId | UUID | yes | Parent entry |
 | itemId | UUID | yes | Logged Item |
 | sourceBundleId | UUID | no | If present, item came from expanding this bundle (display/grouping hint) |
@@ -62,6 +61,11 @@ An Item present in a LogEntry. Bundles do **not** appear here as bundle referenc
 - No duplicates within an entry: `(logEntryId, itemId)` unique.
 - Enforce the single-type rule by validating `itemId`’s Type matches the entry’s Type.
 
+#### Keying (implementation choice)
+
+- **Recommended (matches prior implementation)**: primary key = `(logEntryId, itemId)`
+- Alternative: add a surrogate `id` column and keep `(logEntryId, itemId)` unique
+
 ---
 
 ### QuantifierValue (`log_entry_quantifier_values`)
@@ -72,7 +76,6 @@ Optional numeric values recorded for a specific Item’s QuantifierDefinition in
 
 | Field | Type | Required | Description |
 |------|------|----------|-------------|
-| id | UUID | yes | Stable identifier |
 | logEntryId | UUID | yes | Parent entry |
 | itemId | UUID | yes | Which item the value applies to |
 | quantifierDefinitionId | UUID | yes | Which Item quantifier definition |
@@ -89,6 +92,11 @@ Optional numeric values recorded for a specific Item’s QuantifierDefinition in
 - One value per quantifier per item per entry: `(logEntryId, itemId, quantifierDefinitionId)` unique.
 - `quantifierDefinitionId` must belong to `itemId`.
 - If QuantifierDefinition has min/max, `value` must be within that range.
+
+#### Keying (implementation choice)
+
+- **Recommended (matches prior implementation)**: primary key = `(logEntryId, itemId, quantifierDefinitionId)`
+- Alternative: add a surrogate `id` column and keep `(logEntryId, itemId, quantifierDefinitionId)` unique
 
 ## Deletion / integrity (high-level)
 
