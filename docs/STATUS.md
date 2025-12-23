@@ -14,13 +14,55 @@ This project is being migrated from Appeus v1 to Appeus v2 to take advantage of 
   - Mobile + Web apps
   - Healthcare professional access via web UI
 - [ ] **Initialize new mobile app**: Run `./appeus/scripts/add-app.sh --name mobile --framework react-native`
-- [ ] **Reconcile design folder**: Ensure stories/specs fit appeus-2 structure (flat single-app layout)
+- [x] **Reconcile design folder**: Ensure stories/specs fit appeus-2 structure
+  - Migrated `design.org/` content into `design/` (stories/specs/generated)
+  - Reorganized schema specs from `specs/api/schema.md` into `specs/schema/*.md`
 - [ ] **Manual spec review**: Human review all specs for accuracy and completeness
+  - [x] `design/specs/project.md`
+  - [x] `design/specs/api/schema.md` (data-access contract)
+  - [x] `design/specs/schema/index.md`
+  - [x] `design/specs/schema/taxonomy.md`
+  - [x] `design/specs/schema/bundles.md`
+  - [x] `design/specs/schema/logging.md`
+  - [ ] `design/specs/mobile/components/index.md`
+  - [x] `design/specs/mobile/global/general.md`
+  - [x] `design/specs/mobile/global/ui.md`
+  - [x] `design/specs/project.md` (mobile toolchain lives here; per-target `toolchain.md` removed)
+  - [x] `design/specs/mobile/global/dependencies.md` (likely delete; if any deps are “must-use”, restate elsewhere)
+  - [x] `design/specs/mobile/global/inline-taxonomy.md` (deleted; inline-add rules belong in the relevant screen specs if/when desired)
+  - [x] `design/specs/mobile/global/import-export.md`
+  - [ ] `design/specs/mobile/navigation.md`
+  - [ ] `design/specs/mobile/screens/index.md`
+  - [ ] `design/specs/mobile/screens/log-history.md`
+  - [ ] `design/specs/mobile/screens/edit-entry.md`
+  - [ ] `design/specs/mobile/screens/edit-entry-wizard.md` (decide: archive/delete vs merge)
+  - [ ] `design/specs/mobile/screens/configure-catalog.md`
+  - [ ] `design/specs/mobile/screens/edit-item.md`
+  - [ ] `design/specs/mobile/screens/edit-category.md`
+  - [ ] `design/specs/mobile/screens/edit-bundle.md`
+  - [ ] `design/specs/mobile/screens/sereus-connections.md`
 - [ ] **Generate fresh scaffold**: Let appeus-2 generate clean app structure
 - [ ] **Regenerate app code**: Agent generates from specs, optionally referencing `rn-v1/` for patterns
 - [ ] **Integrate Quereus with persistence**: Configure Quereus persistent mode (optimistic single-node)
 - [ ] **Functional testing**: Verify core workflows with persistent data
 - [ ] **Cleanup**: Remove `rn-v1/` once new version is stable and tested
+
+### Things to Consider (Revisit After App Boots)
+
+These are known decisions/inconsistencies that are easier to resolve once the rebuilt app is running and you can see the UX.
+
+- [ ] **Defer detailed screen-spec review until the app boots**: once the scaffold runs, re-review `design/specs/mobile/screens/*.md` for correctness and remove stale/over-specified content.
+- [ ] **Graphs persistence model**: reconcile whether graphs are ad-hoc (not persisted across restarts) vs saved/named and persisted.
+  - Current tension: `design/specs/mobile/navigation.md` vs `design/specs/mobile/global/general.md`.
+- [ ] **Inline-create policy**: decide where inline creation is allowed (EditEntry pickers vs Catalog-only vs EditItem-only) and make the relevant screen specs consistent.
+- [ ] **EditEntry spec variants**: decide whether to keep `design/specs/mobile/screens/edit-entry-wizard.md` (archive/delete vs merge ideas into `edit-entry.md`).
+- [ ] **Catalog tab scope**: confirm whether Catalog is a full manager (current), a read-only browser, or removed in favor of inline editing.
+- [ ] **Nested bundles**: schema supports nested bundles, but app-level support must be explicit (read/expand/cycle prevention). Decide whether to support nested bundles in MVP.
+- [ ] **Deep link parameter conventions**: normalize param names/types across screens (e.g., `GraphCreate.preselectedItems`, `GraphView.graphId`) once those screens are implemented.
+- [ ] **Project spec cleanup**: fix any remaining wording/link nits (e.g., “patient” typo, Quereus link target, HIPAA phrasing) after you confirm the desired messaging.
+- [ ] **Generated artifacts policy**: confirm whether `design/generated/mobile/site/` should remain in-repo or be treated as build output.
+- [ ] **Logo implementation**: how do we implement the logo from `docs/images/` for the mobile app (header + app icons)?
+- [ ] **Logo procedure source**: is the logo/icon generation procedure already documented in specs/docs (and if so, where)?
 
 ### RN v1 Archive Location
 
@@ -76,13 +118,9 @@ This file tracks open design questions for Sereus Health so they can be resolved
 
 ### Schema & Data Model
 
-- [x] **Database schema design**: Updated `specs/api/schema.md` with refined design:
-  - Flat categories (no hierarchy for MVP)
-  - Bundles expand to items at log time (immutable historical snapshot)
-  - Quantifiers are properties of item definitions (shown for all selected items)
-  - Single-type entries (validated)
-  - 9 tables with detailed examples, constraints, and rationale
-  - Ready for Quereus implementation
+- [x] **Database schema design**: Consolidated into `design/specs/schema/*.md` (authoritative)
+  - `schema/taxonomy.md`, `schema/bundles.md`, `schema/logging.md`
+  - `specs/api/schema.md` now documents the local “data access” contract (not HTTP)
 
 ### Quereus Integration (BLOCKED - Critical RN Incompatibilities)
 

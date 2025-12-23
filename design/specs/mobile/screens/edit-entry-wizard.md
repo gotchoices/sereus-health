@@ -8,7 +8,7 @@ Create, edit, or clone a log entry. Guides user through type → category → it
 
 ### Step 1: Type Selection
 - List of types: Activity, Condition, Outcome (plus user-defined)
-- **"+ Add Type"** at bottom of list (see `global/inline-taxonomy.md`)
+- **"+ Add Type"** at bottom of list
 - Single select, then auto-advance to categories
 
 ### Step 2: Category Selection  
@@ -27,7 +27,7 @@ Create, edit, or clone a log entry. Guides user through type → category → it
 When 2+ items selected:
 - **"Save as Bundle"** button appears above item list
 - Opens bundle naming modal
-- See `global/inline-taxonomy.md` for flow
+  - (This wizard spec describes the modal flow below.)
 
 ### Step 5: Quantifiers & Details
 - For each selected item with quantifiers defined, show input fields

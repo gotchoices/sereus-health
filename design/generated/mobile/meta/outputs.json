@@ -10,13 +10,7 @@
         "design/specs/navigation.md",
         "design/specs/global/general.md"
       ],
-      "depHashes": {
-        "design/generated/screens/LogHistory.md": "b68e36de6b8dab00ab6274b4be295e5398b2851fbe727aab2d278e1336cc9108",
-        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
-        "design/specs/screens/log-history.md": "78bf222507785b26b6487c3f8e37dc1fe861c67dd8a0b4dc1ee5b258ad55acea",
-        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
-        "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755"
-      }
+      "depHashes": {}
     },
     {
       "route": "EditEntry",

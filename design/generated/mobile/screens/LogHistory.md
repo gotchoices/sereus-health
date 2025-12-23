@@ -1,3 +1,67 @@
+---
+provides:
+  - screen:mobile:LogHistory
+needs:
+  - schema:taxonomy
+  - schema:logging
+dependsOn:
+  - design/stories/mobile/01-exploring.md
+  - design/stories/mobile/02-daily.md
+  - design/stories/mobile/05-cloning.md
+  - design/specs/mobile/screens/log-history.md
+  - design/specs/mobile/navigation.md
+  - design/specs/mobile/global/general.md
+  - design/specs/mobile/global/ui.md
+  - design/specs/schema/taxonomy.md
+  - design/specs/schema/logging.md
+---
+
+# LogHistory Screen Consolidation
+
+## Purpose
+
+Primary home screen: show a chronological list of log entries and provide fast access to:
+- add a new entry
+- clone an entry
+- open graphs
+- filter/search within history
+
+## UX contract (from human spec)
+
+### Entry card (compact 3-line layout)
+
+- **Line 1**:
+  - Type badge (left), date/time immediately after, clone icon at top-right
+- **Line 2**:
+  - Item/bundle names comma-separated; truncate after 3 items with “+N more”
+- **Line 3 (optional)**:
+  - Comment snippet, single line, italicized
+
+### Spacing (dense list)
+
+- Card padding: 12px
+- Line spacing: 4px
+- Card margin-bottom: 8px
+- Clone touch target: >= 44pt (use hitSlop)
+
+## Navigation
+
+- **Route**: `LogHistory` (HOME tab root)
+- **Actions**:
+  - Add → `EditEntry` (mode=new)
+  - Clone → `EditEntry` (mode=clone, entryId)
+  - Tap entry → `EditEntry` (mode=edit, entryId)
+  - Graph icon → `Graphs`
+
+## Data shaping notes
+
+LogHistory only needs a summary per entry:
+- `id`
+- `timestampUtc` (display in local)
+- `type`
+- `items[]` + `bundles[]` (names)
+- `comment` (optional)
+
 # LogHistory Screen Consolidation
 
 ## Purpose
