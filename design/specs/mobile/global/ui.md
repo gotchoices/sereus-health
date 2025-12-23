@@ -34,8 +34,6 @@ typography:
     weight: 400
 
 notes:
-- Semantic names map to RN components; refine over time.
+- Semantic names map to framework components; refine over time.
 - For icons, choose names from the selected icon set; adjust per platform if needed.
 - Navigation theming can adopt these colors via a navigation theme if/when added.
-
-
