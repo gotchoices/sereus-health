@@ -1,0 +1,59 @@
+---
+id: bundles
+name: Bundles
+description: Named collections of items (and optionally other bundles) for fast logging.
+---
+
+Bundles are a user-defined convenience feature. They are **type-specific** (a bundle belongs to exactly one Type).
+
+## Entities
+
+### Bundle (`bundles`)
+
+#### Fields
+
+| Field | Type | Required | Description |
+|------|------|----------|-------------|
+| id | UUID | yes | Stable identifier |
+| typeId | UUID | yes | Type affinity for all members |
+| name | string | yes | Display name (unique within the Type) |
+| description | string | no | Optional note |
+
+#### Relationships
+
+- Bundle belongs to Type
+- Bundle has many BundleMembers
+
+#### Validation / Constraints
+
+- Unique within Type: `(typeId, name)`
+- **Type affinity**: every member (item or nested bundle) must be of the same Type as the Bundle.
+
+---
+
+### BundleMember (`bundle_members`)
+
+Represents membership of either an Item or a nested Bundle.
+
+#### Fields
+
+| Field | Type | Required | Description |
+|------|------|----------|-------------|
+| id | UUID | yes | Stable identifier |
+| bundleId | UUID | yes | Owning Bundle |
+| memberItemId | UUID | no | Member Item (set exactly one of memberItemId/memberBundleId) |
+| memberBundleId | UUID | no | Member Bundle (nested) |
+| displayOrder | number | no | Optional semantic order within the bundle |
+
+#### Relationships
+
+- BundleMember belongs to Bundle
+- BundleMember references either an Item or a nested Bundle
+
+#### Validation / Constraints
+
+- Exactly one of `memberItemId` / `memberBundleId` is set.
+- No self-reference: `memberBundleId != bundleId`.
+- No cycles: bundle nesting must not create cycles (enforced by app logic or DB constraints if supported).
+
+
