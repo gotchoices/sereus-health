@@ -1,3 +1,38 @@
+## Migration to Appeus-2 (In Progress)
+
+This project is being migrated from Appeus v1 to Appeus v2 to take advantage of improved tooling and generation workflows.
+
+### Migration Checklist
+
+- [x] **Git tag pre-migration state**: Tag as `v0.1-appeus-1-rn` before any migration changes
+- [x] **Archive RN v1 code**: Move all React Native app files to `rn-v1/` for future reference
+- [x] **Clean appeus-1 artifacts**: Remove appeus-1 symlinks and old AGENTS.md files
+- [x] **Strip root to basics**: Keep only `design/`, `docs/`, `mock/`, `README.md`, `.gitignore`
+  - Note: `tmp/`, `log-console`, `p`, `publish` remain but can be manually removed
+- [ ] **Initialize appeus-2 project**: Run `/path/to/appeus-2/scripts/init-project.sh`
+- [ ] **Review project.md**: Complete `design/specs/project.md` with current decisions
+- [ ] **Initialize new mobile app**: Run `./appeus/scripts/add-app.sh --name mobile --framework react-native`
+- [ ] **Reconcile design folder**: Ensure stories/specs fit appeus-2 structure (flat single-app layout)
+- [ ] **Manual spec review**: Human review all specs for accuracy and completeness
+- [ ] **Generate fresh scaffold**: Let appeus-2 generate clean app structure
+- [ ] **Regenerate app code**: Agent generates from specs, optionally referencing `rn-v1/` for patterns
+- [ ] **Integrate Quereus with persistence**: Configure Quereus persistent mode (optimistic single-node)
+- [ ] **Functional testing**: Verify core workflows with persistent data
+- [ ] **Cleanup**: Remove `rn-v1/` once new version is stable and tested
+
+### RN v1 Archive Location
+
+Original React Native code is preserved in `rn-v1/` for reference during regeneration.
+
+To view old implementation:
+```bash
+# View structure
+ls -la rn-v1/
+
+# View specific file
+cat rn-v1/src/screens/EditEntry.tsx
+```
+
 ## Design Status
 
 This file tracks open design questions for Sereus Health so they can be resolved one at a time.
