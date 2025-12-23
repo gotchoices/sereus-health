@@ -1,176 +1,63 @@
-# Import/Export Specification
+# Import/Export (Mobile)
 
-## Overview
+Cross-cutting requirements for **data portability**. Screen-specific placement and UI affordances belong in the relevant screen specs.
 
-Import/export functionality appears in two contexts:
-1. **Contextual** (LogHistory, ConfigureCatalog) - via hamburger menu in filter bar
-2. **Settings** - Backup & Restore section
+## Supported exports
 
-## UI Placement
+- **Log export**: CSV (scope depends on the screen: filtered subset vs all)
+- **Catalog export**: CSV (full taxonomy + quantifier definitions + bundles)
+- **Backup export**: YAML (everything: catalog + logs + settings)
 
-### Contextual Screens (LogHistory, ConfigureCatalog)
+## CSV contracts (stable headers)
 
-When user taps the search icon:
-- Filter bar appears with text input
-- Hamburger menu icon appears on the right side of the filter bar
-- Hamburger menu contains: "Export", "Import..."
+### Log entries CSV
 
-### Settings Screen
+- **Header**: `timestampUtc,type,category,item,quantifier,value,unit,comment`
+- **Model**: one row per *entry × item × quantifier* (entries with multiple items/quantifiers span multiple rows)
 
-Backup & Restore section contains:
-- "Export Backup" - exports everything to YAML
-- "Import" - imports from any supported file
+### Catalog CSV
 
-## Export Behavior
+- **Header**: `type,category,item,quantifierName,quantifierUnit,quantifierMin,quantifierMax`
+- **Model**: one row per *item × quantifier*; items without quantifiers have empty quantifier columns
 
-| Context | Format | Scope |
-|---------|--------|-------|
-| LogHistory | CSV | Log entries matching current filter (or all if empty) |
-| ConfigureCatalog | CSV | Full catalog (types, categories, items, quantifiers, bundles) |
-| Settings | YAML | Everything (catalog + logs + settings) |
+## Backup contract (YAML)
 
-### CSV Structure - Log Entries
+- Backup file contains:
+  - `version` (integer)
+  - `exportedAtUtc` (ISO8601)
+  - `catalog` (taxonomy + bundles)
+  - `logs` (log entries)
+  - `settings` (app settings; may be empty for now)
+- Import should apply **only what is present** (partial backups are allowed).
 
-```csv
-timestamp,type,category,item,quantifier,value,unit,comment
-2024-12-05T08:00:00Z,Activity,Eating,Omelette,,,,Breakfast
-2024-12-05T09:00:00Z,Activity,Exercise,Pushups,Count,20,reps,Morning workout
-```
+## Import behavior (all formats)
 
-One row per item-quantifier pair. Entries with multiple items/quantifiers span multiple rows.
+- **Format detection**: by file extension (csv/yaml/yml/json). Reject unknown.
+- **Preview** before commit:
+  - counts: add / update / skip
+  - top errors/warnings (if any)
+  - user can confirm or cancel
 
-### CSV Structure - Catalog
+### Idempotency / matching rules
 
-```csv
-type,category,item,quantifier_name,quantifier_unit,quantifier_min,quantifier_max
-Activity,Eating,Omelette,,,, 
-Activity,Eating,Omelette,Eggs,count,1,6
-Activity,Exercise,Pushups,Count,reps,0,100
-```
+Imports should be idempotent (re-importing should not multiply data).
 
-One row per item-quantifier pair. Items without quantifiers have empty quantifier columns.
+- **Catalog item identity**: `(typeName, categoryName, itemName)` case-insensitive
+- **Quantifier definition identity**: `(itemIdentity, quantifierName)` case-insensitive
+- **Bundle identity**: `(typeName, bundleName)` case-insensitive
+- **Log entry identity** (MVP): `(timestampUtc, typeName, set(items))`
+  - If a match exists, update differing quantifier values/comments rather than creating duplicates.
 
-### YAML Structure - Catalog
+### Missing taxonomy during log import
 
-```yaml
-types:
-  - id: type-activity
-    name: Activity
-    color: "#3B82F6"
-    categories:
-      - name: Eating
-        items:
-          - name: Omelette
-            quantifiers:
-              - name: Eggs
-                unit: count
-                min: 1
-                max: 6
-          - name: Toast
-      - name: Exercise
-        items:
-          - name: Pushups
-            quantifiers:
-              - name: Count
-                unit: reps
-                min: 0
-                max: 100
-bundles:
-  - name: Morning Routine
-    type: Activity
-    items:
-      - Omelette
-      - Toast
-      - Orange Juice
-```
+- If an imported log references unknown types/categories/items, the importer may create the missing taxonomy definitions (or present a warning and skip those rows). The import preview should make this explicit.
 
-### YAML Structure - Full Backup
+## Error handling
 
-```yaml
-version: 1
-exported_at: 2024-12-05T14:30:00Z
-catalog:
-  types: [...]
-  bundles: [...]
-logs:
-  - timestamp: 2024-12-05T08:00:00Z
-    type: Activity
-    category: Eating
-    items:
-      - name: Omelette
-        quantifiers:
-          - name: Eggs
-            value: 3
-    comment: Breakfast
-settings:
-  # Future: user preferences, reminder settings, etc.
-```
+- Invalid format / missing required columns: show error and abort.
+- Partial success: show a summary (added/updated/skipped + failures).
 
-## Import Behavior
+## Sharing
 
-### Format Detection
-
-Import auto-detects format by:
-1. File extension (.csv, .yaml, .yml, .json)
-2. Content inspection (CSV has commas, YAML/JSON has structure)
-
-### Content Detection (Settings Import)
-
-Settings import examines file structure to determine scope:
-- Has `logs` key → includes log entries
-- Has `catalog` or `types` key → includes catalog
-- Has `settings` key → includes settings
-
-Imports only what's present in the file.
-
-### Idempotency
-
-Imports are idempotent—re-importing the same data does not create duplicates.
-
-**Log entry identity** (match = same entry):
-- timestamp (exact match)
-- type
-- Set of items (order-independent)
-
-If all match, entry is skipped (or updated if values differ).
-
-**Catalog item identity** (match = same item):
-- name (case-insensitive)
-- category name
-- type name
-
-If match found:
-- Skip if identical
-- Update if properties differ (quantifiers, etc.)
-
-**Bundle identity**:
-- name (case-insensitive)
-- type
-
-### Import Preview
-
-Before committing, show preview:
-- Count of new entries/items to add
-- Count of existing entries/items to update
-- Count of entries/items to skip (identical)
-- Sample of first few items
-
-User confirms or cancels.
-
-### Error Handling
-
-| Error | Behavior |
-|-------|----------|
-| Invalid format | Show error, abort |
-| Missing required columns (CSV) | Show error, abort |
-| Unknown type/category in log import | Create if possible, or show warning |
-| Partial success | Show summary of what succeeded/failed |
-
-## File Sharing
-
-After export, offer system share sheet for:
-- Email attachment
-- Save to Files
-- Cloud storage (iCloud, Google Drive, etc.)
-- AirDrop (iOS)
+- After export, offer the system share sheet (Files, cloud providers, email, etc.).
 
