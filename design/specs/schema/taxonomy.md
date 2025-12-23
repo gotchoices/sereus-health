@@ -14,12 +14,12 @@ Top-level grouping for everything else (e.g., Activity, Condition, Outcome).
 
 #### Fields
 
-| Field | Type | Required | Description |
+| Field | Type | Nullable | Description |
 |------|------|----------|-------------|
-| id | UUID | yes | Stable identifier |
-| name | string | yes | Unique display name |
-| color | string | no | Optional hex color for UI badges |
-| displayOrder | number | no | Optional ordering hint (lower first) |
+| id | UUID | no | Stable identifier |
+| name | string | no | Unique display name |
+| color | string | yes | Optional hex color for UI badges |
+| displayOrder | number | yes | Optional ordering hint (lower first) |
 
 #### Relationships
 
@@ -39,11 +39,11 @@ Flat list of categories under a Type (MVP: no nesting).
 
 #### Fields
 
-| Field | Type | Required | Description |
+| Field | Type | Nullable | Description |
 |------|------|----------|-------------|
-| id | UUID | yes | Stable identifier |
-| typeId | UUID | yes | Parent Type |
-| name | string | yes | Display name (unique within the Type) |
+| id | UUID | no | Stable identifier |
+| typeId | UUID | no | Parent Type |
+| name | string | no | Display name (unique within the Type) |
 
 #### Relationships
 
@@ -62,12 +62,12 @@ Loggable unit (food, exercise, symptom, etc).
 
 #### Fields
 
-| Field | Type | Required | Description |
+| Field | Type | Nullable | Description |
 |------|------|----------|-------------|
-| id | UUID | yes | Stable identifier |
-| categoryId | UUID | yes | Parent Category |
-| name | string | yes | Display name (unique within the Category) |
-| description | string | no | Optional note/description |
+| id | UUID | no | Stable identifier |
+| categoryId | UUID | no | Parent Category |
+| name | string | no | Display name (unique within the Category) |
+| description | string | yes | Optional note/description |
 
 #### Relationships
 
@@ -88,14 +88,14 @@ Defines optional numeric measurements for an Item (e.g., Intensity 1–10, Durat
 
 #### Fields
 
-| Field | Type | Required | Description |
+| Field | Type | Nullable | Description |
 |------|------|----------|-------------|
-| id | UUID | yes | Stable identifier |
-| itemId | UUID | yes | Parent Item |
-| name | string | yes | Label (unique per Item) |
-| units | string | no | Display hint (e.g. “minutes”, “miles”, “1–10”) |
-| minValue | number | no | Optional minimum |
-| maxValue | number | no | Optional maximum |
+| id | UUID | no | Stable identifier |
+| itemId | UUID | no | Parent Item |
+| name | string | no | Label (unique per Item) |
+| units | string | yes | Display hint (e.g. “minutes”, “miles”, “1–10”) |
+| minValue | number | yes | Optional minimum |
+| maxValue | number | yes | Optional maximum |
 
 #### Relationships
 

@@ -18,12 +18,12 @@ One entry at a point in time, containing 0–N items and optional notes.
 
 #### Fields
 
-| Field | Type | Required | Description |
+| Field | Type | Nullable | Description |
 |------|------|----------|-------------|
-| id | UUID | yes | Stable identifier |
-| typeId | UUID | yes | Entry’s Type (single-type rule) |
-| timestampUtc | ISO8601 | yes | Stored in UTC; user-editable |
-| comment | string | no | Optional free-form note |
+| id | UUID | no | Stable identifier |
+| typeId | UUID | no | Entry’s Type (single-type rule) |
+| timestampUtc | ISO8601 | no | Stored in UTC; user-editable |
+| comment | string | yes | Optional free-form note |
 
 #### Relationships
 
@@ -44,11 +44,11 @@ An Item present in a LogEntry. Bundles do **not** appear here as bundle referenc
 
 #### Fields
 
-| Field | Type | Required | Description |
+| Field | Type | Nullable | Description |
 |------|------|----------|-------------|
-| logEntryId | UUID | yes | Parent entry |
-| itemId | UUID | yes | Logged Item |
-| sourceBundleId | UUID | no | If present, item came from expanding this bundle (display/grouping hint) |
+| logEntryId | UUID | no | Parent entry |
+| itemId | UUID | no | Logged Item |
+| sourceBundleId | UUID | yes | If present, item came from expanding this bundle (display/grouping hint) |
 
 #### Relationships
 
@@ -74,12 +74,12 @@ Optional numeric values recorded for a specific Item’s QuantifierDefinition in
 
 #### Fields
 
-| Field | Type | Required | Description |
+| Field | Type | Nullable | Description |
 |------|------|----------|-------------|
-| logEntryId | UUID | yes | Parent entry |
-| itemId | UUID | yes | Which item the value applies to |
-| quantifierDefinitionId | UUID | yes | Which Item quantifier definition |
-| value | number | yes | Numeric value |
+| logEntryId | UUID | no | Parent entry |
+| itemId | UUID | no | Which item the value applies to |
+| quantifierDefinitionId | UUID | no | Which Item quantifier definition |
+| value | number | no | Numeric value |
 
 #### Relationships
 

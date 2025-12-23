@@ -12,12 +12,12 @@ Bundles are a user-defined convenience feature. They are **type-specific** (a bu
 
 #### Fields
 
-| Field | Type | Required | Description |
+| Field | Type | Nullable | Description |
 |------|------|----------|-------------|
-| id | UUID | yes | Stable identifier |
-| typeId | UUID | yes | Type affinity for all members |
-| name | string | yes | Display name (unique within the Type) |
-| description | string | no | Optional note |
+| id | UUID | no | Stable identifier |
+| typeId | UUID | no | Type affinity for all members |
+| name | string | no | Display name (unique within the Type) |
+| description | string | yes | Optional note |
 
 #### Relationships
 
@@ -41,13 +41,13 @@ Represents membership of either an Item or a nested Bundle.
 
 #### Fields
 
-| Field | Type | Required | Description |
+| Field | Type | Nullable | Description |
 |------|------|----------|-------------|
-| id | UUID | yes | Stable identifier |
-| bundleId | UUID | yes | Owning Bundle |
-| memberItemId | UUID | no | Member Item (set exactly one of memberItemId/memberBundleId) |
-| memberBundleId | UUID | no | Member Bundle (nested) |
-| displayOrder | number | no | Optional semantic order within the bundle |
+| id | UUID | no | Stable identifier |
+| bundleId | UUID | no | Owning Bundle |
+| memberItemId | UUID | yes | Member Item (set exactly one of memberItemId/memberBundleId) |
+| memberBundleId | UUID | yes | Member Bundle (nested) |
+| displayOrder | number | yes | Optional semantic order within the bundle |
 
 #### Relationships
 

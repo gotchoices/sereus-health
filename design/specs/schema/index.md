@@ -46,5 +46,5 @@ These are small, high-value indexes used in the prior implementation:
 ## Notes
 
 - Join tables (e.g. logged items / quantifier values) may use **composite primary keys** instead of separate `id` fields; see `logging.md`.
-- Prefer keeping schema specs **short and stable**; detailed rationale and examples belong in `reject.md` or AI consolidations (`design/generated/…`).
+- Prefer keeping schema specs **short and stable**; detailed rationale and examples belong in AI consolidations (`design/generated/…`) or other non-authoritative notes.
 
