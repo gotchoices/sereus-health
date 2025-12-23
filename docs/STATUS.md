@@ -8,9 +8,11 @@ This project is being migrated from Appeus v1 to Appeus v2 to take advantage of 
 - [x] **Archive RN v1 code**: Move all React Native app files to `rn-v1/` for future reference
 - [x] **Clean appeus-1 artifacts**: Remove appeus-1 symlinks and old AGENTS.md files
 - [x] **Strip root to basics**: Keep only `design/`, `docs/`, `mock/`, `README.md`, `.gitignore`
-  - Note: `tmp/`, `log-console`, `p`, `publish` remain but can be manually removed
-- [ ] **Initialize appeus-2 project**: Run `/path/to/appeus-2/scripts/init-project.sh`
-- [ ] **Review project.md**: Complete `design/specs/project.md` with current decisions
+- [x] **Initialize appeus-2 project**: Run `/path/to/appeus-2/scripts/init-project.sh`
+- [x] **Review project.md**: Complete `design/specs/project.md` with current decisions
+  - Production quality (not MVP)
+  - Mobile + Web apps
+  - Healthcare professional access via web UI
 - [ ] **Initialize new mobile app**: Run `./appeus/scripts/add-app.sh --name mobile --framework react-native`
 - [ ] **Reconcile design folder**: Ensure stories/specs fit appeus-2 structure (flat single-app layout)
 - [ ] **Manual spec review**: Human review all specs for accuracy and completeness
