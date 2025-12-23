@@ -1,24 +1,31 @@
-# Screens Plan
+# Screens Plan (Human Proposal)
 
-List of screens for this target with routes and status.
+Purpose
+- Make a first pass at screen names and routes before generation.
+- If you leave this as-is, the agent will propose names from stories.
 
-## Instructions
+Instructions
+- List each screen with a clear, stable name and short purpose.
+- Add a proposed route (used for deep links and navigation).
+- Optional: note variants to support early (happy, empty, error).
 
-- List each screen with a clear, stable name
-- Add the route name (PascalCase, used for navigation and deep links)
-- Spec file uses kebab-case (`item-list.md` for route `ItemList`)
-- Note variants to support (happy, empty, error)
+Screens
 
-## Screens
+| Screen Name        | Route             | Purpose                                              | Variants            |
+|--------------------|-------------------|------------------------------------------------------|---------------------|
+| LogHistory         | LogHistory        | Main log history: list of entries with add/clone    | happy, empty        |
+| EditEntry          | EditEntry         | Add/edit/clone a single log entry (modal pickers)   | happy, error        |
+| ConfigureCatalog   | ConfigureCatalog  | Manage categories, items, bundles, quantifiers      | happy, empty, error |
+| EditItem           | EditItem          | Create/edit item with category and quantifiers      | happy, error        |
+| EditBundle         | EditBundle        | Create/edit bundle with member items                | happy, error        |
+| Graphs             | Graphs            | Browse saved/named graphs                            | happy, empty        |
+| GraphCreate        | GraphCreate       | Select items + date range, generate new graph       | happy              |
+| GraphView          | GraphView         | Display and share a specific graph                   | happy              |
+| Settings           | Settings          | List of settings sections (Sereus, Reminders, etc.) | happy              |
+| SereusConnections  | SereusConnections | View and manage Sereus cadre and guest nodes        | happy, empty, error |
+| Reminders          | Reminders         | Configure reminder notification interval             | happy              |
 
-| Screen Name | Route | Spec File | Variants | Status |
-|-------------|-------|-----------|----------|--------|
-| Item List | ItemList | item-list.md | happy, empty, error | draft |
-| Item Detail | ItemDetail | item-detail.md | happy, error | draft |
-| User Profile | UserProfile | user-profile.md | happy, empty | draft |
+Notes
+- Add/remove rows as needed. You can refine names later, but avoiding churn helps.
+- Screen-specific requirements go in `design/specs/mobile/screens/<screen-id>.md` (kebab-case).
 
-## Notes
-
-- Add/remove rows as needed
-- Screen-specific requirements go in spec files
-- Agent proposes screens from stories if this is empty
