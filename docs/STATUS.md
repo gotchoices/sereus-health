@@ -57,6 +57,7 @@ This project is being migrated from Appeus v1 to Appeus v2 to take advantage of 
   - [ ] **Top-level types are dynamic vs fixed**: reconcile `design/specs/schema/*` + any stories that imply types can be edited/removed. If dynamic, update `apps/mobile` to stop hardcoding `['Activity','Condition','Outcome']` and load types from storage; ensure UI supports type CRUD where specified.
   - [ ] **SereusConnections: copy peer id**: check whether prescribed by Sereus screen spec/stories. If desired, implement copy-to-clipboard UX (use supported RN clipboard lib) for peer id rows.
   - [ ] **SereusConnections: QR scan implementation**: check whether prescribed by specs. If desired, integrate an approved QR scanning approach (camera permissions, scanner UI, parse scanned deep link, confirm-add flow).
+  - [ ] **Fastlane (iOS)**: implement iOS fastlane in `apps/mobile/ios/fastlane/` (lanes comparable to legacy Android lanes), using the existing `apps/mobile/Gemfile` fastlane dependency. Reuse the same CI/env-var approach as Android (no secrets committed) and add `build:ios:*` scripts to `apps/mobile/package.json`.
 - [ ] **Functional testing**: Verify core workflows with persistent data
 - [ ] **Cleanup**: Remove `rn-v1/` once new version is stable and tested
 

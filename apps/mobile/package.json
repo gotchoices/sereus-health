@@ -8,6 +8,8 @@
     "icons:android": "bash scripts/logo-gen-android.sh",
     "icons:ios": "bash scripts/logo-gen-ios.sh",
     "icons:all": "yarn icons:android && yarn icons:ios",
+    "build:android:apk": "cd android && bundle exec fastlane build_apk",
+    "build:android:aab": "cd android && bundle exec fastlane build_app_bundle",
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest"
