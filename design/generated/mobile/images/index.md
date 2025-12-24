@@ -39,7 +39,7 @@ screenshots:
   # EditItem
   - route: EditItem
     params:
-      typeId: type-activity
+      type: Activity
     file: edit-item-new.png
     deps:
       - src/screens/EditItem.tsx
@@ -51,7 +51,7 @@ screenshots:
   # EditBundle
   - route: EditBundle
     params:
-      typeId: type-activity
+      type: Activity
     file: edit-bundle-new.png
     deps:
       - src/screens/EditBundle.tsx

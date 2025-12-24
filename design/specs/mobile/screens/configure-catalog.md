@@ -57,8 +57,8 @@ Manage the catalog of items, categories, and bundles that Bob uses when logging 
 |--------|--------|
 | Tap item card | EditItem (id=item.id) |
 | Tap bundle card | EditBundle (id=bundle.id) |
-| Tap (+) in Items view | EditItem (typeId=selectedType) |
-| Tap (+) in Bundles view | EditBundle (typeId=selectedType) |
+| Tap (+) in Items view | EditItem (type=selectedType) |
+| Tap (+) in Bundles view | EditBundle (type=selectedType) |
 | Bottom tab: Home | LogHistory |
 | Bottom tab: Settings | Settings |
 

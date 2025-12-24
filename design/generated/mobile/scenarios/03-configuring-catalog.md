@@ -28,7 +28,7 @@ If Bob hadn't added anything yet, he'd see prompts to add his first items.
 
 Bob wants to add "Omelette" as a new food item. He taps (+) and fills in the details.
 
-[![New Item](../images/edit-item-new.png)](health://screen/EditItem?typeId=type-activity)
+[![New Item](../images/edit-item-new.png)](health://screen/EditItem?type=Activity)
 
 ---
 
@@ -44,7 +44,7 @@ Bob taps on "Omelette" to edit it. He can change the name, category, or add quan
 
 Bob creates a "BLT" bundle for logging his favorite sandwich quickly. He selects bacon, lettuce, and tomato.
 
-[![New Bundle](../images/edit-bundle-new.png)](health://screen/EditBundle?typeId=type-activity)
+[![New Bundle](../images/edit-bundle-new.png)](health://screen/EditBundle?type=Activity)
 
 ---
 

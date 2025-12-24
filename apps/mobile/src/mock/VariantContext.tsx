@@ -9,6 +9,8 @@ interface VariantContextValue {
   setVariant: (variant: Variant) => void;
   route: string | null;
   params: Record<string, string>;
+  /** Monotonic counter incremented on each handled deep link (used to force refresh/remount for scenarios). */
+  linkSeq: number;
 }
 
 const VariantContext = createContext<VariantContextValue | null>(null);
@@ -57,6 +59,7 @@ export function VariantProvider({ children, initialVariant }: { children: ReactN
   const [variant, setVariantState] = useState<Variant>(initialVariant ?? defaultVariant);
   const [route, setRoute] = useState<string | null>(null);
   const [params, setParams] = useState<Record<string, string>>({});
+  const [linkSeq, setLinkSeq] = useState(0);
 
   const handleUrl = useCallback((url: string | null) => {
     const { route: parsedRoute, params: parsedParams } = parseDeepLink(url);
@@ -65,11 +68,19 @@ export function VariantProvider({ children, initialVariant }: { children: ReactN
     setParams(parsedParams);
 
     if (parsedParams.variant && isValidVariant(parsedParams.variant)) {
+      // Critical: set module-level variant immediately so data adapters can read it
+      // even before React effects run (important for screenshot capture / scenarios).
+      setCurrentVariant(parsedParams.variant);
       setVariantState(parsedParams.variant);
+    }
+
+    if (url) {
+      setLinkSeq((n) => n + 1);
     }
   }, []);
 
   const setVariant = useCallback((newVariant: Variant) => {
+    setCurrentVariant(newVariant);
     setVariantState(newVariant);
   }, []);
 
@@ -82,16 +93,13 @@ export function VariantProvider({ children, initialVariant }: { children: ReactN
     return () => subscription.remove();
   }, [handleUrl]);
 
-  useEffect(() => {
-    setCurrentVariant(variant);
-  }, [variant]);
-
   const value: VariantContextValue = {
     mockMode,
     variant,
     setVariant,
     route,
     params,
+    linkSeq,
   };
 
   return <VariantContext.Provider value={value}>{children}</VariantContext.Provider>;

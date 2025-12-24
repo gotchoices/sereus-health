@@ -48,7 +48,7 @@ export default function App() {
 }
 
 function AppContent() {
-  const { route, params } = useVariantParams();
+  const { route, params, linkSeq } = useVariantParams();
 
   const [tab, setTab] = useState<Tab>('home');
 
@@ -138,13 +138,11 @@ function AppContent() {
     }
     if (target === 'EditItem') {
       setEditItemId(params.itemId || undefined);
-      const ty = params.type as CatalogType | undefined;
-      setEditItemType(ty === 'Activity' || ty === 'Condition' || ty === 'Outcome' ? ty : undefined);
+      setEditItemType(normalizeCatalogType(params.type));
     }
     if (target === 'EditBundle') {
       setEditBundleId(params.bundleId || undefined);
-      const ty = params.type as CatalogType | undefined;
-      setEditBundleType(ty === 'Activity' || ty === 'Condition' || ty === 'Outcome' ? ty : undefined);
+      setEditBundleType(normalizeCatalogType(params.type));
     }
     if (target === 'GraphView') {
       setCurrentGraphId(params.graphId || null);
@@ -162,12 +160,16 @@ function AppContent() {
     // Deep link resets stack to the target screen (legacy behavior).
     setScreenStack([target]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [route, params]);
+  }, [linkSeq, params, route]);
+
+  // Force remount after each deep link so screens re-run their data loads with the latest mock variant.
+  const dlKey = `dl-${linkSeq}`;
 
   return screen === 'EditEntry' ? (
-    <EditEntry mode={editMode} entryId={editEntryId} onBack={popScreen} />
+    <EditEntry key={dlKey} mode={editMode} entryId={editEntryId} onBack={popScreen} />
   ) : screen === 'ConfigureCatalog' ? (
     <ConfigureCatalog
+      key={dlKey}
       onNavigateTab={resetToTabRoot}
       activeTab={tab}
       onAddItem={(type) => {
@@ -192,11 +194,12 @@ function AppContent() {
       }}
     />
   ) : screen === 'EditItem' ? (
-    <EditItem itemId={editItemId} type={editItemType} onBack={popScreen} />
+    <EditItem key={dlKey} itemId={editItemId} type={editItemType} onBack={popScreen} />
   ) : screen === 'EditBundle' ? (
-    <EditBundle bundleId={editBundleId} type={editBundleType} onBack={popScreen} />
+    <EditBundle key={dlKey} bundleId={editBundleId} type={editBundleType} onBack={popScreen} />
   ) : screen === 'Graphs' ? (
     <Graphs
+      key={dlKey}
       onBack={popScreen}
       onCreate={() => pushScreen('GraphCreate')}
       onView={(graphId) => {
@@ -213,6 +216,7 @@ function AppContent() {
     />
   ) : screen === 'GraphCreate' ? (
     <GraphCreate
+      key={dlKey}
       onBack={popScreen}
       onGraphCreated={(graph) => {
         setGraphs((prev) => [graph, ...prev]);
@@ -222,9 +226,10 @@ function AppContent() {
     />
   ) : screen === 'GraphView' ? (
     currentGraph ? (
-      <GraphView graph={currentGraph} onBack={popScreen} />
+      <GraphView key={dlKey} graph={currentGraph} onBack={popScreen} />
     ) : (
       <Graphs
+        key={dlKey}
         onBack={popScreen}
         onCreate={() => pushScreen('GraphCreate')}
         onView={(graphId) => {
@@ -239,17 +244,19 @@ function AppContent() {
     )
   ) : screen === 'Settings' ? (
     <Settings
+      key={dlKey}
       onNavigateTab={resetToTabRoot}
       activeTab={tab}
       onOpenSereus={() => pushScreen('SereusConnections')}
       onOpenReminders={() => pushScreen('Reminders')}
     />
   ) : screen === 'SereusConnections' ? (
-    <SereusConnections onBack={popScreen} />
+    <SereusConnections key={dlKey} onBack={popScreen} />
   ) : screen === 'Reminders' ? (
-    <Reminders onBack={popScreen} />
+    <Reminders key={dlKey} onBack={popScreen} />
   ) : (
     <LogHistory
+      key={dlKey}
       onAddNew={() => {
         setEditMode('new');
         setEditEntryId(undefined);
@@ -270,4 +277,14 @@ function AppContent() {
       activeTab={tab}
     />
   );
+}
+
+function normalizeCatalogType(value: unknown): CatalogType | undefined {
+  const raw = typeof value === 'string' ? value.trim() : '';
+  if (!raw) return undefined;
+  const lower = raw.toLowerCase();
+  if (lower === 'activity') return 'Activity';
+  if (lower === 'condition') return 'Condition';
+  if (lower === 'outcome') return 'Outcome';
+  return undefined;
 }

@@ -32,6 +32,7 @@ export function useVariantParams(): {
   route: string | null;
   params: Record<string, string>;
   mockMode: boolean;
+  linkSeq: number;
 } {
   try {
     const ctx = useVariantContext();
@@ -40,9 +41,10 @@ export function useVariantParams(): {
       route: ctx.route,
       params: ctx.params,
       mockMode: ctx.mockMode,
+      linkSeq: ctx.linkSeq,
     };
   } catch {
-    return { variant: defaultVariant, route: null, params: {}, mockMode };
+    return { variant: defaultVariant, route: null, params: {}, mockMode, linkSeq: 0 };
   }
 }
 

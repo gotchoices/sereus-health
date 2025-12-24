@@ -103,7 +103,7 @@ Create or edit a bundle (named collection of items). Bundles are type-specificâ€
 ```typescript
 interface EditBundleParams {
   bundleId?: string;    // undefined for create
-  typeId?: string;      // pre-select type (create mode)
+  type?: 'Activity' | 'Condition' | 'Outcome'; // pre-select type (create mode)
 }
 ```
 
