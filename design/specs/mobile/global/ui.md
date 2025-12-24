@@ -2,7 +2,7 @@
 
 iconSet: ionicons            # ionicons | material-community | feather
 uiKit: none                  # none | react-native-paper | tamagui | native-base
-theme: system                # system | light | dark
+theme: system                # system | light | dark, Settable from preferences screen
 
 colors:
   # Light mode

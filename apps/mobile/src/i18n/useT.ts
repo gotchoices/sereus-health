@@ -126,6 +126,11 @@ const en: Dict = {
   'graphView.chartPending': 'Chart library integration pending.',
   'graphView.legend': 'Legend',
   'graphView.dateRange': 'Date Range',
+
+  'settings.title': 'Settings',
+  'settings.sereusConnections': 'Sereus Connections',
+  'settings.reminders': 'Reminders',
+  'settings.preferences': 'Preferences',
 };
 
 export function useT() {

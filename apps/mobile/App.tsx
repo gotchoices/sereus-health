@@ -13,6 +13,7 @@ import Graphs from './src/screens/Graphs';
 import GraphCreate from './src/screens/GraphCreate';
 import { getGraphs, type Graph } from './src/data/graphs';
 import GraphView from './src/screens/GraphView';
+import Settings from './src/screens/Settings';
 
 type Tab = 'home' | 'catalog' | 'settings';
 type Screen =
@@ -23,7 +24,8 @@ type Screen =
   | 'EditBundle'
   | 'Graphs'
   | 'GraphCreate'
-  | 'GraphView';
+  | 'GraphView'
+  | 'Settings';
 
 /**
  * Note: This is a minimal navigation shell to get back to a running baseline.
@@ -70,12 +72,8 @@ export default function App() {
   const currentGraph = currentGraphId ? graphs.find((g) => g.id === currentGraphId) ?? null : null;
 
   const navigateTab = (next: Tab) => {
-    if (next === 'settings') {
-      Alert.alert('Not implemented', 'Settings will be generated in a later slice.');
-      return;
-    }
     setTab(next);
-    setScreen(next === 'catalog' ? 'ConfigureCatalog' : 'LogHistory');
+    setScreen(next === 'catalog' ? 'ConfigureCatalog' : next === 'settings' ? 'Settings' : 'LogHistory');
   };
 
   return (
@@ -190,6 +188,8 @@ export default function App() {
                 error={graphsError}
               />
             )
+          ) : screen === 'Settings' ? (
+            <Settings onNavigateTab={navigateTab} activeTab={tab} />
           ) : (
             <LogHistory
               onAddNew={() => {
