@@ -16,16 +16,35 @@ const VariantContext = createContext<VariantContextValue | null>(null);
 function parseDeepLink(url: string | null): { route: string | null; params: Record<string, string> } {
   if (!url) return { route: null, params: {} };
 
+  // Avoid URL/URLSearchParams (DOM lib) to keep TS config simple in RN projects.
+  // Supported formats:
+  // - health://screen/LogHistory?variant=empty
+  // - health://LogHistory?variant=empty
   try {
-    const urlObj = new URL(url);
-    const path = urlObj.pathname.replace(/^\/+/, '');
-    const parts = path.split('/');
-    const route = parts[parts.length - 1] || null;
-
     const params: Record<string, string> = {};
-    urlObj.searchParams.forEach((value, key) => {
-      params[key] = value;
-    });
+
+    const [beforeHash] = url.split('#');
+    const [pathPart, queryPart] = beforeHash.split('?');
+
+    // Strip scheme prefix.
+    const withoutScheme = pathPart.replace(/^health:\/\//, '');
+    const segments = withoutScheme.split('/').filter(Boolean);
+
+    // health://screen/LogHistory -> ["screen","LogHistory"] -> route "LogHistory"
+    // health://LogHistory -> ["LogHistory"] -> route "LogHistory"
+    const route = segments.length ? segments[segments.length - 1] : null;
+
+    if (queryPart) {
+      for (const kv of queryPart.split('&')) {
+        if (!kv) continue;
+        const [rawKey, rawValue = ''] = kv.split('=');
+        if (!rawKey) continue;
+        const key = safeDecodeURIComponent(rawKey);
+        const value = safeDecodeURIComponent(rawValue);
+        params[key] = value;
+      }
+    }
+
     return { route, params };
   } catch {
     // best-effort
@@ -82,6 +101,14 @@ export function useVariantContext(): VariantContextValue {
   const ctx = useContext(VariantContext);
   if (!ctx) throw new Error('useVariantContext must be used within VariantProvider');
   return ctx;
+}
+
+function safeDecodeURIComponent(value: string): string {
+  try {
+    return decodeURIComponent(value.replace(/\+/g, '%20'));
+  } catch {
+    return value;
+  }
 }
 
 

@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Alert } from 'react-native';
 import LogHistory from './src/screens/LogHistory';
-import { VariantProvider } from './src/mock';
+import { useVariantParams, VariantProvider } from './src/mock';
 import EditEntry from './src/screens/EditEntry';
 import type { EditEntryMode } from './src/data/editEntry';
 import ConfigureCatalog from './src/screens/ConfigureCatalog';
@@ -36,8 +36,27 @@ type Screen =
  * We intentionally avoid adding navigation framework dependencies until needed.
  */
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <VariantProvider>
+        <SafeAreaView style={{ flex: 1 }}>
+          <AppContent />
+        </SafeAreaView>
+      </VariantProvider>
+    </SafeAreaProvider>
+  );
+}
+
+function AppContent() {
+  const { route, params } = useVariantParams();
+
   const [tab, setTab] = useState<Tab>('home');
-  const [screen, setScreen] = useState<Screen>('LogHistory');
+
+  // Navigation stack (legacy parity): allows generic "back" without hardcoding destinations.
+  const [screenStack, setScreenStack] = useState<Screen[]>(['LogHistory']);
+  const screen = screenStack[screenStack.length - 1] ?? 'LogHistory';
+
+  // Route params / transient state
   const [editMode, setEditMode] = useState<EditEntryMode>('new');
   const [editEntryId, setEditEntryId] = useState<string | undefined>(undefined);
   const [editItemId, setEditItemId] = useState<string | undefined>(undefined);
@@ -73,170 +92,182 @@ export default function App() {
     };
   }, []);
 
-  const currentGraph = currentGraphId ? graphs.find((g) => g.id === currentGraphId) ?? null : null;
+  const currentGraph = useMemo(() => (currentGraphId ? graphs.find((g) => g.id === currentGraphId) ?? null : null), [currentGraphId, graphs]);
 
-  const navigateTab = (next: Tab) => {
-    setTab(next);
-    setScreen(next === 'catalog' ? 'ConfigureCatalog' : next === 'settings' ? 'Settings' : 'LogHistory');
+  const pushScreen = (next: Screen) => setScreenStack((prev) => [...prev, next]);
+  const popScreen = () =>
+    setScreenStack((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.slice(0, -1);
+    });
+
+  const resetToTabRoot = (nextTab: Tab) => {
+    setTab(nextTab);
+    setScreenStack([nextTab === 'catalog' ? 'ConfigureCatalog' : nextTab === 'settings' ? 'Settings' : 'LogHistory']);
   };
 
-  return (
-    <SafeAreaProvider>
-      <VariantProvider>
-        <SafeAreaView style={{ flex: 1 }}>
-          {screen === 'EditEntry' ? (
-            <EditEntry
-              mode={editMode}
-              entryId={editEntryId}
-              onBack={() => {
-                setScreen('LogHistory');
-              }}
-            />
-          ) : screen === 'ConfigureCatalog' ? (
-            <ConfigureCatalog
-              onNavigateTab={navigateTab}
-              activeTab={tab}
-              onAddItem={(type) => {
-                setEditItemId(undefined);
-                setEditItemType(type);
-                setScreen('EditItem');
-              }}
-              onEditItem={(itemId) => {
-                setEditItemId(itemId);
-                setEditItemType(undefined);
-                setScreen('EditItem');
-              }}
-              onAddBundle={(type) => {
-                setEditBundleId(undefined);
-                setEditBundleType(type);
-                setScreen('EditBundle');
-              }}
-              onEditBundle={(bundleId) => {
-                setEditBundleId(bundleId);
-                setEditBundleType(undefined);
-                setScreen('EditBundle');
-              }}
-            />
-          ) : screen === 'EditItem' ? (
-            <EditItem
-              itemId={editItemId}
-              type={editItemType}
-              onBack={() => {
-                setScreen('ConfigureCatalog');
-              }}
-            />
-          ) : screen === 'EditBundle' ? (
-            <EditBundle
-              bundleId={editBundleId}
-              type={editBundleType}
-              onBack={() => {
-                setScreen('ConfigureCatalog');
-              }}
-            />
-          ) : screen === 'Graphs' ? (
-            <Graphs
-              onBack={() => {
-                setScreen('LogHistory');
-              }}
-              onCreate={() => {
-                setScreen('GraphCreate');
-              }}
-              onView={(graphId) => {
-                setCurrentGraphId(graphId);
-                setScreen('GraphView');
-              }}
-              onClose={(graphId) => {
-                setGraphs((prev) => prev.filter((g) => g.id !== graphId));
-                if (currentGraphId === graphId) {
-                  setCurrentGraphId(null);
-                }
-              }}
-              graphs={graphs}
-              loading={graphsLoading}
-              error={graphsError}
-            />
-          ) : screen === 'GraphCreate' ? (
-            <GraphCreate
-              onBack={() => {
-                setScreen('Graphs');
-              }}
-              onGraphCreated={(graph) => {
-                setGraphs((prev) => [graph, ...prev]);
-                setCurrentGraphId(graph.id);
-                setScreen('GraphView');
-              }}
-            />
-          ) : screen === 'GraphView' ? (
-            currentGraph ? (
-              <GraphView
-                graph={currentGraph}
-                onBack={() => {
-                  setScreen('Graphs');
-                }}
-              />
-            ) : (
-              <Graphs
-                onBack={() => {
-                  setScreen('LogHistory');
-                }}
-                onCreate={() => {
-                  setScreen('GraphCreate');
-                }}
-                onView={(graphId) => {
-                  setCurrentGraphId(graphId);
-                  setScreen('GraphView');
-                }}
-                onClose={(graphId) => setGraphs((prev) => prev.filter((g) => g.id !== graphId))}
-                graphs={graphs}
-                loading={graphsLoading}
-                error={graphsError}
-              />
-            )
-          ) : screen === 'Settings' ? (
-            <Settings
-              onNavigateTab={navigateTab}
-              activeTab={tab}
-              onOpenSereus={() => setScreen('SereusConnections')}
-              onOpenReminders={() => setScreen('Reminders')}
-            />
-          ) : screen === 'SereusConnections' ? (
-            <SereusConnections
-              onBack={() => {
-                setScreen('Settings');
-              }}
-            />
-          ) : screen === 'Reminders' ? (
-            <Reminders
-              onBack={() => {
-                setScreen('Settings');
-              }}
-            />
-          ) : (
-            <LogHistory
-              onAddNew={() => {
-                setEditMode('new');
-                setEditEntryId(undefined);
-                setScreen('EditEntry');
-              }}
-              onClone={(entryId) => {
-                setEditMode('clone');
-                setEditEntryId(entryId);
-                setScreen('EditEntry');
-              }}
-              onEdit={(entryId) => {
-                setEditMode('edit');
-                setEditEntryId(entryId);
-                setScreen('EditEntry');
-              }}
-              onOpenGraphs={() => {
-                setScreen('Graphs');
-              }}
-              onNavigateTab={navigateTab}
-              activeTab={tab}
-            />
-          )}
-        </SafeAreaView>
-      </VariantProvider>
-    </SafeAreaProvider>
+  // Deep link navigation:
+  // - Variant is handled globally by VariantProvider + module-level currentVariant (data adapters read getVariant()).
+  // - Here we only translate { route, params } into in-app navigation/params.
+  useEffect(() => {
+    if (!route) return;
+
+    const allowed: Screen[] = [
+      'LogHistory',
+      'EditEntry',
+      'ConfigureCatalog',
+      'EditItem',
+      'EditBundle',
+      'Graphs',
+      'GraphCreate',
+      'GraphView',
+      'Settings',
+      'SereusConnections',
+      'Reminders',
+    ];
+
+    if (!allowed.includes(route as Screen)) return;
+
+    const target = route as Screen;
+
+    // Apply per-screen params (best-effort; ignore unknown params).
+    if (target === 'EditEntry') {
+      const mode = (params.mode as EditEntryMode) || 'new';
+      setEditMode(mode);
+      setEditEntryId(params.entryId || undefined);
+    }
+    if (target === 'EditItem') {
+      setEditItemId(params.itemId || undefined);
+      const ty = params.type as CatalogType | undefined;
+      setEditItemType(ty === 'Activity' || ty === 'Condition' || ty === 'Outcome' ? ty : undefined);
+    }
+    if (target === 'EditBundle') {
+      setEditBundleId(params.bundleId || undefined);
+      const ty = params.type as CatalogType | undefined;
+      setEditBundleType(ty === 'Activity' || ty === 'Condition' || ty === 'Outcome' ? ty : undefined);
+    }
+    if (target === 'GraphView') {
+      setCurrentGraphId(params.graphId || null);
+    }
+
+    // Set tab for screen family (legacy parity).
+    if (target === 'LogHistory' || target === 'EditEntry' || target === 'Graphs' || target === 'GraphCreate' || target === 'GraphView') {
+      setTab('home');
+    } else if (target === 'ConfigureCatalog' || target === 'EditItem' || target === 'EditBundle') {
+      setTab('catalog');
+    } else {
+      setTab('settings');
+    }
+
+    // Deep link resets stack to the target screen (legacy behavior).
+    setScreenStack([target]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route, params]);
+
+  return screen === 'EditEntry' ? (
+    <EditEntry mode={editMode} entryId={editEntryId} onBack={popScreen} />
+  ) : screen === 'ConfigureCatalog' ? (
+    <ConfigureCatalog
+      onNavigateTab={resetToTabRoot}
+      activeTab={tab}
+      onAddItem={(type) => {
+        setEditItemId(undefined);
+        setEditItemType(type);
+        pushScreen('EditItem');
+      }}
+      onEditItem={(itemId) => {
+        setEditItemId(itemId);
+        setEditItemType(undefined);
+        pushScreen('EditItem');
+      }}
+      onAddBundle={(type) => {
+        setEditBundleId(undefined);
+        setEditBundleType(type);
+        pushScreen('EditBundle');
+      }}
+      onEditBundle={(bundleId) => {
+        setEditBundleId(bundleId);
+        setEditBundleType(undefined);
+        pushScreen('EditBundle');
+      }}
+    />
+  ) : screen === 'EditItem' ? (
+    <EditItem itemId={editItemId} type={editItemType} onBack={popScreen} />
+  ) : screen === 'EditBundle' ? (
+    <EditBundle bundleId={editBundleId} type={editBundleType} onBack={popScreen} />
+  ) : screen === 'Graphs' ? (
+    <Graphs
+      onBack={popScreen}
+      onCreate={() => pushScreen('GraphCreate')}
+      onView={(graphId) => {
+        setCurrentGraphId(graphId);
+        pushScreen('GraphView');
+      }}
+      onClose={(graphId) => {
+        setGraphs((prev) => prev.filter((g) => g.id !== graphId));
+        if (currentGraphId === graphId) setCurrentGraphId(null);
+      }}
+      graphs={graphs}
+      loading={graphsLoading}
+      error={graphsError}
+    />
+  ) : screen === 'GraphCreate' ? (
+    <GraphCreate
+      onBack={popScreen}
+      onGraphCreated={(graph) => {
+        setGraphs((prev) => [graph, ...prev]);
+        setCurrentGraphId(graph.id);
+        pushScreen('GraphView');
+      }}
+    />
+  ) : screen === 'GraphView' ? (
+    currentGraph ? (
+      <GraphView graph={currentGraph} onBack={popScreen} />
+    ) : (
+      <Graphs
+        onBack={popScreen}
+        onCreate={() => pushScreen('GraphCreate')}
+        onView={(graphId) => {
+          setCurrentGraphId(graphId);
+          pushScreen('GraphView');
+        }}
+        onClose={(graphId) => setGraphs((prev) => prev.filter((g) => g.id !== graphId))}
+        graphs={graphs}
+        loading={graphsLoading}
+        error={graphsError}
+      />
+    )
+  ) : screen === 'Settings' ? (
+    <Settings
+      onNavigateTab={resetToTabRoot}
+      activeTab={tab}
+      onOpenSereus={() => pushScreen('SereusConnections')}
+      onOpenReminders={() => pushScreen('Reminders')}
+    />
+  ) : screen === 'SereusConnections' ? (
+    <SereusConnections onBack={popScreen} />
+  ) : screen === 'Reminders' ? (
+    <Reminders onBack={popScreen} />
+  ) : (
+    <LogHistory
+      onAddNew={() => {
+        setEditMode('new');
+        setEditEntryId(undefined);
+        pushScreen('EditEntry');
+      }}
+      onClone={(entryId) => {
+        setEditMode('clone');
+        setEditEntryId(entryId);
+        pushScreen('EditEntry');
+      }}
+      onEdit={(entryId) => {
+        setEditMode('edit');
+        setEditEntryId(entryId);
+        pushScreen('EditEntry');
+      }}
+      onOpenGraphs={() => pushScreen('Graphs')}
+      onNavigateTab={resetToTabRoot}
+      activeTab={tab}
+    />
   );
 }
