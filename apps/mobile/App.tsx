@@ -6,9 +6,11 @@ import { VariantProvider } from './src/mock';
 import EditEntry from './src/screens/EditEntry';
 import type { EditEntryMode } from './src/data/editEntry';
 import ConfigureCatalog from './src/screens/ConfigureCatalog';
+import EditItem from './src/screens/EditItem';
+import type { CatalogType } from './src/data/configureCatalog';
 
 type Tab = 'home' | 'catalog' | 'settings';
-type Screen = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog';
+type Screen = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog' | 'EditItem';
 
 /**
  * Note: This is a minimal navigation shell to get back to a running baseline.
@@ -19,6 +21,8 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('LogHistory');
   const [editMode, setEditMode] = useState<EditEntryMode>('new');
   const [editEntryId, setEditEntryId] = useState<string | undefined>(undefined);
+  const [editItemId, setEditItemId] = useState<string | undefined>(undefined);
+  const [editItemType, setEditItemType] = useState<CatalogType | undefined>(undefined);
 
   const navigateTab = (next: Tab) => {
     if (next === 'settings') {
@@ -42,7 +46,28 @@ export default function App() {
               }}
             />
           ) : screen === 'ConfigureCatalog' ? (
-            <ConfigureCatalog onNavigateTab={navigateTab} activeTab={tab} />
+            <ConfigureCatalog
+              onNavigateTab={navigateTab}
+              activeTab={tab}
+              onAddItem={(type) => {
+                setEditItemId(undefined);
+                setEditItemType(type);
+                setScreen('EditItem');
+              }}
+              onEditItem={(itemId) => {
+                setEditItemId(itemId);
+                setEditItemType(undefined);
+                setScreen('EditItem');
+              }}
+            />
+          ) : screen === 'EditItem' ? (
+            <EditItem
+              itemId={editItemId}
+              type={editItemType}
+              onBack={() => {
+                setScreen('ConfigureCatalog');
+              }}
+            />
           ) : (
             <LogHistory
               onAddNew={() => {

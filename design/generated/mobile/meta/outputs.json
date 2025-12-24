@@ -64,16 +64,20 @@
       "route": "EditItem",
       "output": "src/screens/EditItem.tsx",
       "dependsOn": [
-        "design/specs/screens/index.md",
-        "design/specs/screens/edit-item.md",
-        "design/specs/navigation.md",
-        "design/specs/global/general.md"
+        "design/generated/mobile/screens/EditItem.md",
+        "design/specs/mobile/screens/index.md",
+        "design/specs/mobile/screens/edit-item.md",
+        "design/specs/mobile/navigation.md",
+        "design/specs/mobile/global/general.md",
+        "design/specs/mobile/global/ui.md"
       ],
       "depHashes": {
-        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
-        "design/specs/screens/edit-item.md": "1646da7feb642b17f92f659555f32d7cb9349d81683434adf02f387b2e1fac89",
-        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
-        "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755"
+        "design/generated/mobile/screens/EditItem.md": "77cde3e47d5179b85eb6a43c942f9e132271ef97eaf4e40e3b7bd2b0f41ecf59",
+        "design/specs/mobile/screens/index.md": "cb0617ed616661cc69cbaab5637a94385ca6301d408bbfc0f63c59ad029c3006",
+        "design/specs/mobile/screens/edit-item.md": "f5cf32c7e7ca79ccbe0a0e49d359cb740e21be1f0e4b72e7dfcb4d13d062958a",
+        "design/specs/mobile/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
+        "design/specs/mobile/global/general.md": "c7428ec105560a84a4ceca085dd6ef8ecefa4369512c0ca518d06f4b083cbcee",
+        "design/specs/mobile/global/ui.md": "4d8687e3cdf479c3aac789b56b4fefca96a3e08351657b14dec537ecd819d707"
       }
     },
     {
