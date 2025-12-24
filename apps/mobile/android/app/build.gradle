@@ -2,6 +2,11 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
+// Ensure react-native-vector-icons fonts are bundled (needed on Android).
+// Detect node_modules location: local first (../../node_modules), then workspace root (../../../../node_modules)
+def nodeModulesDir = file("../../node_modules/react-native").exists() ? file("../../node_modules") : file("../../../../node_modules")
+apply from: "${nodeModulesDir}/react-native-vector-icons/fonts.gradle"
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.

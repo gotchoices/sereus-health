@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import LogHistory from './src/screens/LogHistory';
 import { VariantProvider } from './src/mock';
 
@@ -16,7 +15,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <VariantProvider>
-        <View style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1 }}>
           <LogHistory
             onAddNew={() => {
               // TODO: wire to EditEntry once generated
@@ -33,7 +32,7 @@ export default function App() {
             onNavigateTab={(next) => setTab(next)}
             activeTab={tab}
           />
-        </View>
+        </SafeAreaView>
       </VariantProvider>
     </SafeAreaProvider>
   );
