@@ -51,6 +51,8 @@ This project is being migrated from Appeus v1 to Appeus v2 to take advantage of 
 
 These are known decisions/inconsistencies that are easier to resolve once the rebuilt app is running and you can see the UX.
 
+- [ ] **Theme on real device**: verify system light/dark switching works on a physical iOS/Android device (emulator/simulator is not reflecting changes reliably).
+- [ ] **Theme preferences**: implement a user preference in Settings to select **System | Light | Dark** (override system appearance when chosen).
 - [ ] **Defer detailed screen-spec review until the app boots**: once the scaffold runs, re-review `design/specs/mobile/screens/*.md` for correctness and remove stale/over-specified content.
 - [ ] **Graphs persistence model**: reconcile whether graphs are ad-hoc (not persisted across restarts) vs saved/named and persisted.
   - Current tension: `design/specs/mobile/navigation.md` vs `design/specs/mobile/global/general.md`.

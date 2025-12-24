@@ -7,6 +7,7 @@ export interface Theme {
   textSecondary: string;
   border: string;
   bannerError: string;
+  error: string;
 
   // Accents (not in ui.md but required for semantic badges/actions)
   accentActivity: string;
@@ -22,6 +23,7 @@ const lightTheme: Theme = {
   textSecondary: '#555555',
   border: '#dddddd',
   bannerError: '#ffeeee',
+  error: '#D32F2F',
   accentActivity: '#4A90E2',
   accentCondition: '#F5A623',
   accentOutcome: '#7ED321',
@@ -35,6 +37,7 @@ const darkTheme: Theme = {
   textSecondary: '#bbbbbb',
   border: '#333333',
   bannerError: '#330000',
+  error: '#EF5350',
   accentActivity: '#5FA3EE',
   accentCondition: '#FFB84D',
   accentOutcome: '#8FE635',
