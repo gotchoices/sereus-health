@@ -42,6 +42,16 @@ When a user edits a taxonomy element that is already referenced by historical lo
 - **Reusable selection list**: a shared list picker that supports optional filtering and single/multi-select, reused across screens.
 - **Shared dialogs/toasts**: confirmation dialogs and transient notifications are shared components/styles, not one-offs.
 
+### Filters (search toggles)
+
+For screens that expose a toggleable search/filter bar:
+
+- Tapping the search icon **reveals** the filter input.
+- Typing into the input **filters the list live**.
+- Tapping the search icon again **hides** the filter input.
+- When hidden, the **typed filter value is retained**, but the **list is not filtered**.
+- Re-opening the filter input restores the previous value and **re-applies** filtering (until the value is cleared).
+
 ### Theming
 
 - Default to **system light/dark**; layouts must remain legible in both.

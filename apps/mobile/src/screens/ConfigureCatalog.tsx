@@ -69,16 +69,17 @@ export default function ConfigureCatalog(props: {
   const typedBundles = useMemo(() => bundles.filter((b) => b.type === catalogType), [bundles, catalogType]);
 
   const filteredItems = useMemo(() => {
-    const q = filterText.trim().toLowerCase();
+    // Global filter rule: when filter UI is hidden, retain the text but do not filter the list.
+    const q = (filterVisible ? filterText : '').trim().toLowerCase();
     if (!q) return typedItems;
     return typedItems.filter((it) => it.name.toLowerCase().includes(q) || it.category.toLowerCase().includes(q));
-  }, [filterText, typedItems]);
+  }, [filterText, filterVisible, typedItems]);
 
   const filteredBundles = useMemo(() => {
-    const q = filterText.trim().toLowerCase();
+    const q = (filterVisible ? filterText : '').trim().toLowerCase();
     if (!q) return typedBundles;
     return typedBundles.filter((b) => b.name.toLowerCase().includes(q));
-  }, [filterText, typedBundles]);
+  }, [filterText, filterVisible, typedBundles]);
 
   const onPressAdd = () => {
     if (viewMode === 'items') {

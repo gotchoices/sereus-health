@@ -54,7 +54,8 @@ export default function LogHistory(props: {
   }, [t]);
 
   const filtered = useMemo(() => {
-    const q = filterText.trim().toLowerCase();
+    // Global filter rule: when filter UI is hidden, retain the text but do not filter the list.
+    const q = (filterVisible ? filterText : '').trim().toLowerCase();
     if (!q) return entries;
     return entries.filter((e) => {
       if (e.type.toLowerCase().includes(q)) return true;
@@ -64,7 +65,7 @@ export default function LogHistory(props: {
       if (e.bundles?.some((b) => b.toLowerCase().includes(q))) return true;
       return false;
     });
-  }, [entries, filterText]);
+  }, [entries, filterText, filterVisible]);
 
   const formatTimestamp = (iso: string) => {
     const d = new Date(iso);
