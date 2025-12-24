@@ -31,7 +31,7 @@ This project is being migrated from Appeus v1 to Appeus v2 to take advantage of 
   - [x] `design/specs/mobile/global/dependencies.md` (likely delete; if any deps are “must-use”, restate elsewhere)
   - [x] `design/specs/mobile/global/inline-taxonomy.md` (deleted; inline-add rules belong in the relevant screen specs if/when desired)
   - [x] `design/specs/mobile/global/import-export.md`
-  - [ ] `design/specs/mobile/navigation.md`
+  - [x] `design/specs/mobile/navigation.md`
   - [ ] `design/specs/mobile/screens/index.md`
   - [ ] `design/specs/mobile/screens/log-history.md`
   - [ ] `design/specs/mobile/screens/edit-entry.md`
@@ -142,13 +142,18 @@ This file tracks open design questions for Sereus Health so they can be resolved
 
 **NOTE:** This section reflects a prior/legacy Quereus exploration. The current `apps/mobile` implementation does **not** include Quereus adapters yet (it currently has only `apps/mobile/src/db/config.ts` and uses mock-backed adapters).
 
-**Implementation Status:**
-- [ ] **Add Quereus dependency**: Install `@quereus/quereus` in `apps/mobile/package.json` (only after confirming Quereus is still the chosen approach).
-- [ ] **Create database initialization**: Add `apps/mobile/src/db/index.ts` / `init.ts` with DB instance + initialization.
-- [ ] **Translate schema to declarative SQL**: Add `apps/mobile/src/db/schema.ts` matching `design/specs/schema/*.md`.
-- [ ] **Seed data**: Add first-run seed expectations (types/categories/items) per schema specs.
-- [ ] **Implement storage adapters**: Add `apps/mobile/src/db/*` (stats, logEntries, catalog) and update screen data adapters to use DB when enabled.
-- [ ] **Document RN issues / feasibility**: If Quereus is still blocked on Hermes, document decision and choose alternate persistence.
+**Blocked until next Quereus release (imminent)**:
+- [ ] **Re-test Quereus on RN/Hermes (smoke suite)**: after upgrading Quereus, run a minimal in-app smoke test (Android + Hermes) to confirm the critical blockers are fixed:
+  - [ ] **Insert/Select persists**: INSERT into a table, then SELECT returns rows (no “data disappears”).
+  - [ ] **Transaction commit persists**: BEGIN → INSERT → COMMIT, then SELECT returns rows.
+  - [ ] **No internal MVCC corruption**: no `primaryKeys.add is not a function` (or similar) during inserts.
+  - [ ] **Nullable prepared statements** (optional): prepared stmt accepts `null` for nullable columns (or confirm official workaround).
+  - Reference: `docs/quereus-rn-issues.md` for prior repro notes.
+- [ ] **If smoke suite passes: port the working legacy DB layer**:
+  - Copy/adapt `rn-v1/src/db/*` into `apps/mobile/src/db/*` (schema/init/stats/logEntries/catalog).
+  - Add `USE_QUEREUS` switching in `apps/mobile/src/data/*` adapters (like legacy) so UI remains unaware and `variant` remains mock-only.
+  - Add seed expectations from `design/specs/schema/*.md`.
+  - Only then consider enabling `USE_QUEREUS = true`.
 
 **Current Status:**
 - **App runs with `USE_QUEREUS = false`** (using Appeus mock data)
@@ -164,56 +169,15 @@ This file tracks open design questions for Sereus Health so they can be resolved
 
 **Issues #4 and #5 are fundamental** and suggest Quereus's in-memory MemoryTable is not compatible with React Native's JavaScript engine (Hermes). These cannot be worked around without deep changes to Quereus's core.
 
-**Cleanup Checklist for When Quereus RN Support is Fixed:**
-
-Once Quereus resolves the RN compatibility issues, perform these cleanup steps:
-
-- [ ] **Remove workarounds in `src/db/schema.ts`**:
-  - [ ] Remove comment about autocommit workaround
-  - [ ] Re-add `BEGIN` transaction at start of `applyProductionSeeds()`
-  - [ ] Re-add `COMMIT` and `ROLLBACK` error handling
-  - [ ] Remove verification SELECT query (debugging code)
-
-- [ ] **Remove workarounds in `src/db/schema.samples.ts`**:
-  - [ ] Remove comment about autocommit workaround  
-  - [ ] Re-add `BEGIN` transaction at start of `applySampleData()`
-  - [ ] Re-add `COMMIT` and `ROLLBACK` error handling
-  - [ ] **Replace direct SQL with prepared statements** for:
-    - [ ] Item quantifiers insert (line ~101)
-    - [ ] Log entries insert (line ~130)
-    - [ ] Log entry items insert (line ~140)
-  - [ ] Remove all `db.exec()` string interpolation for INSERTs
-  - [ ] Remove special NULL handling (use native `null` in arrays)
-
-- [ ] **Remove patches to `node_modules/@quereus/quereus`**:
-  - [ ] Remove patch to `plugin-loader.js` (or update package.json to apply automatically)
-  - [ ] Remove patch to `schema-hasher.js` (or update package.json to apply automatically)
-  - [ ] Consider documenting patches if they need to persist
-
-- [ ] **Remove polyfills from `index.js`**:
-  - [ ] Remove `structuredClone` polyfill (only if Quereus includes its own)
-
-- [ ] **Update logging in `src/db/init.ts`**:
-  - [ ] Remove excessive debug logging added for troubleshooting
-  - [ ] Keep only info-level logs for initialization milestones
-  - [ ] Remove verification queries and type counting
-
-- [ ] **Set `USE_QUEREUS = true` in `src/db/config.ts`**
-  - [ ] Test full CRUD operations
-  - [ ] Test with multiple log entries
-  - [ ] Test bundle expansion
-  - [ ] Test quantifier values
-  - [ ] Verify EditEntry stats queries work
-  - [ ] Verify LogHistory queries work
-
-- [ ] **Archive or remove `docs/quereus-rn-issues.md`**:
-  - [ ] If issues are fully resolved, move to `docs/archive/` or delete
-  - [ ] If some workarounds remain, update status to reflect what's fixed
-
-- [ ] **Update `docs/STATUS.md`**:
-  - [ ] Mark Quereus integration as complete
-  - [ ] Remove this cleanup checklist
-  - [ ] Document any remaining limitations or known issues
+**After Quereus RN Support is Fixed (follow-up checklist)**:
+- [ ] **Remove/adjust any Quereus RN workarounds** (polyfills/patches) if no longer needed.
+- [ ] **Enable + verify**: set `apps/mobile/src/db/config.ts` `USE_QUEREUS = true` and verify:
+  - [ ] EditEntry stats queries work
+  - [ ] LogHistory queries work
+  - [ ] Catalog reads/writes work
+  - [ ] Bundle expansion works
+  - [ ] Quantifier values work
+  - [ ] Basic CRUD is stable across app restarts
 
 ### Build & Deployment
 
@@ -221,7 +185,7 @@ Once Quereus resolves the RN compatibility issues, perform these cleanup steps:
 - [x] **Implement fastlane build system**: Set up fastlane similar to what exists in `devel/mypitch` for automated builds and deployment.
 - [x] **Configure real keystore files**: Use real Android keystore files specified by environment variables (not committed to repo).
 - [x] **Integrate app logos**: Add app icons/logos for Android and iOS builds.
-- [ ] **Verify Quereus integration still works**: Confirm running the app with `USE_QUEREUS = true` still functions after recent changes.
+- [ ] **Verify Quereus integration (after next Quereus release)**: once Quereus is upgraded and the smoke suite passes, confirm running the app with `USE_QUEREUS = true` works end-to-end.
 
 ### Features
 

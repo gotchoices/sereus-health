@@ -10,6 +10,7 @@ const en: Dict = {
   'common.loading': 'Loading…',
   'common.search': 'Search…',
   'common.done': 'Done',
+  'common.now': 'Now',
   'common.cancel': 'Cancel',
   'common.delete': 'Delete',
   'common.notImplementedTitle': 'Not implemented',

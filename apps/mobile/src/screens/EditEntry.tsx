@@ -3,6 +3,7 @@ import {
   Alert,
   FlatList,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +12,7 @@ import {
   View,
 } from 'react-native';
 
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
@@ -84,6 +86,12 @@ export default function EditEntry(props: {
   const [typeFilter, setTypeFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [itemsFilter, setItemsFilter] = useState('');
+
+  // Date/time picker state (legacy parity)
+  const [dateTimeModalVisible, setDateTimeModalVisible] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   // Load initial data (entry + stats)
   useEffect(() => {
@@ -179,6 +187,45 @@ export default function EditEntry(props: {
   const selectedType = useMemo(() => types.find((x) => x.id === typeId) ?? null, [typeId, types]);
   const selectedCategory = useMemo(() => categories.find((x) => x.id === categoryId) ?? null, [categoryId, categories]);
   const selectedItems = useMemo(() => items.filter((x) => selectedItemIds.includes(x.id)), [items, selectedItemIds]);
+
+  const timestampDate = useMemo(() => {
+    const d = new Date(timestamp);
+    return Number.isNaN(d.getTime()) ? new Date() : d;
+  }, [timestamp]);
+
+  const handleDateTimeChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      if (pickerMode === 'date') {
+        setShowDatePicker(false);
+        if (event.type === 'set' && selectedDate) {
+          setTimestamp(selectedDate.toISOString());
+          // show time picker after date is selected
+          setTimeout(() => {
+            setPickerMode('time');
+            setShowTimePicker(true);
+          }, 100);
+        }
+      } else {
+        setShowTimePicker(false);
+        if (event.type === 'set' && selectedDate) {
+          setTimestamp(selectedDate.toISOString());
+        }
+      }
+      return;
+    }
+
+    // iOS - inline picker
+    if (selectedDate) setTimestamp(selectedDate.toISOString());
+  };
+
+  const openDateTimePicker = () => {
+    if (Platform.OS === 'android') {
+      setPickerMode('date');
+      setShowDatePicker(true);
+      return;
+    }
+    setDateTimeModalVisible(true);
+  };
 
   const canSave = useMemo(() => {
     if (!typeId) return false;
@@ -384,10 +431,14 @@ export default function EditEntry(props: {
           {/* Timestamp (placeholder, until DateTimePicker slice introduces native picker) */}
           <View>
             <Text style={[styles.label, { color: theme.textSecondary }]}>{t('editEntry.timestamp')}</Text>
-            <View style={[styles.selector, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <TouchableOpacity
+              onPress={openDateTimePicker}
+              style={[styles.selector, { backgroundColor: theme.surface, borderColor: theme.border }]}
+              activeOpacity={0.85}
+            >
               <Text style={[styles.selectorText, { color: theme.textPrimary }]}>{formatTimestamp(timestamp)}</Text>
               <Ionicons name="time-outline" size={18} color={theme.textSecondary} />
-            </View>
+            </TouchableOpacity>
           </View>
 
           {/* Comment */}
@@ -416,6 +467,37 @@ export default function EditEntry(props: {
           </TouchableOpacity>
         </ScrollView>
       )}
+
+      {/* Date/time picker (Android) */}
+      {showDatePicker ? (
+        <DateTimePicker value={timestampDate} mode="date" display="default" onChange={handleDateTimeChange} />
+      ) : null}
+      {showTimePicker ? (
+        <DateTimePicker value={timestampDate} mode="time" display="default" onChange={handleDateTimeChange} />
+      ) : null}
+
+      {/* Date/time picker (iOS modal) */}
+      <Modal visible={dateTimeModalVisible} animationType="slide" transparent onRequestClose={() => setDateTimeModalVisible(false)}>
+        <View style={styles.dateTimeModalBackdrop}>
+          <View style={[styles.dateTimeModalCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <View style={[styles.dateTimeModalHeader, { borderBottomColor: theme.border }]}>
+              <TouchableOpacity onPress={() => setDateTimeModalVisible(false)} hitSlop={HIT_SLOP}>
+                <Text style={{ color: theme.accentPrimary, fontWeight: '700' }}>{t('common.done')}</Text>
+              </TouchableOpacity>
+              <Text style={{ color: theme.textPrimary, fontWeight: '700' }}>{t('editEntry.timestamp')}</Text>
+              <TouchableOpacity
+                onPress={() => setTimestamp(new Date().toISOString())}
+                hitSlop={HIT_SLOP}
+              >
+                <Text style={{ color: theme.textSecondary, fontWeight: '600' }}>{t('common.now')}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.dateTimePickerWrap}>
+              <DateTimePicker value={timestampDate} mode="datetime" display="inline" onChange={handleDateTimeChange} />
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Type modal */}
       <Modal visible={typeModal} animationType="slide" onRequestClose={() => setTypeModal(false)}>
@@ -632,6 +714,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing[2],
   },
+
+  // iOS date/time picker modal
+  dateTimeModalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
+  dateTimeModalCard: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  dateTimeModalHeader: {
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[3],
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dateTimePickerWrap: { padding: spacing[2] },
 });
 
 

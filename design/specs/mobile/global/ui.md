@@ -36,4 +36,5 @@ typography:
 notes:
 - Semantic names map to framework components; refine over time.
 - For icons, choose names from the selected icon set; adjust per platform if needed.
+- Date/time inputs should use native platform pickers (React Native DateTimePicker).
 - Navigation theming can adopt these colors via a navigation theme if/when added.
