@@ -9,9 +9,10 @@ import ConfigureCatalog from './src/screens/ConfigureCatalog';
 import EditItem from './src/screens/EditItem';
 import type { CatalogType } from './src/data/configureCatalog';
 import EditBundle from './src/screens/EditBundle';
+import Graphs from './src/screens/Graphs';
 
 type Tab = 'home' | 'catalog' | 'settings';
-type Screen = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog' | 'EditItem' | 'EditBundle';
+type Screen = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog' | 'EditItem' | 'EditBundle' | 'Graphs';
 
 /**
  * Note: This is a minimal navigation shell to get back to a running baseline.
@@ -89,6 +90,12 @@ export default function App() {
                 setScreen('ConfigureCatalog');
               }}
             />
+          ) : screen === 'Graphs' ? (
+            <Graphs
+              onBack={() => {
+                setScreen('LogHistory');
+              }}
+            />
           ) : (
             <LogHistory
               onAddNew={() => {
@@ -107,7 +114,7 @@ export default function App() {
                 setScreen('EditEntry');
               }}
               onOpenGraphs={() => {
-                // TODO: wire to Graphs once generated
+                setScreen('Graphs');
               }}
               onNavigateTab={navigateTab}
               activeTab={tab}

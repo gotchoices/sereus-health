@@ -101,6 +101,12 @@ const en: Dict = {
   'editBundle.searchItems': 'Search items…',
   'editBundle.alreadyInBundle': 'in bundle',
   'editBundle.addSelected': 'Add {count} Selected Items',
+
+  'graphs.title': 'Graphs',
+  'graphs.emptyTitle': 'No graphs yet',
+  'graphs.emptyMessage': 'Create your first graph to visualize trends in your data.',
+  'graphs.create': 'Create Graph',
+  'graphs.errorLoading': 'Failed to load graphs.',
 };
 
 export function useT() {

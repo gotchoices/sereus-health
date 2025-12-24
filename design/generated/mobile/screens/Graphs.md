@@ -1,14 +1,18 @@
-# Graphs Screen Consolidation
-
 ---
-provides: ["screen:Graphs"]
-needs: ["screen:GraphCreate", "screen:GraphView"]
+provides:
+  - screen:mobile:Graphs
+needs:
+  - screen:mobile:GraphCreate
+  - screen:mobile:GraphView
 dependsOn:
-  - design/stories/06-graphing.md
-  - design/specs/navigation.md
-  - design/specs/screens/index.md
-  - design/specs/global/general.md
+  - design/stories/mobile/06-graphing.md
+  - design/specs/mobile/navigation.md
+  - design/specs/mobile/screens/index.md
+  - design/specs/mobile/global/general.md
+  - design/specs/mobile/global/ui.md
 ---
+
+# Graphs Screen Consolidation
 
 ## Purpose
 Browse and manage Bob's collection of saved/named graphs. Acts as the hub for all graphing functionality—creating new graphs, viewing existing ones, and sharing them.

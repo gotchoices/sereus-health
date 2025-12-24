@@ -104,16 +104,18 @@
       "route": "Graphs",
       "output": "src/screens/Graphs.tsx",
       "dependsOn": [
-        "design/generated/screens/Graphs.md",
-        "design/specs/screens/index.md",
-        "design/specs/navigation.md",
-        "design/specs/global/general.md"
+        "design/generated/mobile/screens/Graphs.md",
+        "design/specs/mobile/screens/index.md",
+        "design/specs/mobile/navigation.md",
+        "design/specs/mobile/global/general.md",
+        "design/specs/mobile/global/ui.md"
       ],
       "depHashes": {
-        "design/generated/screens/Graphs.md": "1064d4aadbc6ae58c44b6c996a3e481f401b93ff34bb95184f19baad19c63336",
-        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
-        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
-        "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755"
+        "design/generated/mobile/screens/Graphs.md": "3951514b610ca5c078af8b66df25f9eeef690e1deed646e67ca91fd7a45d8b9f",
+        "design/specs/mobile/screens/index.md": "cb0617ed616661cc69cbaab5637a94385ca6301d408bbfc0f63c59ad029c3006",
+        "design/specs/mobile/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
+        "design/specs/mobile/global/general.md": "c7428ec105560a84a4ceca085dd6ef8ecefa4369512c0ca518d06f4b083cbcee",
+        "design/specs/mobile/global/ui.md": "4d8687e3cdf479c3aac789b56b4fefca96a3e08351657b14dec537ecd819d707"
       }
     },
     {
