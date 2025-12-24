@@ -72,6 +72,8 @@ List the apps to be built:
 Healthcare data requires production-grade quality: data integrity.
 HIPAA considerations are minimized since all data is kept by the patient himself.
 
+Brand assets (logo / icon artwork) live under `docs/images/`. See `docs/APP_ICONS.md` for how each app integrates them.
+
 **Quality / performance posture (brief):**
 
 - Expected scale: **medium** (single user's lifetime health data, <100k log entries).  May grow to include a full "medical record" including lab results, procedures, scans, etc.

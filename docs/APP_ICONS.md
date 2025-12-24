@@ -2,7 +2,9 @@
 
 ## Overview
 
-Sereus Health uses **Android Adaptive Icons** (API 26+) for modern, device-agnostic app icon display. The system automatically masks your icon to match the device manufacturer's preferred shape (circle, square, squircle, etc.).
+This repo keeps **brand artwork** in `docs/images/` and then each app/platform integrates it using its own framework-native mechanism.
+
+For Android, Sereus Health uses **Android Adaptive Icons** (API 26+) for modern, device-agnostic app icon display. The system automatically masks your icon to match the device manufacturer's preferred shape (circle, square, squircle, etc.).
 
 ## How It Works
 
@@ -51,7 +53,11 @@ Located in `docs/images/`:
 ### Automatic (Recommended)
 
 ```bash
-./design/specs/global/generate-app-icons.sh
+# From repo root:
+yarn --cwd apps/mobile icons:android
+
+# Or from apps/mobile:
+yarn icons:android
 ```
 
 This script:
@@ -60,6 +66,8 @@ This script:
 3. Preserves transparency for proper layering
 4. Generates legacy fallback icons (pre-Android 8.0)
 5. Creates in-app logo at `src/assets/logo.png`
+
+Implementation note: the scripts live under `apps/mobile/scripts/` and are intentionally **React Native / platform specific** (Android/iOS).
 
 ### Manual
 
@@ -134,9 +142,24 @@ cd android && ./gradlew assembleRelease
 - App switcher should display properly
 - In-app header should show the logo next to "Sereus Health"
 
-## iOS Icons (TODO)
+## iOS Icons
 
-iOS uses a different approach (single multi-resolution asset catalog). Implementation pending.
+iOS uses an asset catalog (`.xcassets`). This repo generates the required PNGs and writes them into:
+
+- `apps/mobile/ios/mobile/Images.xcassets/AppIcon.appiconset/`
+
+Generate/update iOS icons:
+
+```bash
+# From repo root:
+yarn --cwd apps/mobile icons:ios
+```
+
+Or generate both Android + iOS:
+
+```bash
+yarn --cwd apps/mobile icons:all
+```
 
 ## References
 
