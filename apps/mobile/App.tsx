@@ -8,9 +8,10 @@ import type { EditEntryMode } from './src/data/editEntry';
 import ConfigureCatalog from './src/screens/ConfigureCatalog';
 import EditItem from './src/screens/EditItem';
 import type { CatalogType } from './src/data/configureCatalog';
+import EditBundle from './src/screens/EditBundle';
 
 type Tab = 'home' | 'catalog' | 'settings';
-type Screen = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog' | 'EditItem';
+type Screen = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog' | 'EditItem' | 'EditBundle';
 
 /**
  * Note: This is a minimal navigation shell to get back to a running baseline.
@@ -23,6 +24,8 @@ export default function App() {
   const [editEntryId, setEditEntryId] = useState<string | undefined>(undefined);
   const [editItemId, setEditItemId] = useState<string | undefined>(undefined);
   const [editItemType, setEditItemType] = useState<CatalogType | undefined>(undefined);
+  const [editBundleId, setEditBundleId] = useState<string | undefined>(undefined);
+  const [editBundleType, setEditBundleType] = useState<CatalogType | undefined>(undefined);
 
   const navigateTab = (next: Tab) => {
     if (next === 'settings') {
@@ -59,11 +62,29 @@ export default function App() {
                 setEditItemType(undefined);
                 setScreen('EditItem');
               }}
+              onAddBundle={(type) => {
+                setEditBundleId(undefined);
+                setEditBundleType(type);
+                setScreen('EditBundle');
+              }}
+              onEditBundle={(bundleId) => {
+                setEditBundleId(bundleId);
+                setEditBundleType(undefined);
+                setScreen('EditBundle');
+              }}
             />
           ) : screen === 'EditItem' ? (
             <EditItem
               itemId={editItemId}
               type={editItemType}
+              onBack={() => {
+                setScreen('ConfigureCatalog');
+              }}
+            />
+          ) : screen === 'EditBundle' ? (
+            <EditBundle
+              bundleId={editBundleId}
+              type={editBundleType}
               onBack={() => {
                 setScreen('ConfigureCatalog');
               }}

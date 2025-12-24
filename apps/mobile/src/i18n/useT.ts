@@ -85,6 +85,22 @@ const en: Dict = {
   'editItem.noRange': 'No range',
   'editItem.deleteQuantTitle': 'Delete quantifier?',
   'editItem.deleteQuantConfirm': 'This cannot be undone.',
+
+  'editBundle.addTitle': 'Add Bundle',
+  'editBundle.editTitle': 'Edit Bundle',
+  'editBundle.loadError': 'Failed to load bundle.',
+  'editBundle.saveError': 'Failed to save bundle.',
+  'editBundle.nameLabel': 'Name *',
+  'editBundle.namePlaceholder': 'e.g., BLT, Morning Routine',
+  'editBundle.typeLabel': 'Type *',
+  'editBundle.itemsInBundle': 'Items in Bundle',
+  'editBundle.emptyItems': 'Tap + to add items.',
+  'editBundle.minOneTitle': 'At least one item',
+  'editBundle.minOneBody': 'A bundle must contain at least one item.',
+  'editBundle.addItemsTitle': 'Add Items to Bundle',
+  'editBundle.searchItems': 'Search items…',
+  'editBundle.alreadyInBundle': 'in bundle',
+  'editBundle.addSelected': 'Add {count} Selected Items',
 };
 
 export function useT() {
