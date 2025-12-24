@@ -1,12 +1,14 @@
 # Reminders Screen Consolidation
 
 ---
-provides: ["screen:Reminders"]
+provides:
+  - screen:mobile:Reminders
 dependsOn:
-  - design/stories/08-reminders.md
-  - design/specs/navigation.md
-  - design/specs/screens/index.md
-  - design/specs/global/general.md
+  - design/stories/mobile/08-reminders.md
+  - design/specs/mobile/navigation.md
+  - design/specs/mobile/screens/index.md
+  - design/specs/mobile/global/general.md
+  - design/specs/mobile/global/ui.md
 ---
 
 ## Purpose

@@ -145,6 +145,13 @@ const en: Dict = {
   'sereus.removeCadreBody': 'Removing a node may reduce data redundancy.',
   'sereus.revokeGuestTitle': 'Revoke access?',
   'sereus.revokeGuestBody': 'This guest node will no longer have access to your data.',
+
+  'reminders.title': 'Reminders',
+  'reminders.interval': "Remind me if I haven't logged anything in:",
+  'reminders.off': 'Off',
+  'reminders.hours': '{count} hours',
+  'reminders.futureTitle': 'Future reminder options:',
+  'reminders.futureList': '• Smart reminders based on patterns\n• Quiet hours\n• Custom messages',
 };
 
 export function useT() {

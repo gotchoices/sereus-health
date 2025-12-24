@@ -198,18 +198,20 @@
       "route": "Reminders",
       "output": "src/screens/Reminders.tsx",
       "dependsOn": [
-        "design/generated/screens/Reminders.md",
-        "design/specs/screens/index.md",
-        "design/specs/navigation.md",
-        "design/specs/global/general.md",
-        "design/stories/08-reminders.md"
+        "design/generated/mobile/screens/Reminders.md",
+        "design/specs/mobile/screens/index.md",
+        "design/specs/mobile/navigation.md",
+        "design/specs/mobile/global/general.md",
+        "design/specs/mobile/global/ui.md",
+        "design/stories/mobile/08-reminders.md"
       ],
       "depHashes": {
-        "design/generated/screens/Reminders.md": "ea04f98d093469e3a145080d7b9ea60f1b41d80118a3c9bfb4cb14365d5af6a8",
-        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
-        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
-        "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755",
-        "design/stories/08-reminders.md": "6a24afeaa611baf8d4253a6102e34caef592a6c93455ac320b3595f534696c08"
+        "design/generated/mobile/screens/Reminders.md": "a46aa0d331aa8345f7b1cf8ade6b7a2eb32bd584ba6bd82ed00353bec3361a86",
+        "design/specs/mobile/screens/index.md": "cb0617ed616661cc69cbaab5637a94385ca6301d408bbfc0f63c59ad029c3006",
+        "design/specs/mobile/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
+        "design/specs/mobile/global/general.md": "c7428ec105560a84a4ceca085dd6ef8ecefa4369512c0ca518d06f4b083cbcee",
+        "design/specs/mobile/global/ui.md": "997a13bf6fcb3b49cdc5e4cafd2139379e7717a843d6fe3d58a7c319bd4e4e99",
+        "design/stories/mobile/08-reminders.md": "6a24afeaa611baf8d4253a6102e34caef592a6c93455ac320b3595f534696c08"
       }
     }
   ]
