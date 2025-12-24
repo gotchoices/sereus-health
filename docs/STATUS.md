@@ -13,7 +13,7 @@ This project is being migrated from Appeus v1 to Appeus v2 to take advantage of 
   - Production quality (not MVP)
   - Mobile + Web apps
   - Healthcare professional access via web UI
-- [ ] **Initialize new mobile app**: Run `./appeus/scripts/add-app.sh --name mobile --framework react-native`
+- [x] **Initialize new mobile app**: Run `./appeus/scripts/add-app.sh --name mobile --framework react-native` (created `apps/mobile`)
 - [x] **Reconcile design folder**: Ensure stories/specs fit appeus-2 structure
   - Migrated `design.org/` content into `design/` (stories/specs/generated)
   - Reorganized schema specs from `specs/api/schema.md` into `specs/schema/*.md`
@@ -41,9 +41,19 @@ This project is being migrated from Appeus v1 to Appeus v2 to take advantage of 
   - [ ] `design/specs/mobile/screens/edit-category.md`
   - [ ] `design/specs/mobile/screens/edit-bundle.md`
   - [ ] `design/specs/mobile/screens/sereus-connections.md`
-- [ ] **Generate fresh scaffold**: Let appeus-2 generate clean app structure
-- [ ] **Regenerate app code**: Agent generates from specs, optionally referencing `rn-v1/` for patterns
-- [ ] **Integrate Quereus with persistence**: Configure Quereus persistent mode (optimistic single-node)
+- [x] **Generate fresh scaffold**: Let appeus-2 generate clean app structure (done via `add-app` + baseline slices)
+- [x] **Regenerate app code (baseline slices)**: Reconstituted `rn-v1` baseline screens in `apps/mobile` from stories/specs → consolidations → code (LogHistory, EditEntry, ConfigureCatalog, EditItem, EditBundle, Graphs, GraphCreate, GraphView, Settings, SereusConnections, Reminders)
+- [ ] **Legacy parity gaps (evaluate vs stories/specs before implementing)**:
+  - [ ] **Deep link → navigation**: confirm expected deep link format in `design/specs/mobile/navigation.md` and relevant stories (esp. 08-reminders). If required, implement screen+param navigation in `apps/mobile/App.tsx` (parse `health://screen/<Screen>?...`, set tab, set screen, pass params such as `EditEntry.mode`, `EditEntry.entryId`, `GraphView.graphId`).
+  - [ ] **Reminders notifications**: confirm requirements in story 08 + any global specs. If required, implement notification permissions + scheduling/canceling based on “no log entries within interval”, and ensure tapping notification deep-links to `EditEntry` in `new` mode.
+  - [ ] **LogHistory import/export**: confirm whether required by `design/specs/mobile/global/import-export.md` and/or a story. If required, add CSV export (Share) + CSV import (document picker) to `apps/mobile/src/screens/LogHistory.tsx` and implement adapters in `apps/mobile/src/data/logHistory.ts`.
+  - [ ] **ConfigureCatalog import/export**: confirm whether required by stories/specs. If required, add CSV export/import UI to `apps/mobile/src/screens/ConfigureCatalog.tsx` and implement adapter functions in `apps/mobile/src/data/configureCatalog.ts`.
+  - [ ] **Settings backup/restore**: confirm whether required by stories/specs. If required, implement full backup export + restore import from Settings (likely JSON), and wire to underlying import functions (catalog + logs).
+  - [ ] **EditEntry native date/time picker**: confirm whether required by `design/specs/mobile/screens/edit-entry.md` and/or story behavior. If required, integrate `@react-native-community/datetimepicker` (or approved alternative) and replace current timestamp placeholder UI in `apps/mobile/src/screens/EditEntry.tsx`.
+  - [ ] **Persistence layer (beyond mocks)**: confirm target behavior in `design/specs/project.md` + schema specs. Decide storage approach (Quereus vs SQLite/other) and then implement `apps/mobile/src/db/*` + update data adapters to read/write persistent data (not only mock JSON).
+  - [ ] **Top-level types are dynamic vs fixed**: reconcile `design/specs/schema/*` + any stories that imply types can be edited/removed. If dynamic, update `apps/mobile` to stop hardcoding `['Activity','Condition','Outcome']` and load types from storage; ensure UI supports type CRUD where specified.
+  - [ ] **SereusConnections: copy peer id**: check whether prescribed by Sereus screen spec/stories. If desired, implement copy-to-clipboard UX (use supported RN clipboard lib) for peer id rows.
+  - [ ] **SereusConnections: QR scan implementation**: check whether prescribed by specs. If desired, integrate an approved QR scanning approach (camera permissions, scanner UI, parse scanned deep link, confirm-add flow).
 - [ ] **Functional testing**: Verify core workflows with persistent data
 - [ ] **Cleanup**: Remove `rn-v1/` once new version is stable and tested
 
@@ -63,8 +73,8 @@ These are known decisions/inconsistencies that are easier to resolve once the re
 - [ ] **Deep link parameter conventions**: normalize param names/types across screens (e.g., `GraphCreate.preselectedItems`, `GraphView.graphId`) once those screens are implemented.
 - [ ] **Project spec cleanup**: fix any remaining wording/link nits (e.g., “patient” typo, Quereus link target, HIPAA phrasing) after you confirm the desired messaging.
 - [ ] **Generated artifacts policy**: confirm whether `design/generated/mobile/site/` should remain in-repo or be treated as build output.
-- [ ] **Logo implementation**: how do we implement the logo from `docs/images/` for the mobile app (header + app icons)?
-- [ ] **Logo procedure source**: is the logo/icon generation procedure already documented in specs/docs (and if so, where)?
+- [x] **Logo implementation**: implemented app icons for Android + iOS and added in-app header logo.
+- [x] **Logo procedure source**: documented in `docs/APP_ICONS.md` and referenced from `design/specs/project.md`.
 
 ### RN v1 Archive Location
 
@@ -126,15 +136,15 @@ This file tracks open design questions for Sereus Health so they can be resolved
 
 ### Quereus Integration (BLOCKED - Critical RN Incompatibilities)
 
+**NOTE:** This section reflects a prior/legacy Quereus exploration. The current `apps/mobile` implementation does **not** include Quereus adapters yet (it currently has only `apps/mobile/src/db/config.ts` and uses mock-backed adapters).
+
 **Implementation Status:**
-- [x] **Add Quereus dependency**: Installed `@quereus/quereus@^0.4.11`
-- [x] **Create database initialization**: `src/db/index.ts` with Database instance, MemoryTableModule registration, and default pragmas
-- [x] **Translate schema to declarative SQL**: Created `src/db/schema.ts` with full declarative schema matching `design/specs/api/schema.md`
-- [x] **Production & sample seed data**: Separated into `schema.ts` (production) and `schema.samples.ts` (dev only)
-- [x] **Implement SQL adapters**: Created `src/db/stats.ts` and `src/db/logEntries.ts` with full SQL implementation
-- [x] **Add feature flag**: Created `src/db/config.ts` with `USE_QUEREUS` toggle (default: false)
-- [x] **Preserve Appeus mock system**: Updated adapters to fall back to existing `mock/data/*.json` when `USE_QUEREUS = false`
-- [x] **Document RN issues**: Comprehensive issue tracking in `docs/quereus-rn-issues.md`
+- [ ] **Add Quereus dependency**: Install `@quereus/quereus` in `apps/mobile/package.json` (only after confirming Quereus is still the chosen approach).
+- [ ] **Create database initialization**: Add `apps/mobile/src/db/index.ts` / `init.ts` with DB instance + initialization.
+- [ ] **Translate schema to declarative SQL**: Add `apps/mobile/src/db/schema.ts` matching `design/specs/schema/*.md`.
+- [ ] **Seed data**: Add first-run seed expectations (types/categories/items) per schema specs.
+- [ ] **Implement storage adapters**: Add `apps/mobile/src/db/*` (stats, logEntries, catalog) and update screen data adapters to use DB when enabled.
+- [ ] **Document RN issues / feasibility**: If Quereus is still blocked on Hermes, document decision and choose alternate persistence.
 
 **Current Status:**
 - **App runs with `USE_QUEREUS = false`** (using Appeus mock data)
@@ -211,9 +221,9 @@ Once Quereus resolves the RN compatibility issues, perform these cleanup steps:
 
 ### Features
 
-- [x] **Log import/export**: Per Story 04 - contextual CSV export (filtered or all), import from CSV files with auto-creation of types/categories/items.
-- [x] **Catalog import/export**: Per Story 09 - contextual CSV export/import from Catalog screen, bulk populate from external sources.
-- [x] **Full backup/restore**: Per Story 09 - complete JSON backup/restore from Settings (JSON is valid YAML).
+- [ ] **Log import/export**: Legacy (`rn-v1`) has this; `apps/mobile` does not yet. Evaluate against stories/specs, then decide where it lives (LogHistory menu vs Settings) before implementing.
+- [ ] **Catalog import/export**: Legacy (`rn-v1`) has this; `apps/mobile` does not yet. Evaluate against stories/specs before implementing.
+- [ ] **Full backup/restore**: Legacy (`rn-v1`) has this; `apps/mobile` does not yet. Evaluate against stories/specs before implementing.
 
 ### Possible Future Enhancements (Post-MVP)
 
