@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Alert } from 'react-native';
 import LogHistory from './src/screens/LogHistory';
@@ -11,9 +11,19 @@ import type { CatalogType } from './src/data/configureCatalog';
 import EditBundle from './src/screens/EditBundle';
 import Graphs from './src/screens/Graphs';
 import GraphCreate from './src/screens/GraphCreate';
+import { getGraphs, type Graph } from './src/data/graphs';
+import GraphView from './src/screens/GraphView';
 
 type Tab = 'home' | 'catalog' | 'settings';
-type Screen = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog' | 'EditItem' | 'EditBundle' | 'Graphs' | 'GraphCreate';
+type Screen =
+  | 'LogHistory'
+  | 'EditEntry'
+  | 'ConfigureCatalog'
+  | 'EditItem'
+  | 'EditBundle'
+  | 'Graphs'
+  | 'GraphCreate'
+  | 'GraphView';
 
 /**
  * Note: This is a minimal navigation shell to get back to a running baseline.
@@ -28,6 +38,36 @@ export default function App() {
   const [editItemType, setEditItemType] = useState<CatalogType | undefined>(undefined);
   const [editBundleId, setEditBundleId] = useState<string | undefined>(undefined);
   const [editBundleType, setEditBundleType] = useState<CatalogType | undefined>(undefined);
+
+  // Ephemeral graphs store (legacy behavior): lives while app is running.
+  const [graphs, setGraphs] = useState<Graph[]>([]);
+  const [graphsLoading, setGraphsLoading] = useState(false);
+  const [graphsError, setGraphsError] = useState<string | null>(null);
+  const [currentGraphId, setCurrentGraphId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    setGraphsLoading(true);
+    setGraphsError(null);
+    getGraphs()
+      .then((rows) => {
+        if (!alive) return;
+        setGraphs(rows);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setGraphsError('Failed to load graphs.');
+      })
+      .finally(() => {
+        if (!alive) return;
+        setGraphsLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const currentGraph = currentGraphId ? graphs.find((g) => g.id === currentGraphId) ?? null : null;
 
   const navigateTab = (next: Tab) => {
     if (next === 'settings') {
@@ -99,13 +139,57 @@ export default function App() {
               onCreate={() => {
                 setScreen('GraphCreate');
               }}
+              onView={(graphId) => {
+                setCurrentGraphId(graphId);
+                setScreen('GraphView');
+              }}
+              onClose={(graphId) => {
+                setGraphs((prev) => prev.filter((g) => g.id !== graphId));
+                if (currentGraphId === graphId) {
+                  setCurrentGraphId(null);
+                }
+              }}
+              graphs={graphs}
+              loading={graphsLoading}
+              error={graphsError}
             />
           ) : screen === 'GraphCreate' ? (
             <GraphCreate
               onBack={() => {
                 setScreen('Graphs');
               }}
+              onGraphCreated={(graph) => {
+                setGraphs((prev) => [graph, ...prev]);
+                setCurrentGraphId(graph.id);
+                setScreen('GraphView');
+              }}
             />
+          ) : screen === 'GraphView' ? (
+            currentGraph ? (
+              <GraphView
+                graph={currentGraph}
+                onBack={() => {
+                  setScreen('Graphs');
+                }}
+              />
+            ) : (
+              <Graphs
+                onBack={() => {
+                  setScreen('LogHistory');
+                }}
+                onCreate={() => {
+                  setScreen('GraphCreate');
+                }}
+                onView={(graphId) => {
+                  setCurrentGraphId(graphId);
+                  setScreen('GraphView');
+                }}
+                onClose={(graphId) => setGraphs((prev) => prev.filter((g) => g.id !== graphId))}
+                graphs={graphs}
+                loading={graphsLoading}
+                error={graphsError}
+              />
+            )
           ) : (
             <LogHistory
               onAddNew={() => {

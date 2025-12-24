@@ -2,12 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { computeDateRange, getGraphCreateItems, type DatePreset, type GraphCreateItem } from '../data/graphCreate';
+import { generateGraphId, type Graph } from '../data/graphs';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 
 type Group = { category: string; items: GraphCreateItem[] };
 
-export default function GraphCreate(props: { onBack: () => void }) {
+export default function GraphCreate(props: { onBack: () => void; onGraphCreated: (graph: Graph) => void }) {
   const theme = useTheme();
   const t = useT();
 
@@ -66,12 +67,15 @@ export default function GraphCreate(props: { onBack: () => void }) {
 
   const onGenerate = () => {
     const range = computeDateRange(preset);
-    // GraphView slice comes next; for now we validate and return to Graphs.
-    Alert.alert(
-      t('common.notImplementedTitle'),
-      t('graphCreate.generateNotImplemented', { start: range.start, end: range.end })
-    );
-    props.onBack();
+    const chosen = items.filter((it) => selected[it.id]);
+    const graph: Graph = {
+      id: generateGraphId(),
+      name: name.trim(),
+      createdAt: new Date().toISOString(),
+      items: chosen.map((it) => ({ id: it.id, name: it.name, category: it.category })),
+      dateRange: range,
+    };
+    props.onGraphCreated(graph);
   };
 
   const toggle = (id: string) => setSelected((p) => ({ ...p, [id]: !p[id] }));

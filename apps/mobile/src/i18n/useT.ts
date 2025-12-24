@@ -120,7 +120,12 @@ const en: Dict = {
   'graphCreate.allTime': 'All time',
   'graphCreate.generate': 'Generate Graph',
   'graphCreate.errorLoading': 'Failed to load items.',
-  'graphCreate.generateNotImplemented': 'GraphView is next. Selected date range: {start} – {end}',
+  'common.error': 'Error',
+  'graphView.shareError': 'Failed to share graph.',
+  'graphView.visualization': 'Graph Visualization',
+  'graphView.chartPending': 'Chart library integration pending.',
+  'graphView.legend': 'Legend',
+  'graphView.dateRange': 'Date Range',
 };
 
 export function useT() {

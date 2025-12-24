@@ -140,16 +140,18 @@
       "route": "GraphView",
       "output": "src/screens/GraphView.tsx",
       "dependsOn": [
-        "design/generated/screens/GraphView.md",
-        "design/specs/screens/index.md",
-        "design/specs/navigation.md",
-        "design/specs/global/general.md"
+        "design/generated/mobile/screens/GraphView.md",
+        "design/specs/mobile/screens/index.md",
+        "design/specs/mobile/navigation.md",
+        "design/specs/mobile/global/general.md",
+        "design/specs/mobile/global/ui.md"
       ],
       "depHashes": {
-        "design/generated/screens/GraphView.md": "159939820ac1096f1d6ffa3c9e4e8b44efd2a095793fed01a6e7195aecbd1e7e",
-        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
-        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
-        "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755"
+        "design/generated/mobile/screens/GraphView.md": "6c286415d2c96840a33e4a4dcd1659c77f8c3f5ce1fa5046cbee3702ffa034a0",
+        "design/specs/mobile/screens/index.md": "cb0617ed616661cc69cbaab5637a94385ca6301d408bbfc0f63c59ad029c3006",
+        "design/specs/mobile/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
+        "design/specs/mobile/global/general.md": "c7428ec105560a84a4ceca085dd6ef8ecefa4369512c0ca518d06f4b083cbcee",
+        "design/specs/mobile/global/ui.md": "4d8687e3cdf479c3aac789b56b4fefca96a3e08351657b14dec537ecd819d707"
       }
     },
     {

@@ -1,52 +1,33 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useMemo } from 'react';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { getGraphs, type Graph } from '../data/graphs';
+import { formatDateRange, type Graph } from '../data/graphs';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 
-export default function Graphs(props: { onBack: () => void; onCreate: () => void }) {
+export default function Graphs(props: {
+  onBack: () => void;
+  onCreate: () => void;
+  onView: (graphId: string) => void;
+  onClose: (graphId: string) => void;
+  graphs: Graph[];
+  loading: boolean;
+  error: string | null;
+}) {
   const theme = useTheme();
   const t = useT();
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [graphs, setGraphs] = useState<Graph[]>([]);
-
-  useEffect(() => {
-    let alive = true;
-    setLoading(true);
-    setError(null);
-    getGraphs()
-      .then((rows) => {
-        if (!alive) return;
-        setGraphs(rows);
-      })
-      .catch(() => {
-        if (!alive) return;
-        setError(t('graphs.errorLoading'));
-      })
-      .finally(() => {
-        if (!alive) return;
-        setLoading(false);
-      });
-
-    return () => {
-      alive = false;
-    };
-  }, [t]);
 
   const onCreate = props.onCreate;
 
   const renderCard = ({ item }: { item: Graph }) => {
     const itemsSummary = item.items.map((x) => x.name).slice(0, 3).join(', ');
     const more = Math.max(0, item.items.length - 3);
-    const range = `${item.dateRange.start} – ${item.dateRange.end}`;
+    const range = formatDateRange(item.dateRange.start, item.dateRange.end);
     return (
       <TouchableOpacity
         style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}
         activeOpacity={0.85}
-        onPress={() => Alert.alert(t('common.notImplementedTitle'), t('common.notImplementedBody'))}
+        onPress={() => props.onView(item.id)}
       >
         <View style={{ flex: 1 }}>
           <Text style={[styles.cardTitle, { color: theme.textPrimary }]} numberOfLines={1}>
@@ -61,7 +42,7 @@ export default function Graphs(props: { onBack: () => void; onCreate: () => void
 
         <TouchableOpacity
           hitSlop={HIT_SLOP}
-          onPress={() => setGraphs((prev) => prev.filter((g) => g.id !== item.id))}
+          onPress={() => props.onClose(item.id)}
         >
           <Ionicons name="close" size={18} color={theme.textSecondary} />
         </TouchableOpacity>
@@ -69,7 +50,7 @@ export default function Graphs(props: { onBack: () => void; onCreate: () => void
     );
   };
 
-  const hasGraphs = graphs.length > 0;
+  const hasGraphs = props.graphs.length > 0;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -83,13 +64,13 @@ export default function Graphs(props: { onBack: () => void; onCreate: () => void
         </TouchableOpacity>
       </View>
 
-      {loading ? (
+      {props.loading ? (
         <View style={styles.center}>
           <Text style={{ color: theme.textSecondary }}>{t('common.loading')}</Text>
         </View>
-      ) : error ? (
+      ) : props.error ? (
         <View style={styles.center}>
-          <Text style={{ color: theme.textSecondary }}>{error}</Text>
+          <Text style={{ color: theme.textSecondary }}>{props.error}</Text>
         </View>
       ) : !hasGraphs ? (
         <View style={styles.center}>
@@ -102,7 +83,7 @@ export default function Graphs(props: { onBack: () => void; onCreate: () => void
         </View>
       ) : (
         <FlatList
-          data={graphs}
+          data={props.graphs}
           keyExtractor={(g) => g.id}
           renderItem={renderCard}
           contentContainerStyle={{ padding: spacing[3] }}
