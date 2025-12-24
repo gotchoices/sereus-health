@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { Alert } from 'react-native';
 import LogHistory from './src/screens/LogHistory';
 import { VariantProvider } from './src/mock';
 import EditEntry from './src/screens/EditEntry';
 import type { EditEntryMode } from './src/data/editEntry';
+import ConfigureCatalog from './src/screens/ConfigureCatalog';
 
 type Tab = 'home' | 'catalog' | 'settings';
-type Screen = 'LogHistory' | 'EditEntry';
+type Screen = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog';
 
 /**
  * Note: This is a minimal navigation shell to get back to a running baseline.
@@ -17,6 +19,15 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('LogHistory');
   const [editMode, setEditMode] = useState<EditEntryMode>('new');
   const [editEntryId, setEditEntryId] = useState<string | undefined>(undefined);
+
+  const navigateTab = (next: Tab) => {
+    if (next === 'settings') {
+      Alert.alert('Not implemented', 'Settings will be generated in a later slice.');
+      return;
+    }
+    setTab(next);
+    setScreen(next === 'catalog' ? 'ConfigureCatalog' : 'LogHistory');
+  };
 
   return (
     <SafeAreaProvider>
@@ -30,6 +41,8 @@ export default function App() {
                 setScreen('LogHistory');
               }}
             />
+          ) : screen === 'ConfigureCatalog' ? (
+            <ConfigureCatalog onNavigateTab={navigateTab} activeTab={tab} />
           ) : (
             <LogHistory
               onAddNew={() => {
@@ -50,7 +63,7 @@ export default function App() {
               onOpenGraphs={() => {
                 // TODO: wire to Graphs once generated
               }}
-              onNavigateTab={(next) => setTab(next)}
+              onNavigateTab={navigateTab}
               activeTab={tab}
             />
           )}

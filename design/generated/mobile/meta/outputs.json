@@ -11,7 +11,14 @@
         "design/specs/mobile/global/general.md",
         "design/specs/mobile/global/ui.md"
       ],
-      "depHashes": {}
+      "depHashes": {
+        "design/generated/mobile/screens/LogHistory.md": "5f36af0e1d931033e123bfad3445167309ead5df6f8b95639570268dc63d55b0",
+        "design/specs/mobile/screens/index.md": "cb0617ed616661cc69cbaab5637a94385ca6301d408bbfc0f63c59ad029c3006",
+        "design/specs/mobile/screens/log-history.md": "78bf222507785b26b6487c3f8e37dc1fe861c67dd8a0b4dc1ee5b258ad55acea",
+        "design/specs/mobile/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
+        "design/specs/mobile/global/general.md": "c7428ec105560a84a4ceca085dd6ef8ecefa4369512c0ca518d06f4b083cbcee",
+        "design/specs/mobile/global/ui.md": "4d8687e3cdf479c3aac789b56b4fefca96a3e08351657b14dec537ecd819d707"
+      }
     },
     {
       "route": "EditEntry",
@@ -25,7 +32,7 @@
         "design/specs/mobile/global/ui.md"
       ],
       "depHashes": {
-        "design/generated/mobile/screens/EditEntry.md": "49601fd385e340c5cba0279e0cf5e150e6f170b9f7c9cfa03d8960be63381447",
+        "design/generated/mobile/screens/EditEntry.md": "c825477a5a06207b3ac78ce7c988e91b49b514f540c2dff2b5de28cf0857533b",
         "design/specs/mobile/screens/index.md": "cb0617ed616661cc69cbaab5637a94385ca6301d408bbfc0f63c59ad029c3006",
         "design/specs/mobile/screens/edit-entry.md": "e05eb97d49ee1d1f7e786b2f0656dc2e18e3a19a385569e152c55eea93e649b1",
         "design/specs/mobile/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
@@ -37,18 +44,20 @@
       "route": "ConfigureCatalog",
       "output": "src/screens/ConfigureCatalog.tsx",
       "dependsOn": [
-        "design/generated/screens/ConfigureCatalog.md",
-        "design/specs/screens/index.md",
-        "design/specs/screens/configure-catalog.md",
-        "design/specs/navigation.md",
-        "design/specs/global/general.md"
+        "design/generated/mobile/screens/ConfigureCatalog.md",
+        "design/specs/mobile/screens/index.md",
+        "design/specs/mobile/screens/configure-catalog.md",
+        "design/specs/mobile/navigation.md",
+        "design/specs/mobile/global/general.md",
+        "design/specs/mobile/global/ui.md"
       ],
       "depHashes": {
-        "design/generated/screens/ConfigureCatalog.md": "cdd462b094f3ae3ac3643ed65086e06ab2381d09615aad4291dad24984e9b257",
-        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
-        "design/specs/screens/configure-catalog.md": "37bab970da5cdb1fa94989720d088cd621119074dd7a94def9d8ce0bcc8a39c2",
-        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
-        "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755"
+        "design/generated/mobile/screens/ConfigureCatalog.md": "b8f3f29a234206eddf3558cb8f3643edda43dadedcc892bd26cf33357ec3abeb",
+        "design/specs/mobile/screens/index.md": "cb0617ed616661cc69cbaab5637a94385ca6301d408bbfc0f63c59ad029c3006",
+        "design/specs/mobile/screens/configure-catalog.md": "37bab970da5cdb1fa94989720d088cd621119074dd7a94def9d8ce0bcc8a39c2",
+        "design/specs/mobile/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
+        "design/specs/mobile/global/general.md": "c7428ec105560a84a4ceca085dd6ef8ecefa4369512c0ca518d06f4b083cbcee",
+        "design/specs/mobile/global/ui.md": "4d8687e3cdf479c3aac789b56b4fefca96a3e08351657b14dec537ecd819d707"
       }
     },
     {

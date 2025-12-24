@@ -1,3 +1,5 @@
+import { useCallback } from 'react';
+
 type Dict = Record<string, string>;
 
 const en: Dict = {
@@ -10,6 +12,8 @@ const en: Dict = {
   'common.done': 'Done',
   'common.cancel': 'Cancel',
   'common.delete': 'Delete',
+  'common.notImplementedTitle': 'Not implemented',
+  'common.notImplementedBody': 'This will be generated in a later slice.',
   'logHistory.title': 'History',
   'logHistory.filterPlaceholder': 'Filter entries…',
   'logHistory.emptyTitle': 'Welcome',
@@ -40,14 +44,26 @@ const en: Dict = {
   'editEntry.deleteConfirm': 'This cannot be undone.',
   'editEntry.errorLoading': 'Failed to load entry.',
   'editEntry.errorSaving': 'Failed to save entry.',
+
+  'configureCatalog.title': 'Catalog',
+  'configureCatalog.filterPlaceholder': 'Filter…',
+  'configureCatalog.items': 'Items',
+  'configureCatalog.bundles': 'Bundles',
+  'configureCatalog.emptyItemsTitle': 'No items yet',
+  'configureCatalog.emptyItemsBody': 'Add your first item to start building your catalog.',
+  'configureCatalog.emptyBundlesTitle': 'No bundles yet',
+  'configureCatalog.emptyBundlesBody': 'Create a bundle to group items together.',
+  'configureCatalog.bundleCount': '{count} items',
+  'configureCatalog.errorLoading': 'Failed to load catalog.',
 };
 
 export function useT() {
-  return (key: string, params?: Record<string, string | number>) => {
+  // Important: return a stable function so components can safely depend on it in useEffect/useMemo.
+  return useCallback((key: string, params?: Record<string, string | number>) => {
     const template = en[key] ?? key;
     if (!params) return template;
     return template.replace(/\{(\w+)\}/g, (_, k) => String(params[k] ?? `{${k}}`));
-  };
+  }, []);
 }
 
 

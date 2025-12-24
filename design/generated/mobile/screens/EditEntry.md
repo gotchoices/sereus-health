@@ -1,21 +1,27 @@
-# EditEntry Screen Consolidation
-
-## Metadata
-- **Route**: EditEntry
-- **dependsOn**: 
-  - stories: 01-exploring.md, 02-daily.md, 03-configuring.md, 05-cloning.md, 08-reminders.md
-  - specs: specs/screens/EditEntry.md, specs/navigation.md, specs/global/general.md, specs/screens/index.md
-  - api: specs/api/schema.md
-- **provides**: Single-screen form for adding, editing, or cloning log entries
-- **needs**: 
-  - Types API (Activity, Condition, Outcome + user-defined)
-  - Categories API (filtered by type)
-  - Items API (filtered by category)
-  - Bundles API (all bundles)
-  - Quantifiers API (per item)
-  - LogEntry CRUD API
-
 ---
+provides:
+  - screen:mobile:EditEntry
+needs:
+  - schema:taxonomy
+  - schema:bundles
+  - schema:logging
+dependsOn:
+  - design/stories/mobile/01-exploring.md
+  - design/stories/mobile/02-daily.md
+  - design/stories/mobile/03-configuring.md
+  - design/stories/mobile/05-cloning.md
+  - design/stories/mobile/08-reminders.md
+  - design/specs/mobile/screens/edit-entry.md
+  - design/specs/mobile/screens/index.md
+  - design/specs/mobile/navigation.md
+  - design/specs/mobile/global/general.md
+  - design/specs/mobile/global/ui.md
+  - design/specs/schema/taxonomy.md
+  - design/specs/schema/bundles.md
+  - design/specs/schema/logging.md
+---
+
+# EditEntry Screen Consolidation
 
 ## Purpose
 Single comprehensive form for creating, editing, or cloning log entries. Modal picker pattern for type/category/item selection provides efficiency (story 02: "not be a distraction") while maintaining overview and context.

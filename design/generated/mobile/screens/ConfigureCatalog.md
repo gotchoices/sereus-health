@@ -3,18 +3,23 @@ id: ConfigureCatalog
 route: ConfigureCatalog
 variants: [happy, empty, error]
 provides:
-  - screen:ConfigureCatalog
-needs: []
+  - screen:mobile:ConfigureCatalog
+needs:
+  - schema:taxonomy
+  - schema:bundles
 description: >
-  Screen for managing categories, items, groups, and their quantifiers that
-  Bob will use when logging entries.
+  Screen for managing the catalog of items, categories, and bundles used when logging entries.
 dependsOn:
-  - design/stories/01-exploring.md
-  - design/stories/02-daily.md
-  - design/stories/03-configuring.md
-  - design/specs/screens/index.md
-  - design/specs/navigation.md
-  - design/specs/global/general.md
+  - design/stories/mobile/01-exploring.md
+  - design/stories/mobile/02-daily.md
+  - design/stories/mobile/03-configuring.md
+  - design/specs/mobile/screens/index.md
+  - design/specs/mobile/screens/configure-catalog.md
+  - design/specs/mobile/navigation.md
+  - design/specs/mobile/global/general.md
+  - design/specs/mobile/global/ui.md
+  - design/specs/schema/taxonomy.md
+  - design/specs/schema/bundles.md
 ---
 
 ## Purpose and Role
@@ -23,6 +28,9 @@ ConfigureCatalog lets Bob curate the vocabulary he uses in Sereus Health:
 categories, items, groups, and the quantifiers attached to items.
 It supports bulk creation (e.g., “fridge pass”) and group creation
 for combinations like a BLT.
+
+> Note: current human spec uses **Items/Bundles** terminology; older story language uses “groups”.
+> In this app version, “group” maps to **bundle**.
 
 ## Key Behaviors
 
