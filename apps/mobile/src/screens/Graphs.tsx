@@ -5,7 +5,7 @@ import { getGraphs, type Graph } from '../data/graphs';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 
-export default function Graphs(props: { onBack: () => void }) {
+export default function Graphs(props: { onBack: () => void; onCreate: () => void }) {
   const theme = useTheme();
   const t = useT();
 
@@ -36,9 +36,7 @@ export default function Graphs(props: { onBack: () => void }) {
     };
   }, [t]);
 
-  const onCreate = () => {
-    Alert.alert(t('common.notImplementedTitle'), t('common.notImplementedBody'));
-  };
+  const onCreate = props.onCreate;
 
   const renderCard = ({ item }: { item: Graph }) => {
     const itemsSummary = item.items.map((x) => x.name).slice(0, 3).join(', ');

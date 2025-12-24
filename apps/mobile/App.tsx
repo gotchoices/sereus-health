@@ -10,9 +10,10 @@ import EditItem from './src/screens/EditItem';
 import type { CatalogType } from './src/data/configureCatalog';
 import EditBundle from './src/screens/EditBundle';
 import Graphs from './src/screens/Graphs';
+import GraphCreate from './src/screens/GraphCreate';
 
 type Tab = 'home' | 'catalog' | 'settings';
-type Screen = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog' | 'EditItem' | 'EditBundle' | 'Graphs';
+type Screen = 'LogHistory' | 'EditEntry' | 'ConfigureCatalog' | 'EditItem' | 'EditBundle' | 'Graphs' | 'GraphCreate';
 
 /**
  * Note: This is a minimal navigation shell to get back to a running baseline.
@@ -94,6 +95,15 @@ export default function App() {
             <Graphs
               onBack={() => {
                 setScreen('LogHistory');
+              }}
+              onCreate={() => {
+                setScreen('GraphCreate');
+              }}
+            />
+          ) : screen === 'GraphCreate' ? (
+            <GraphCreate
+              onBack={() => {
+                setScreen('Graphs');
               }}
             />
           ) : (

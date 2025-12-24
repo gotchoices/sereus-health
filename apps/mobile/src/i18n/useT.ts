@@ -107,6 +107,20 @@ const en: Dict = {
   'graphs.emptyMessage': 'Create your first graph to visualize trends in your data.',
   'graphs.create': 'Create Graph',
   'graphs.errorLoading': 'Failed to load graphs.',
+
+  'graphCreate.title': 'Create Graph',
+  'graphCreate.name': 'Graph Name *',
+  'graphCreate.namePlaceholder': 'Graph name…',
+  'graphCreate.filterLabel': 'Filter',
+  'graphCreate.selectItems': 'Select Items',
+  'graphCreate.noItems': 'No items available.',
+  'graphCreate.last7Days': 'Last 7 days',
+  'graphCreate.last30Days': 'Last 30 days',
+  'graphCreate.last90Days': 'Last 90 days',
+  'graphCreate.allTime': 'All time',
+  'graphCreate.generate': 'Generate Graph',
+  'graphCreate.errorLoading': 'Failed to load items.',
+  'graphCreate.generateNotImplemented': 'GraphView is next. Selected date range: {start} – {end}',
 };
 
 export function useT() {

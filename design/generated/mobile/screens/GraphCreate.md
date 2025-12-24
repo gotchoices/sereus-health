@@ -1,13 +1,16 @@
 # GraphCreate Screen Consolidation
 
 ---
-provides: ["screen:GraphCreate"]
-needs: ["screen:GraphView"]
+provides:
+  - screen:mobile:GraphCreate
+needs:
+  - screen:mobile:GraphView
 dependsOn:
-  - design/stories/06-graphing.md
-  - design/specs/navigation.md
-  - design/specs/screens/index.md
-  - design/specs/global/general.md
+  - design/stories/mobile/06-graphing.md
+  - design/specs/mobile/navigation.md
+  - design/specs/mobile/screens/index.md
+  - design/specs/mobile/global/general.md
+  - design/specs/mobile/global/ui.md
 ---
 
 ## Purpose
