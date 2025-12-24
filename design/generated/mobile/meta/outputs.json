@@ -4,11 +4,12 @@
       "route": "LogHistory",
       "output": "src/screens/LogHistory.tsx",
       "dependsOn": [
-        "design/generated/screens/LogHistory.md",
-        "design/specs/screens/index.md",
-        "design/specs/screens/log-history.md",
-        "design/specs/navigation.md",
-        "design/specs/global/general.md"
+        "design/generated/mobile/screens/LogHistory.md",
+        "design/specs/mobile/screens/index.md",
+        "design/specs/mobile/screens/log-history.md",
+        "design/specs/mobile/navigation.md",
+        "design/specs/mobile/global/general.md",
+        "design/specs/mobile/global/ui.md"
       ],
       "depHashes": {}
     },
@@ -16,20 +17,20 @@
       "route": "EditEntry",
       "output": "src/screens/EditEntry.tsx",
       "dependsOn": [
-        "design/generated/screens/EditEntry.md",
-        "design/specs/screens/index.md",
-        "design/specs/screens/edit-entry.md",
-        "design/specs/navigation.md",
-        "design/specs/global/general.md",
-        "design/specs/global/inline-taxonomy.md"
+        "design/generated/mobile/screens/EditEntry.md",
+        "design/specs/mobile/screens/index.md",
+        "design/specs/mobile/screens/edit-entry.md",
+        "design/specs/mobile/navigation.md",
+        "design/specs/mobile/global/general.md",
+        "design/specs/mobile/global/ui.md"
       ],
       "depHashes": {
-        "design/generated/screens/EditEntry.md": "49601fd385e340c5cba0279e0cf5e150e6f170b9f7c9cfa03d8960be63381447",
-        "design/specs/screens/index.md": "49230fd3ddf7538502c9573c2a4ef9ce2043a9f51a0f1d702127ec610c972246",
-        "design/specs/screens/edit-entry.md": "6b279312428726706ac1d765b31bd9d60ef014a07b9bb3554556161ac0529b33",
-        "design/specs/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
-        "design/specs/global/general.md": "fdf2876919ef40c068924f7c664b0efbcbc5a4b860f2105247a0f8ace6ce3755",
-        "design/specs/global/inline-taxonomy.md": "720e6ab1e134f78b98a4d1d02e6b243ec335559578e7e7997955eff86e1ac5d4"
+        "design/generated/mobile/screens/EditEntry.md": "49601fd385e340c5cba0279e0cf5e150e6f170b9f7c9cfa03d8960be63381447",
+        "design/specs/mobile/screens/index.md": "cb0617ed616661cc69cbaab5637a94385ca6301d408bbfc0f63c59ad029c3006",
+        "design/specs/mobile/screens/edit-entry.md": "e05eb97d49ee1d1f7e786b2f0656dc2e18e3a19a385569e152c55eea93e649b1",
+        "design/specs/mobile/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
+        "design/specs/mobile/global/general.md": "c7428ec105560a84a4ceca085dd6ef8ecefa4369512c0ca518d06f4b083cbcee",
+        "design/specs/mobile/global/ui.md": "4d8687e3cdf479c3aac789b56b4fefca96a3e08351657b14dec537ecd819d707"
       }
     },
     {
