@@ -131,6 +131,20 @@ const en: Dict = {
   'settings.sereusConnections': 'Sereus Connections',
   'settings.reminders': 'Reminders',
   'settings.preferences': 'Preferences',
+
+  'sereus.title': 'Sereus Connections',
+  'sereus.sectionCadre': 'My Nodes',
+  'sereus.sectionGuests': 'Guest Nodes',
+  'sereus.statusOnline': 'Online',
+  'sereus.statusUnreachable': 'Unreachable',
+  'sereus.emptyTitle': 'No shared access',
+  'sereus.emptyBody': 'Scan a QR code from a healthcare provider to share your data.',
+  'sereus.errorLoading': 'Failed to load nodes.',
+  'sereus.scanNotImplemented': 'QR scanning will be implemented in a later slice.',
+  'sereus.removeCadreTitle': 'Remove node?',
+  'sereus.removeCadreBody': 'Removing a node may reduce data redundancy.',
+  'sereus.revokeGuestTitle': 'Revoke access?',
+  'sereus.revokeGuestBody': 'This guest node will no longer have access to your data.',
 };
 
 export function useT() {

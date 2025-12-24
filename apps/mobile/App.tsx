@@ -14,6 +14,7 @@ import GraphCreate from './src/screens/GraphCreate';
 import { getGraphs, type Graph } from './src/data/graphs';
 import GraphView from './src/screens/GraphView';
 import Settings from './src/screens/Settings';
+import SereusConnections from './src/screens/SereusConnections';
 
 type Tab = 'home' | 'catalog' | 'settings';
 type Screen =
@@ -25,7 +26,8 @@ type Screen =
   | 'Graphs'
   | 'GraphCreate'
   | 'GraphView'
-  | 'Settings';
+  | 'Settings'
+  | 'SereusConnections';
 
 /**
  * Note: This is a minimal navigation shell to get back to a running baseline.
@@ -189,7 +191,18 @@ export default function App() {
               />
             )
           ) : screen === 'Settings' ? (
-            <Settings onNavigateTab={navigateTab} activeTab={tab} />
+            <Settings
+              onNavigateTab={navigateTab}
+              activeTab={tab}
+              onOpenSereus={() => setScreen('SereusConnections')}
+              onOpenReminders={() => Alert.alert('Not implemented', 'Reminders will be generated in the next slice.')}
+            />
+          ) : screen === 'SereusConnections' ? (
+            <SereusConnections
+              onBack={() => {
+                setScreen('Settings');
+              }}
+            />
           ) : (
             <LogHistory
               onAddNew={() => {

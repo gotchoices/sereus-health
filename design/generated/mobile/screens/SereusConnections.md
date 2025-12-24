@@ -1,12 +1,15 @@
 # SereusConnections Screen Consolidation
 
 ---
-provides: ["screen:SereusConnections"]
+provides:
+  - screen:mobile:SereusConnections
 dependsOn:
-  - design/stories/07-networking.md
-  - design/specs/navigation.md
-  - design/specs/screens/index.md
-  - design/specs/global/general.md
+  - design/stories/mobile/07-networking.md
+  - design/specs/mobile/navigation.md
+  - design/specs/mobile/screens/index.md
+  - design/specs/mobile/screens/sereus-connections.md
+  - design/specs/mobile/global/general.md
+  - design/specs/mobile/global/ui.md
 ---
 
 ## Purpose
