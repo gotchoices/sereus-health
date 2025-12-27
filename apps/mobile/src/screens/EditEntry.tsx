@@ -16,6 +16,7 @@ import DateTimePicker, { type DateTimePickerEvent } from '@react-native-communit
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
+import { createLogger } from '../util/logger';
 import {
   createLogEntry,
   deleteLogEntry,
@@ -30,6 +31,8 @@ import {
 } from '../data/editEntry';
 
 type PickerRow = { id: string; name: string; usageCount: number };
+
+const logger = createLogger('EditEntry');
 
 function sortByUsageThenName<T extends PickerRow>(rows: T[]) {
   return [...rows].sort((a, b) => {
@@ -113,9 +116,16 @@ export default function EditEntry(props: {
           sortedTypes.find((r) => r.name.toLowerCase() === (entry.type ?? '').toLowerCase()) ??
           (props.mode === 'new' ? pickMostUsed(sortedTypes) : null);
         setTypeId(matchedType?.id ?? '');
+
+        // Hydrate edit/clone selections when available.
+        if (props.mode !== 'new') {
+          if (entry.categoryId) setCategoryId(entry.categoryId);
+          if (entry.itemIds?.length) setSelectedItemIds(entry.itemIds);
+        }
       })
-      .catch(() => {
+      .catch((err) => {
         if (!alive) return;
+        logger.error('Failed to load', err);
         setError(t('editEntry.errorLoading'));
       })
       .finally(() => {
@@ -147,8 +157,9 @@ export default function EditEntry(props: {
           setCategoryId(pickMostUsed(sorted)?.id ?? '');
         }
       })
-      .catch(() => {
+      .catch((err) => {
         if (!alive) return;
+        logger.error('Failed to load categories', { typeId }, err);
         setError(t('editEntry.errorLoading'));
       });
 
@@ -174,8 +185,9 @@ export default function EditEntry(props: {
         // If existing selection contains IDs not in this category, clear.
         setSelectedItemIds((prev) => prev.filter((id) => sorted.some((r) => r.id === id)));
       })
-      .catch(() => {
+      .catch((err) => {
         if (!alive) return;
+        logger.error('Failed to load items', { categoryId }, err);
         setError(t('editEntry.errorLoading'));
       });
 

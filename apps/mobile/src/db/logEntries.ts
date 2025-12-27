@@ -13,6 +13,7 @@ export interface LogEntry {
 export interface LogEntryItem {
   id: string;
   name: string;
+  categoryId: string;
   categoryName: string;
   sourceBundleId: string | null;
   sourceBundleName: string | null;
@@ -145,6 +146,7 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
       SELECT 
         i.id,
         i.name,
+        c.id as categoryId,
         c.name as categoryName,
         lei.source_bundle_id as sourceBundleId,
         b.name as sourceBundleName
@@ -183,6 +185,7 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
       items.push({
         id: itemId,
         name: ir.name as string,
+        categoryId: ir.categoryId as string,
         categoryName: ir.categoryName as string,
         sourceBundleId: (ir.sourceBundleId as string) ?? null,
         sourceBundleName: (ir.sourceBundleName as string) ?? null,
@@ -213,8 +216,7 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
 export async function getLogEntryById(entryId: string): Promise<LogEntry | null> {
   const db = await getDatabase();
 
-  const entryRow = await (
-    await db.prepare(`
+  const entryStmt = await db.prepare(`
       SELECT 
         e.id,
         e.timestamp,
@@ -224,8 +226,9 @@ export async function getLogEntryById(entryId: string): Promise<LogEntry | null>
       FROM log_entries e
       JOIN types t ON t.id = e.type_id
       WHERE e.id = ?
-    `)
-  ).get([entryId]);
+    `);
+  const entryRow = await entryStmt.get([entryId]);
+  await entryStmt.finalize();
 
   if (!entryRow) return null;
 
@@ -233,6 +236,7 @@ export async function getLogEntryById(entryId: string): Promise<LogEntry | null>
     SELECT 
       i.id,
       i.name,
+      c.id as categoryId,
       c.name as categoryName,
       lei.source_bundle_id as sourceBundleId,
       b.name as sourceBundleName
@@ -271,6 +275,7 @@ export async function getLogEntryById(entryId: string): Promise<LogEntry | null>
     items.push({
       id: itemId,
       name: ir.name as string,
+      categoryId: ir.categoryId as string,
       categoryName: ir.categoryName as string,
       sourceBundleId: (ir.sourceBundleId as string) ?? null,
       sourceBundleName: (ir.sourceBundleName as string) ?? null,

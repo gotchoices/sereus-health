@@ -20,6 +20,9 @@ export type EditEntryModel = {
   timestamp: string;
   comment: string;
   quantifiers: QuantifierValue[];
+  // Optional hydration for edit/clone modes
+  categoryId?: string;
+  itemIds?: string[];
 };
 
 export type StatRow = { id: string; name: string; usageCount: number };
@@ -100,34 +103,29 @@ export async function getEditEntry(mode: EditEntryMode, entryId?: string): Promi
   const e = await dbLogEntries.getLogEntryById(entryId);
   if (!e) throw new Error('not found');
 
+  const categoryId = e.items[0]?.categoryId;
+  const itemIds = e.items.map((it) => it.id);
+
   return {
     id: e.id,
     mode,
-    type: e.typeId,
+    type: e.typeName,
     title: '',
     timestamp: mode === 'clone' ? new Date().toISOString() : e.timestamp,
     comment: e.comment ?? '',
     quantifiers: [], // TODO: map per-item quantifiers if/when the UI supports them
+    categoryId,
+    itemIds,
   };
 }
 
 export async function getEditEntryStats(): Promise<EditEntryStats> {
   if (USE_QUEREUS) {
     await ensureDatabaseInitialized();
-    // Assemble into the screen-expected shape.
+    // Not used by the current screen implementation (it calls getTypeStats/getCategoryStats/getItemStats directly).
+    // Provide a minimal shape for any future callers.
     const typeStats = await dbStats.getTypeStats();
-    const categoryStats: Record<string, StatRow[]> = {};
-    const itemStats: Record<string, ItemStatRow[]> = {};
-
-    for (const t of typeStats) {
-      const cats = await dbStats.getCategoryStats(t.id);
-      categoryStats[t.id] = cats;
-      for (const c of cats) {
-        itemStats[c.id] = await dbStats.getItemStats(c.id);
-      }
-    }
-
-    return { typeStats, categoryStats, itemStats };
+    return { typeStats, categoryStats: {}, itemStats: {} };
   }
 
   const variant = getVariant();
@@ -139,15 +137,27 @@ export async function getEditEntryStats(): Promise<EditEntryStats> {
 }
 
 export async function getTypeStats(): Promise<StatRow[]> {
+  if (USE_QUEREUS) {
+    await ensureDatabaseInitialized();
+    return dbStats.getTypeStats();
+  }
   return (await getEditEntryStats()).typeStats ?? [];
 }
 
 export async function getCategoryStats(typeId: string): Promise<StatRow[]> {
+  if (USE_QUEREUS) {
+    await ensureDatabaseInitialized();
+    return dbStats.getCategoryStats(typeId);
+  }
   const stats = await getEditEntryStats();
   return stats.categoryStats?.[typeId] ?? [];
 }
 
 export async function getItemStats(categoryId: string): Promise<ItemStatRow[]> {
+  if (USE_QUEREUS) {
+    await ensureDatabaseInitialized();
+    return dbStats.getItemStats(categoryId);
+  }
   const stats = await getEditEntryStats();
   return stats.itemStats?.[categoryId] ?? [];
 }

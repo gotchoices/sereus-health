@@ -49,6 +49,127 @@ export async function insertCatalogItem(input: InsertCatalogItemInput): Promise<
   return id;
 }
 
+export async function getCategoriesForType(typeName: string): Promise<Array<{ id: string; name: string }>> {
+  const db = await getDatabase();
+  const typeStmt = await db.prepare('SELECT id FROM types WHERE name = ?');
+  const typeRow = await typeStmt.get([typeName]);
+  await typeStmt.finalize();
+  if (!typeRow) return [];
+
+  const stmt = await db.prepare('SELECT id, name FROM categories WHERE type_id = ? ORDER BY name ASC');
+  const rows: any[] = [];
+  for await (const r of stmt.all([typeRow.id as string])) rows.push(r);
+  await stmt.finalize();
+  return rows.map((r) => ({ id: r.id as string, name: r.name as string }));
+}
+
+export async function getItemDetail(itemId: string): Promise<{
+  id: string;
+  name: string;
+  description: string | null;
+  type: string;
+  category: string;
+  quantifiers: Array<{ id: string; name: string; minValue: number | null; maxValue: number | null; units: string | null }>;
+} | null> {
+  const db = await getDatabase();
+  const stmt = await db.prepare(`
+    SELECT 
+      i.id,
+      i.name,
+      i.description,
+      t.name as type,
+      c.name as category
+    FROM items i
+    JOIN categories c ON c.id = i.category_id
+    JOIN types t ON t.id = c.type_id
+    WHERE i.id = ?
+  `);
+  const row = await stmt.get([itemId]);
+  await stmt.finalize();
+  if (!row) return null;
+
+  const qStmt = await db.prepare(`
+    SELECT id, name, min_value as minValue, max_value as maxValue, units
+    FROM item_quantifiers
+    WHERE item_id = ?
+    ORDER BY name ASC
+  `);
+  const qs: any[] = [];
+  for await (const r of qStmt.all([itemId])) qs.push(r);
+  await qStmt.finalize();
+
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    description: (row.description as string) ?? null,
+    type: row.type as string,
+    category: row.category as string,
+    quantifiers: qs.map((q) => ({
+      id: q.id as string,
+      name: q.name as string,
+      minValue: (q.minValue as number) ?? null,
+      maxValue: (q.maxValue as number) ?? null,
+      units: (q.units as string) ?? null,
+    })),
+  };
+}
+
+export async function upsertItem(input: {
+  id?: string;
+  name: string;
+  description?: string | null;
+  typeName: string;
+  categoryName: string;
+  quantifiers: Array<{ id?: string; name: string; minValue?: number; maxValue?: number; units?: string }>;
+}): Promise<string> {
+  const db = await getDatabase();
+  const typeId = await getOrCreateType(db, input.typeName);
+  const categoryId = await getOrCreateCategory(db, input.categoryName, typeId);
+  const itemId = input.id ?? newUuid();
+
+  await db.exec('BEGIN');
+  try {
+    const existsStmt = await db.prepare('SELECT id FROM items WHERE id = ?');
+    const exists = await existsStmt.get([itemId]);
+    await existsStmt.finalize();
+
+    if (exists) {
+      await db.exec('UPDATE items SET name = ?, description = ?, category_id = ? WHERE id = ?', [
+        input.name,
+        input.description ?? null,
+        categoryId,
+        itemId,
+      ]);
+    } else {
+      await db.exec('INSERT INTO items (id, name, description, category_id) VALUES (?, ?, ?, ?)', [
+        itemId,
+        input.name,
+        input.description ?? null,
+        categoryId,
+      ]);
+    }
+
+    // Quantifiers: replace-all strategy (Phase 1)
+    await db.exec('DELETE FROM item_quantifiers WHERE item_id = ?', [itemId]);
+    for (const q of input.quantifiers) {
+      await db.exec('INSERT INTO item_quantifiers (id, item_id, name, min_value, max_value, units) VALUES (?, ?, ?, ?, ?, ?)', [
+        q.id ?? newUuid(),
+        itemId,
+        q.name,
+        q.minValue ?? null,
+        q.maxValue ?? null,
+        q.units ?? null,
+      ]);
+    }
+
+    await db.exec('COMMIT');
+    return itemId;
+  } catch (e) {
+    await db.exec('ROLLBACK');
+    throw e;
+  }
+}
+
 export async function getAllCatalogItems(): Promise<Array<{ id: string; name: string; type: string; category: string }>> {
   const db = await getDatabase();
   const stmt = await db.prepare(`

@@ -164,12 +164,14 @@ function AppContent() {
 
   // Force remount after each deep link so screens re-run their data loads with the latest mock variant.
   const dlKey = `dl-${linkSeq}`;
+  // Also remount on stack changes so returning to a previous screen refreshes its data.
+  const navKey = `${dlKey}-nav-${screenStack.join('>')}`;
 
   return screen === 'EditEntry' ? (
-    <EditEntry key={dlKey} mode={editMode} entryId={editEntryId} onBack={popScreen} />
+    <EditEntry key={navKey} mode={editMode} entryId={editEntryId} onBack={popScreen} />
   ) : screen === 'ConfigureCatalog' ? (
     <ConfigureCatalog
-      key={dlKey}
+      key={navKey}
       onNavigateTab={resetToTabRoot}
       activeTab={tab}
       onAddItem={(type) => {
@@ -194,12 +196,12 @@ function AppContent() {
       }}
     />
   ) : screen === 'EditItem' ? (
-    <EditItem key={dlKey} itemId={editItemId} type={editItemType} onBack={popScreen} />
+    <EditItem key={navKey} itemId={editItemId} type={editItemType} onBack={popScreen} />
   ) : screen === 'EditBundle' ? (
-    <EditBundle key={dlKey} bundleId={editBundleId} type={editBundleType} onBack={popScreen} />
+    <EditBundle key={navKey} bundleId={editBundleId} type={editBundleType} onBack={popScreen} />
   ) : screen === 'Graphs' ? (
     <Graphs
-      key={dlKey}
+      key={navKey}
       onBack={popScreen}
       onCreate={() => pushScreen('GraphCreate')}
       onView={(graphId) => {
@@ -216,7 +218,7 @@ function AppContent() {
     />
   ) : screen === 'GraphCreate' ? (
     <GraphCreate
-      key={dlKey}
+      key={navKey}
       onBack={popScreen}
       onGraphCreated={(graph) => {
         setGraphs((prev) => [graph, ...prev]);
@@ -226,10 +228,10 @@ function AppContent() {
     />
   ) : screen === 'GraphView' ? (
     currentGraph ? (
-      <GraphView key={dlKey} graph={currentGraph} onBack={popScreen} />
+      <GraphView key={navKey} graph={currentGraph} onBack={popScreen} />
     ) : (
       <Graphs
-        key={dlKey}
+        key={navKey}
         onBack={popScreen}
         onCreate={() => pushScreen('GraphCreate')}
         onView={(graphId) => {
@@ -244,19 +246,19 @@ function AppContent() {
     )
   ) : screen === 'Settings' ? (
     <Settings
-      key={dlKey}
+      key={navKey}
       onNavigateTab={resetToTabRoot}
       activeTab={tab}
       onOpenSereus={() => pushScreen('SereusConnections')}
       onOpenReminders={() => pushScreen('Reminders')}
     />
   ) : screen === 'SereusConnections' ? (
-    <SereusConnections key={dlKey} onBack={popScreen} />
+    <SereusConnections key={navKey} onBack={popScreen} />
   ) : screen === 'Reminders' ? (
-    <Reminders key={dlKey} onBack={popScreen} />
+    <Reminders key={navKey} onBack={popScreen} />
   ) : (
     <LogHistory
-      key={dlKey}
+      key={navKey}
       onAddNew={() => {
         setEditMode('new');
         setEditEntryId(undefined);
