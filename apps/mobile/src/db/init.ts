@@ -24,45 +24,73 @@ export async function ensureDatabaseInitialized(): Promise<void> {
   if (initPromise) return initPromise;
 
   initPromise = (async () => {
-    logger.info('Initializing DB...');
-    const db = await getDatabase();
-
-    // Check if schema exists
-    let schemaExists = false;
     try {
-      const row = await (await db.prepare("SELECT name FROM schema() WHERE type = 'table' AND name = 'types'")).get();
-      schemaExists = row !== undefined;
-    } catch {
-      schemaExists = false;
-    }
+      logger.info('Initializing DB...');
+      const db = await getDatabase();
 
-    if (!schemaExists) {
-      logger.info('First-time setup: applying schema...');
-      await applySchema(db);
-    }
-
-    // Seed check
-    const countStmt = await db.prepare('SELECT COUNT(*) as count FROM types');
-    const countRow = await countStmt.get();
-    await countStmt.finalize();
-    const typeCount = (countRow?.count as number) || 0;
-
-    if (typeCount === 0) {
-      logger.info('Applying production seeds...');
-      await applyProductionSeeds(db);
-    }
-
-    if (__DEV__ && applySampleData) {
-      // Best-effort: sample data may violate uniqueness if re-run
+      // Check if schema exists
+      let schemaExists = false;
       try {
-        await applySampleData(db);
-      } catch (e) {
-        logger.debug('Sample data not applied (likely already present):', e);
+        const stmt = await db.prepare("SELECT name FROM schema() WHERE type = 'table' AND name = 'types'");
+        const row = await stmt.get();
+        await stmt.finalize();
+        schemaExists = row !== undefined;
+      } catch {
+        schemaExists = false;
       }
-    }
 
-    isInitialized = true;
-    logger.info('DB ready');
+      if (!schemaExists) {
+        logger.info('First-time setup: applying schema...');
+        await applySchema(db);
+      }
+
+      // Seed check
+      const countStmt = await db.prepare('SELECT COUNT(*) as count FROM types');
+      const countRow = await countStmt.get();
+      await countStmt.finalize();
+      const typeCount = (countRow?.count as number) || 0;
+
+      if (typeCount === 0) {
+        logger.info('Applying production seeds...');
+        await applyProductionSeeds(db);
+      }
+
+      if (__DEV__ && applySampleData) {
+        // Best-effort: sample data may violate uniqueness if re-run
+        try {
+          await applySampleData(db);
+        } catch (e) {
+          logger.debug('Sample data not applied (likely already present):', e);
+        }
+      }
+
+      // Post-init verification (helps diagnose RN/Quereus issues quickly)
+      try {
+        const tStmt = await db.prepare('SELECT COUNT(*) as count FROM types');
+        const tRow = await tStmt.get();
+        await tStmt.finalize();
+
+        const eStmt = await db.prepare('SELECT COUNT(*) as count FROM log_entries');
+        const eRow = await eStmt.get();
+        await eStmt.finalize();
+
+        logger.info(`DB verify: types=${String(tRow?.count ?? '?')} log_entries=${String(eRow?.count ?? '?')}`);
+
+        const sampleStmt = await db.prepare('SELECT id, type_id as typeId, timestamp FROM log_entries ORDER BY timestamp DESC LIMIT 3');
+        const sampleRows: any[] = [];
+        for await (const r of sampleStmt.all()) sampleRows.push(r);
+        await sampleStmt.finalize();
+        logger.info('DB verify (sample log_entries):', sampleRows);
+      } catch (e) {
+        logger.error('DB verify failed:', e);
+      }
+
+      isInitialized = true;
+      logger.info('DB ready');
+    } catch (e) {
+      logger.error('DB init failed:', e);
+      throw e;
+    }
   })().catch((e) => {
     initPromise = null;
     throw e;

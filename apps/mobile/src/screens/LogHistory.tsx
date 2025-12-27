@@ -40,8 +40,11 @@ export default function LogHistory(props: {
         setEntries(data);
         setError(null);
       })
-      .catch(() => {
+      .catch((err) => {
         if (!alive) return;
+        // Keep UI error message user-friendly, but log the underlying cause for debugging.
+        // eslint-disable-next-line no-console
+        console.error('[LogHistory] Failed to load history', err);
         setError(t('logHistory.errorLoading'));
       })
       .finally(() => {

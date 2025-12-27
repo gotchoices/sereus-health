@@ -139,6 +139,13 @@ export const PRODUCTION_SEEDS = {
         'Welcome to Sereus Health! Tap + above to log your first activity, condition, or outcome. Track what you do, how you feel, and find patterns to improve your health.',
     },
   ],
+  items: [
+    // One starter item so the welcome entry renders with at least one item.
+    { id: 'item-welcome', category_id: 'cat-health', name: 'Getting Started', description: null as string | null },
+  ],
+  log_entry_items: [
+    { entry_id: 'entry-welcome', item_id: 'item-welcome', source_bundle_id: null as string | null },
+  ],
 };
 
 export async function applySchema(db: Database): Promise<void> {
@@ -171,6 +178,23 @@ export async function applyProductionSeeds(db: Database): Promise<void> {
       e.timestamp,
       e.type_id,
       e.comment,
+    ]);
+  }
+
+  for (const it of PRODUCTION_SEEDS.items) {
+    await db.exec('INSERT INTO items (id, category_id, name, description) VALUES (?, ?, ?, ?)', [
+      it.id,
+      it.category_id,
+      it.name,
+      it.description,
+    ]);
+  }
+
+  for (const lei of PRODUCTION_SEEDS.log_entry_items) {
+    await db.exec('INSERT INTO log_entry_items (entry_id, item_id, source_bundle_id) VALUES (?, ?, ?)', [
+      lei.entry_id,
+      lei.item_id,
+      lei.source_bundle_id,
     ]);
   }
 }
