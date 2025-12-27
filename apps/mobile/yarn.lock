@@ -1928,6 +1928,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@quereus/quereus@portal:../../../quereus/packages/quereus::locator=mobile%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@quereus/quereus@portal:../../../quereus/packages/quereus::locator=mobile%40workspace%3A."
+  dependencies:
+    debug: "npm:^4.4.1"
+    fast-json-patch: "npm:^3.1.1"
+    inheritree: "npm:^0.3.2"
+    moat-maker: "npm:^2.2.0"
+    temporal-polyfill: "npm:^0.3.0"
+    uint8arrays: "npm:^5.1.0"
+  languageName: node
+  linkType: soft
+
 "@react-native-community/cli-clean@npm:20.0.0":
   version: 20.0.0
   resolution: "@react-native-community/cli-clean@npm:20.0.0"
@@ -4485,6 +4498,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"fast-json-patch@npm:^3.1.1":
+  version: 3.1.1
+  resolution: "fast-json-patch@npm:3.1.1"
+  checksum: 10c0/8a0438b4818bb53153275fe5b38033610e8c9d9eb11869e6a7dc05eb92fa70f3caa57015e344eb3ae1e71c7a75ad4cc6bc2dc9e0ff281d6ed8ecd44505210ca8
+  languageName: node
+  linkType: hard
+
 "fast-json-stable-stringify@npm:^2.0.0, fast-json-stable-stringify@npm:^2.1.0":
   version: 2.1.0
   resolution: "fast-json-stable-stringify@npm:2.1.0"
@@ -5097,6 +5117,13 @@ __metadata:
     once: "npm:^1.3.0"
     wrappy: "npm:1"
   checksum: 10c0/7faca22584600a9dc5b9fca2cd5feb7135ac8c935449837b315676b4c90aa4f391ec4f42240178244b5a34e8bede1948627fda392ca3191522fc46b34e985ab2
+  languageName: node
+  linkType: hard
+
+"inheritree@npm:^0.3.2":
+  version: 0.3.2
+  resolution: "inheritree@npm:0.3.2"
+  checksum: 10c0/f60cbf77fe12d024a2730deef475f1a16879e335a40e49ba786e833197d11528f0ccff96b1414d2344cf350b5e1c991c94e8d98a59b87bd4a23145649189fc8e
   languageName: node
   linkType: hard
 
@@ -6737,6 +6764,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"moat-maker@npm:^2.2.0":
+  version: 2.2.0
+  resolution: "moat-maker@npm:2.2.0"
+  checksum: 10c0/8fbdb31dd953bba8b46c90c16dca77e7d669c4e4c16ca01812960899270b47f199ed69ac1aafe619d4c549ddb19140c793ff9208a466a3158b0d262c8fb908f4
+  languageName: node
+  linkType: hard
+
 "mobile@workspace:.":
   version: 0.0.0-use.local
   resolution: "mobile@workspace:."
@@ -6744,6 +6778,7 @@ __metadata:
     "@babel/core": "npm:^7.25.2"
     "@babel/preset-env": "npm:^7.25.3"
     "@babel/runtime": "npm:^7.25.0"
+    "@quereus/quereus": "portal:../../../quereus/packages/quereus"
     "@react-native-community/cli": "npm:20.0.0"
     "@react-native-community/cli-platform-android": "npm:20.0.0"
     "@react-native-community/cli-platform-ios": "npm:20.0.0"
@@ -6779,6 +6814,13 @@ __metadata:
   version: 2.1.3
   resolution: "ms@npm:2.1.3"
   checksum: 10c0/d924b57e7312b3b63ad21fc5b3dc0af5e78d61a1fc7cfb5457edaf26326bf62be5307cc87ffb6862ef1c2b33b0233cdb5d4f01c4c958cc0d660948b65a287a48
+  languageName: node
+  linkType: hard
+
+"multiformats@npm:^13.0.0":
+  version: 13.4.2
+  resolution: "multiformats@npm:13.4.2"
+  checksum: 10c0/b7be09b8bf8198d601c8f8c9a358b9a6aca5a14d61239a84f88d8266322e4e7c3015fe7bdf88b589b9993a4abb752defabb932719d1b457a53277e264c4cee11
   languageName: node
   linkType: hard
 
@@ -8321,6 +8363,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"temporal-polyfill@npm:^0.3.0":
+  version: 0.3.0
+  resolution: "temporal-polyfill@npm:0.3.0"
+  dependencies:
+    temporal-spec: "npm:0.3.0"
+  checksum: 10c0/ea6a495fac64c19b194ec3536c2a5916a754c2bf7f645fac5c149fe6a43f266fe4493c6fd6a6b6dfa3e9813505bc48346cf0514c1631a401b354f4c6568b908d
+  languageName: node
+  linkType: hard
+
+"temporal-spec@npm:0.3.0":
+  version: 0.3.0
+  resolution: "temporal-spec@npm:0.3.0"
+  checksum: 10c0/2f7c8530f10e628ff755618490352f6c45b9a20833518286a3c10a8301012696fe6f0bcaa795d5f6f20038777595f2a73dc3390ddea743803405173ff233f482
+  languageName: node
+  linkType: hard
+
 "terser@npm:^5.15.0":
   version: 5.44.1
   resolution: "terser@npm:5.44.1"
@@ -8519,6 +8577,15 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10c0/6f7e53bf0d9702350deeb6f35e08b69cbc8b958c33e0ec77bdc0ad6a6c8e280f3959dcbfde6f5b0848bece57810696489deaaa53d75de3578ff255d168c1efbd
+  languageName: node
+  linkType: hard
+
+"uint8arrays@npm:^5.1.0":
+  version: 5.1.0
+  resolution: "uint8arrays@npm:5.1.0"
+  dependencies:
+    multiformats: "npm:^13.0.0"
+  checksum: 10c0/e7587f97d03a17a608becd01b3ca52aa6db43e7ee6156c18b278c715a62f4f9e62ef2fe9432a3cd02791b6222a17578476a20b8e3ea37dd3b5ce454c6a8782a9
   languageName: node
   linkType: hard
 

@@ -1,3 +1,6 @@
+import { USE_QUEREUS } from '../db/config';
+import { ensureDatabaseInitialized } from '../db/init';
+import { getAllLogEntries } from '../db/logEntries';
 import { getVariant } from '../mock';
 
 export interface LogEntry {
@@ -37,20 +40,41 @@ function loadMock(variant: string): MockData {
 }
 
 export async function getLogHistory(): Promise<LogEntry[]> {
-  const variant = getVariant();
-  if (variant === 'error') {
-    throw new Error('mock:error');
-  }
-  const raw = loadMock(variant).entries ?? [];
+  if (!USE_QUEREUS) {
+    const variant = getVariant();
+    if (variant === 'error') {
+      throw new Error('mock:error');
+    }
+    const raw = loadMock(variant).entries ?? [];
 
-  return raw.map((e) => ({
-    id: e.id,
-    timestamp: e.timestamp,
-    type: e.type,
-    items: (e.items ?? []).map((it) => it.name),
-    bundles: (e.bundles ?? []).length ? e.bundles.map((b) => b.name) : undefined,
-    comment: e.comment ?? undefined,
-  }));
+    return raw.map((e) => ({
+      id: e.id,
+      timestamp: e.timestamp,
+      type: e.type,
+      items: (e.items ?? []).map((it) => it.name),
+      bundles: (e.bundles ?? []).length ? e.bundles.map((b) => b.name) : undefined,
+      comment: e.comment ?? undefined,
+    }));
+  }
+
+  await ensureDatabaseInitialized();
+  const dbEntries = await getAllLogEntries();
+
+  return dbEntries.map((e) => {
+    const itemNames = e.items.map((it) => it.name);
+    const bundleNames = new Set<string>();
+    for (const it of e.items) {
+      if (it.sourceBundleName) bundleNames.add(it.sourceBundleName);
+    }
+    return {
+      id: e.id,
+      timestamp: e.timestamp,
+      type: e.typeName,
+      items: itemNames,
+      bundles: bundleNames.size ? Array.from(bundleNames) : undefined,
+      comment: e.comment ?? undefined,
+    };
+  });
 }
 
 
