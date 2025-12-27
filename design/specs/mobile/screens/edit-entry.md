@@ -236,10 +236,10 @@ Within each picker modal:
 ## Data Requirements (API/Engine Stubs)
 
 ### Read Operations
-- `getTypeStats(variant?)` → Array<{id, name, usageCount}>
-- `getCategoryStats(typeId, variant?)` → Array<{id, name, usageCount}>
-- `getItemStats(categoryId, variant?)` → Array<{id, name, usageCount, isBundle}>
-- `getLogEntry(entryId, variant?)` → LogEntry (for edit/clone modes)
+- `getTypeStats()` → Array<{id, name, usageCount}>
+- `getCategoryStats(typeId)` → Array<{id, name, usageCount}>
+- `getItemStats(categoryId)` → Array<{id, name, usageCount, isBundle}>
+- `getLogEntry(entryId)` → LogEntry (for edit/clone modes)
 
 ### Write Operations
 - `createLogEntry(data)` → {success, entryId}

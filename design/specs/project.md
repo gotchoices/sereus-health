@@ -62,6 +62,12 @@ List the apps to be built:
 - [x] Offline support required (primary use case)
 - [x] Real-time updates needed (across user's cadre and authorized nodes)
 
+### Data modes (production vs mock)
+
+- **Production mode**: uses the real local storage engine (target: **Quereus**) and persists user data.
+- **Mock mode (development/scenarios)**: uses versioned mock JSON under `mock/data/*` and supports deep-link `variant=happy|empty|error` for UI development and scenario screenshots.
+- **Contract**: `variant` is **mock-only**; production data interfaces must not accept or depend on `variant`.
+
 **Backend:**
 
 - **Local database access**: [Quereus](https://github.com/gotchoicies/sereus.git)

@@ -142,18 +142,61 @@ This file tracks open design questions for Sereus Health so they can be resolved
 
 **NOTE:** This section reflects a prior/legacy Quereus exploration. The current `apps/mobile` implementation does **not** include Quereus adapters yet (it currently has only `apps/mobile/src/db/config.ts` and uses mock-backed adapters).
 
-**Blocked until next Quereus release (imminent)**:
-- [ ] **Re-test Quereus on RN/Hermes (smoke suite)**: after upgrading Quereus, run a minimal in-app smoke test (Android + Hermes) to confirm the critical blockers are fixed:
-  - [ ] **Insert/Select persists**: INSERT into a table, then SELECT returns rows (no “data disappears”).
-  - [ ] **Transaction commit persists**: BEGIN → INSERT → COMMIT, then SELECT returns rows.
-  - [ ] **No internal MVCC corruption**: no `primaryKeys.add is not a function` (or similar) during inserts.
-  - [ ] **Nullable prepared statements** (optional): prepared stmt accepts `null` for nullable columns (or confirm official workaround).
+#### Quereus checklist (3 phases)
+
+**Phase 1 — Prove `USE_QUEREUS = true` works (in-memory only).**
+
+Goal: demonstrate stable CRUD + key reads using Quereus **memory** backend, with the UI unchanged.
+
+- [ ] **Re-test Quereus on RN/Hermes (smoke suite)** (Android + Hermes):
+  - [ ] **Insert/Select works**: INSERT then SELECT returns rows (no “data disappears”).
+  - [ ] **Transactions work**: BEGIN → INSERT → COMMIT, then SELECT returns rows.
+  - [ ] **No internal corruption**: no `primaryKeys.add is not a function` (or similar) during inserts.
+  - [ ] **Nullable prepared statements**: `prepare().run([... , null , ...])` works for nullable columns (or confirm official workaround).
   - Reference: `docs/quereus-rn-issues.md` for prior repro notes.
-- [ ] **If smoke suite passes: port the working legacy DB layer**:
-  - Copy/adapt `rn-v1/src/db/*` into `apps/mobile/src/db/*` (schema/init/stats/logEntries/catalog).
-  - Add `USE_QUEREUS` switching in `apps/mobile/src/data/*` adapters (like legacy) so UI remains unaware and `variant` remains mock-only.
-  - Add seed expectations from `design/specs/schema/*.md`.
-  - Only then consider enabling `USE_QUEREUS = true`.
+- [ ] **Port the working legacy DB layer** into `apps/mobile/src/db/*`:
+  - [ ] `index.ts` (singleton DB), `init.ts` (`ensureDatabaseInitialized()`), `schema.ts` (+ seeds)
+  - [ ] `logEntries.ts`, `stats.ts`, `catalog.ts` (enough to satisfy current screens)
+- [ ] **Dual-backend parity (minimal, end-to-end)** (keep screens unaware; `variant` remains mock-only):
+  - [ ] `LogHistory`: Quereus-backed `getLogHistory()` + create/update/delete entry
+  - [ ] `EditEntry`: Quereus-backed stats (`getTypeStats/getCategoryStats/getItemStats`) + load-by-id for edit/clone
+  - [ ] `ConfigureCatalog` + `EditItem`/`EditBundle`: at least read paths; writes if needed for flows
+- [ ] **UUID strategy (recommended to do now if low-friction)**:
+  - [ ] Add a single ID helper (UUIDv4/ULID) and use it for all new writes in the Quereus-backed adapters.
+  - [ ] Keep mock fixtures as-is unless parity is blocked.
+- [ ] **Minimal in-app smoke flow (manual)**:
+  - [ ] launch → LogHistory loads
+  - [ ] create entry → appears in list
+  - [ ] edit entry → persists in-memory
+  - [ ] delete entry → disappears
+  - [ ] restart app → confirm **expected** loss (in-memory) but no crashes
+
+**Phase 2 — After upgrading to persistent Quereus.**
+
+Goal: validate persistence + stability. (We do **not** own “where the DB file lives”; Quereus chooses the persistent store, e.g., IndexedDB / mobile equivalent.)
+
+- [ ] **Persistence smoke suite**:
+  - [ ] create entry → restart app → entry still present
+  - [ ] update entry → restart app → update persists
+  - [ ] delete entry → restart app → deletion persists
+- [ ] **Durability / recovery behavior**:
+  - [ ] decide + implement UX if DB is not openable or appears corrupted (safe reset vs recover vs read-only mode).
+- [ ] **Performance sanity**:
+  - [ ] remove N+1 query patterns in the hottest paths (LogHistory list, catalog lists) if needed for real volumes.
+
+**Phase 3 — Defer for later.**
+
+- [ ] **Schema migrations / versioning plan** (and migration tests).
+- [ ] **Hardening**: typed storage errors, parity tests, high-volume perf tests, import/export idempotency rules.
+
+#### Spec gaps (not clearly required by current stories/specs)
+
+These items are “engineering baseline” and may merit brief spec notes if you want them to be explicit requirements (otherwise they can be treated as implementation details):
+
+- [ ] **UUID requirement**: specs currently describe IDs, but do not explicitly require UUIDv4/ULID for all entities.
+- [ ] **Durability / corruption recovery UX**: no explicit requirement for what the app should do if local storage fails.
+- [ ] **Performance targets**: no explicit “must remain fast at N entries” requirement (even a single sentence helps).
+- [ ] **Migration posture**: stories/specs do not state how schema evolution should behave for existing users (defer OK, but call it out).
 
 **Current Status:**
 - **App runs with `USE_QUEREUS = false`** (using Appeus mock data)

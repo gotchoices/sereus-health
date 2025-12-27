@@ -5,6 +5,7 @@ Cross-cutting behaviors and assumptions that apply across multiple screens and f
 ### Data, Sync, and Ownership
 
 - **Source of truth**: persisted app data lives in the underlying data layer and is treated as authoritative; UI state is a cache/interaction layer.
+- **Mock mode** (development/scenarios): the app may run against `mock/data/*` using deep-link `variant=happy|empty|error`; this must not leak into production data interfaces.
 - **Sync**: replication/conflict handling is owned by the underlying sync layer; the app should not invent per-record conflict UI for MVP.
 - **Ownership & permissions (initial model)**:
   - Bob controls access to his data.

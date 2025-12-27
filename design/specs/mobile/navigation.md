@@ -80,10 +80,10 @@ Deep Links
       - `entryId`: optional ID of the entry to edit/clone.
     - `EditItem`:  
       - `itemId`: optional ID of item to edit (omit for create mode).
-      - `typeId`: optional type ID to pre-select (for create mode).
+      - `type`: optional type name to pre-select (for create mode), one of `Activity|Condition|Outcome`.
     - `EditBundle`:  
       - `bundleId`: optional ID of bundle to edit (omit for create mode).
-      - `typeId`: optional type ID to pre-select (for create mode).
+      - `type`: optional type name to pre-select (for create mode), one of `Activity|Condition|Outcome`.
     - `Graphs`:  
       - No additional params (shows list of all saved graphs).
     - `GraphCreate`:  
