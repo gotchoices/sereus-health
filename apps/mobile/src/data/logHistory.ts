@@ -59,8 +59,6 @@ export async function getLogHistory(): Promise<LogEntry[]> {
 
   await ensureDatabaseInitialized();
   const dbEntries = await getAllLogEntries();
-  // eslint-disable-next-line no-console
-  console.log('[LogHistory:data] Quereus entries:', dbEntries.map((e) => ({ id: e.id, typeId: e.typeId, typeName: e.typeName, itemCount: e.items.length })));
 
   return dbEntries.map((e) => {
     const itemNames = e.items.map((it) => it.name);

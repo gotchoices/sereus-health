@@ -75,12 +75,6 @@ export async function ensureDatabaseInitialized(): Promise<void> {
         await eStmt.finalize();
 
         logger.info(`DB verify: types=${String(tRow?.count ?? '?')} log_entries=${String(eRow?.count ?? '?')}`);
-
-        const sampleStmt = await db.prepare('SELECT id, type_id as typeId, timestamp FROM log_entries ORDER BY timestamp DESC LIMIT 3');
-        const sampleRows: any[] = [];
-        for await (const r of sampleStmt.all()) sampleRows.push(r);
-        await sampleStmt.finalize();
-        logger.info('DB verify (sample log_entries):', sampleRows);
       } catch (e) {
         logger.error('DB verify failed:', e);
       }

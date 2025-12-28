@@ -146,7 +146,12 @@ export default function EditItem(props: { itemId?: string; type?: CatalogType; o
     try {
       await saveItem(item);
       props.onBack();
-    } catch {
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[EditItem] Save failed', err);
+      if (__DEV__) {
+        Alert.alert('Save failed', String(err));
+      }
       setError(t('editItem.saveError'));
     }
   };

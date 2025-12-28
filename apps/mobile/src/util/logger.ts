@@ -9,9 +9,9 @@ export function createLogger(scope: string): Logger {
   const prefix = `[${scope}]`;
   return {
     info: (...args) => console.log(prefix, ...args),
-    debug: (...args) => console.log(prefix, ...args),
+    debug: (...args) => console.debug(prefix, ...args),
     error: (...args) => console.error(prefix, ...args),
-    sql: (query, params) => console.log(prefix, 'SQL:', query.trim(), params ?? []),
+    sql: (query, params) => console.debug(prefix, 'SQL:', query.trim(), params ?? []),
   };
 }
 

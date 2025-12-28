@@ -50,6 +50,9 @@ export async function getEditItem(params: { itemId?: string; type?: CatalogType 
     if (editing && params.itemId) {
       const existing = await getItemDetail(params.itemId);
       if (!existing) throw new Error('not found');
+      if (__DEV__) {
+        logger.info('Loaded item (Quereus)', { itemId: existing.id, description: existing.description });
+      }
       const categories = await getCategoriesForType(existing.type);
       return {
         item: {
@@ -117,7 +120,13 @@ export async function saveItem(_item: ItemEdit): Promise<{ success: true; id: st
         units: q.units,
       })),
     });
-    logger.info('Saved item (Quereus)', { id, name: _item.name, type: _item.type, category: _item.category });
+    logger.info('Saved item (Quereus)', {
+      id,
+      name: _item.name,
+      type: _item.type,
+      category: _item.category,
+      description: _item.description,
+    });
     return { success: true, id };
   }
   return { success: true, id: _item.id ?? `item-${Date.now()}` };

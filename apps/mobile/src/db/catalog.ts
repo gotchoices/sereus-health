@@ -1,6 +1,9 @@
 import type { Database } from '@quereus/quereus';
 import { getDatabase } from './index';
 import { newUuid } from '../util/id';
+import { createLogger } from '../util/logger';
+
+const logger = createLogger('DB Catalog');
 
 export interface InsertCatalogItemInput {
   typeName: string;
@@ -87,6 +90,9 @@ export async function getItemDetail(itemId: string): Promise<{
   const row = await stmt.get([itemId]);
   await stmt.finalize();
   if (!row) return null;
+  if (__DEV__) {
+    logger.info('getItemDetail', { itemId, description: (row.description as string) ?? null });
+  }
 
   const qStmt = await db.prepare(`
     SELECT id, name, min_value as minValue, max_value as maxValue, units
@@ -134,6 +140,9 @@ export async function upsertItem(input: {
     await existsStmt.finalize();
 
     if (exists) {
+      if (__DEV__) {
+        logger.info('upsertItem UP', { itemId, name: input.name, description: input.description });
+      }
       await db.exec('UPDATE items SET name = ?, description = ?, category_id = ? WHERE id = ?', [
         input.name,
         input.description ?? null,
@@ -141,6 +150,9 @@ export async function upsertItem(input: {
         itemId,
       ]);
     } else {
+      if (__DEV__) {
+        logger.info('upsertItem IN', { itemId, name: input.name, description: input.description });
+      }
       await db.exec('INSERT INTO items (id, name, description, category_id) VALUES (?, ?, ?, ?)', [
         itemId,
         input.name,
@@ -163,6 +175,16 @@ export async function upsertItem(input: {
     }
 
     await db.exec('COMMIT');
+    try {
+      const verifyStmt = await db.prepare('SELECT description FROM items WHERE id = ?');
+      const row = await verifyStmt.get([itemId]);
+      await verifyStmt.finalize();
+      if (__DEV__) {
+        logger.info('upsertItem verify', { itemId, description: row?.description });
+      }
+    } catch (e) {
+      logger.debug('upsertItem verify failed', e);
+    }
     return itemId;
   } catch (e) {
     await db.exec('ROLLBACK');

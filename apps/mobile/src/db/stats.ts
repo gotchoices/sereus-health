@@ -1,7 +1,4 @@
 import { getDatabase } from './index';
-import { createLogger } from '../util/logger';
-
-const logger = createLogger('DB Stats');
 
 export interface TypeStat {
   id: string;
@@ -68,14 +65,12 @@ export async function getItemStats(categoryId: string): Promise<ItemStat[]> {
     SELECT 
       i.id,
       i.name,
-      count(lei.entry_id) as usageCount,
-      0 as isBundle
+      count(lei.entry_id) as usageCount
     FROM items i
     LEFT JOIN log_entry_items lei ON lei.item_id = i.id
     WHERE i.category_id = ?
     GROUP BY i.id, i.name
   `;
-  logger.sql(itemSql, [categoryId]);
   const itemStmt = await db.prepare(itemSql);
   const itemRows: any[] = [];
   for await (const r of itemStmt.all([categoryId])) itemRows.push(r);
@@ -85,13 +80,11 @@ export async function getItemStats(categoryId: string): Promise<ItemStat[]> {
     SELECT 
       b.id,
       b.name,
-      count(lei.entry_id) as usageCount,
-      1 as isBundle
+      count(lei.entry_id) as usageCount
     FROM bundles b
     LEFT JOIN log_entry_items lei ON lei.source_bundle_id = b.id
     GROUP BY b.id, b.name
   `;
-  logger.sql(bundleSql);
   const bundleStmt = await db.prepare(bundleSql);
   const bundleRows: any[] = [];
   for await (const r of bundleStmt.all()) bundleRows.push(r);
