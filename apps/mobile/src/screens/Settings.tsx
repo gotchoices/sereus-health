@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import { Alert, ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
-import { runAggregateRepro } from '../db/quereusDebug';
 
 type Tab = 'home' | 'catalog' | 'settings';
 
@@ -15,7 +14,6 @@ export default function Settings(props: {
 }) {
   const theme = useTheme();
   const t = useT();
-  const [debugRunning, setDebugRunning] = useState(false);
 
   const openSereus = () => {
     if (props.onOpenSereus) return props.onOpenSereus();
@@ -26,19 +24,8 @@ export default function Settings(props: {
     Alert.alert(t('common.notImplementedTitle'), t('common.notImplementedBody'));
   };
 
-  const runDebug = async () => {
-    if (debugRunning) return;
-    setDebugRunning(true);
-    try {
-      const res = await runAggregateRepro();
-      if (res.ok) {
-        Alert.alert('Quereus Debug', `OK\n\n${JSON.stringify(res.rows, null, 2)}`);
-      } else {
-        Alert.alert('Quereus Debug', `FAILED\n\n${String((res as any).error)}`);
-      }
-    } finally {
-      setDebugRunning(false);
-    }
+  const runDebugStub = () => {
+    Alert.alert('Quereus Debug', 'Disabled (used only for temporary debugging sessions).');
   };
 
   return (
@@ -67,9 +54,8 @@ export default function Settings(props: {
         {__DEV__ ? (
           <Row
             icon="bug-outline"
-            title={debugRunning ? 'Quereus Debug…' : 'Quereus Debug'}
-            right={debugRunning ? <ActivityIndicator size="small" color={theme.textSecondary} /> : undefined}
-            onPress={runDebug}
+            title="Quereus Debug"
+            onPress={runDebugStub}
           />
         ) : null}
       </View>

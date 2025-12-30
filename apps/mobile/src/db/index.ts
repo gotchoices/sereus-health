@@ -14,7 +14,7 @@ let instanceId = 0;
 export async function getDatabase(): Promise<Database> {
   if (dbInstance) return dbInstance;
   instanceId++;
-  logger.info(`Creating database instance #${instanceId}`);
+  logger.debug(`Creating database instance #${instanceId}`);
   dbInstance = new Database();
   return dbInstance;
 }

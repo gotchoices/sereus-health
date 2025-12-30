@@ -140,9 +140,6 @@ export async function upsertItem(input: {
     await existsStmt.finalize();
 
     if (exists) {
-      if (__DEV__) {
-        logger.info('upsertItem UP', { itemId, name: input.name, description: input.description });
-      }
       await db.exec('UPDATE items SET name = ?, description = ?, category_id = ? WHERE id = ?', [
         input.name,
         input.description ?? null,
@@ -150,9 +147,6 @@ export async function upsertItem(input: {
         itemId,
       ]);
     } else {
-      if (__DEV__) {
-        logger.info('upsertItem IN', { itemId, name: input.name, description: input.description });
-      }
       await db.exec('INSERT INTO items (id, name, description, category_id) VALUES (?, ?, ?, ?)', [
         itemId,
         input.name,
@@ -175,16 +169,6 @@ export async function upsertItem(input: {
     }
 
     await db.exec('COMMIT');
-    try {
-      const verifyStmt = await db.prepare('SELECT description FROM items WHERE id = ?');
-      const row = await verifyStmt.get([itemId]);
-      await verifyStmt.finalize();
-      if (__DEV__) {
-        logger.info('upsertItem verify', { itemId, description: row?.description });
-      }
-    } catch (e) {
-      logger.debug('upsertItem verify failed', e);
-    }
     return itemId;
   } catch (e) {
     await db.exec('ROLLBACK');

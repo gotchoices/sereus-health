@@ -64,19 +64,21 @@ export async function ensureDatabaseInitialized(): Promise<void> {
         }
       }
 
-      // Post-init verification (helps diagnose RN/Quereus issues quickly)
-      try {
-        const tStmt = await db.prepare('SELECT COUNT(*) as count FROM types');
-        const tRow = await tStmt.get();
-        await tStmt.finalize();
+      // Optional verification (keep low-noise; helps spot schema/seed issues during dev)
+      if (__DEV__) {
+        try {
+          const tStmt = await db.prepare('SELECT COUNT(*) as count FROM types');
+          const tRow = await tStmt.get();
+          await tStmt.finalize();
 
-        const eStmt = await db.prepare('SELECT COUNT(*) as count FROM log_entries');
-        const eRow = await eStmt.get();
-        await eStmt.finalize();
+          const eStmt = await db.prepare('SELECT COUNT(*) as count FROM log_entries');
+          const eRow = await eStmt.get();
+          await eStmt.finalize();
 
-        logger.info(`DB verify: types=${String(tRow?.count ?? '?')} log_entries=${String(eRow?.count ?? '?')}`);
-      } catch (e) {
-        logger.error('DB verify failed:', e);
+          logger.debug(`DB verify: types=${String(tRow?.count ?? '?')} log_entries=${String(eRow?.count ?? '?')}`);
+        } catch (e) {
+          logger.debug('DB verify failed:', e);
+        }
       }
 
       isInitialized = true;
