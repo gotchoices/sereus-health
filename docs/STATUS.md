@@ -173,7 +173,7 @@ Goal: demonstrate stable CRUD + key reads using Quereus **memory** backend, with
 
 **Phase 2 — After upgrading to persistent Quereus.**
 
-Goal: validate persistence + stability. (We do **not** own “where the DB file lives”; Quereus chooses the persistent store, e.g., IndexedDB / mobile equivalent.)
+Goal: validate persistence + stability using a real persistent store backend.
 
 - [ ] **Persistence smoke suite**:
   - [ ] create entry → restart app → entry still present
@@ -183,6 +183,57 @@ Goal: validate persistence + stability. (We do **not** own “where the DB file 
   - [ ] decide + implement UX if DB is not openable or appears corrupted (safe reset vs recover vs read-only mode).
 - [ ] **Performance sanity**:
   - [ ] remove N+1 query patterns in the hottest paths (LogHistory list, catalog lists) if needed for real volumes.
+
+#### React Native persistent store module (planned): `@quereus/store-rnleveldb`
+
+Goal: implement a React Native KV-store backend (LevelDB) that can be consumed by `@quereus/plugin-store`'s generic `StoreModule(KVStoreProvider)` without requiring changes to Quereus core or app code other than wiring/registration.
+
+**Approach (preferred)**
+- Create a new Quereus package: `quereus/packages/quereus-store-rnleveldb/`
+  - Publish name: `@quereus/store-rnleveldb` (mirrors `@quereus/store-leveldb`, `@quereus/store-indexeddb`)
+  - Runtime dependency: `react-native-leveldb` (and any adapter needed) + a minimal RN filesystem/path helper if required
+- Implement `KVStore` + `KVStoreProvider` for React Native
+- In the app, register the store module:
+  - `db.registerVtabModule('store', new StoreModule(provider))`
+  - `pragma default_vtab_module = 'store'`
+  - Ensure schema is created with `default_vtab_module = 'store'` (or no explicit default + rely on pragma)
+
+**Implementation checklist**
+- [ ] **Confirm Quereus side API surface**:
+  - [ ] `@quereus/plugin-store` exports `KVStore`, `KVStoreProvider`, `StoreModule`
+  - [ ] `StoreModule` + `StoreTable` require: ordered iteration with bounds, and atomic-ish `batch().write()`
+- [ ] **Pick the underlying RN LevelDB implementation**:
+  - [ ] Confirm `react-native-leveldb` is maintained and supports iOS+Android
+  - [ ] Confirm whether `react-native-leveldb-level-adapter` is needed and what interface it provides
+- [ ] **Define storage location policy (RN)**:
+  - [ ] **Android**: internal app storage (e.g. `context.getFilesDir()` or `context.getNoBackupFilesDir()`)
+  - [ ] **iOS**: app sandbox non-user-visible directory (e.g. `Library/Application Support/` or `Library/`), not Documents
+  - [ ] Decide whether the DB should be included in OS backups (NoBackup vs backed-up)
+  - [ ] Define the user-facing “DB reset” strategy (delete store directory)
+- [ ] **Implement `RNLevelDBStore implements KVStore`**:
+  - [ ] `open({ path, createIfMissing, errorIfExists })`
+  - [ ] `get/put/delete/has`
+  - [ ] `iterate({ gte/gt/lte/lt, reverse, limit })` with correct byte-lexicographic ordering
+  - [ ] `batch().put/delete/write/clear` (atomic if supported; document semantics if not)
+  - [ ] `close()`
+  - [ ] `approximateCount()` (can be fallback count-by-iterate initially)
+- [ ] **Implement `RNLevelDBProvider implements KVStoreProvider`**:
+  - [ ] `getStore(schema, table, options?)` with stable mapping to per-table DB instance/path
+  - [ ] `getCatalogStore()` for DDL metadata
+  - [ ] `closeStore()` and `closeAll()`
+  - [ ] Decide whether to use one LevelDB instance with prefixes vs one per table (start with one-per-table if the RN library matches that best)
+- [ ] **Add a minimal Node test harness for the provider/store package** (where possible)
+  - [ ] If RN-only, ensure the logic is unit-testable (pure functions for key range checks, option parsing)
+  - [ ] Add a small RN-side smoke test plan (manual) for: create table → insert → restart → data persists
+- [ ] **Wire into `apps/mobile` (post-package)**:
+  - [ ] Add dependency on `@quereus/store-rnleveldb`
+  - [ ] Switch Quereus schema default module to `store` for persistent mode
+  - [ ] Ensure first-run schema creation and seed logic runs on persistent tables
+  - [ ] Add a dev-only “Reset DB” action (optional) to delete the store path for debugging
+
+**Open questions (answer one at a time before coding)**
+- [ ] Which RN LevelDB package + adapter is the target, and what APIs does it expose for iteration + batching?
+- [ ] Do we want the DB included in OS backups (default) or excluded (no-backup directory)?
 
 **Phase 3 — Defer for later.**
 
