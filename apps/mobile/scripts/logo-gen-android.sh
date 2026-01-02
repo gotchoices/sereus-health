@@ -89,38 +89,53 @@ echo ""
 echo "📦 Generating legacy fallback icons (pre-Android 8.0)..."
 
 # Composite background with foreground for legacy icons
+# NOTE: Legacy launcher icons are *single-layer* bitmaps. If we composite a larger
+# adaptive foreground (e.g. 432x432) onto a smaller legacy canvas (e.g. 192x192),
+# ImageMagick will clip the foreground. So we explicitly resize the foreground
+# to match the legacy size before compositing.
+
 # xxxhdpi: 192x192
 magick -size 192x192 xc:"${BG_COLOR}" /tmp/ic_launcher_bg_xxxhdpi.png
-magick /tmp/ic_launcher_bg_xxxhdpi.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png \
+magick android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png \
+    -resize 192x192 /tmp/ic_launcher_fg_xxxhdpi.png
+magick /tmp/ic_launcher_bg_xxxhdpi.png /tmp/ic_launcher_fg_xxxhdpi.png \
     -gravity center -composite android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 cp android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
 
 # xxhdpi: 144x144
 magick -size 144x144 xc:"${BG_COLOR}" /tmp/ic_launcher_bg_xxhdpi.png
-magick /tmp/ic_launcher_bg_xxhdpi.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png \
+magick android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png \
+    -resize 144x144 /tmp/ic_launcher_fg_xxhdpi.png
+magick /tmp/ic_launcher_bg_xxhdpi.png /tmp/ic_launcher_fg_xxhdpi.png \
     -gravity center -composite android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
 cp android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
 
 # xhdpi: 96x96
 magick -size 96x96 xc:"${BG_COLOR}" /tmp/ic_launcher_bg_xhdpi.png
-magick /tmp/ic_launcher_bg_xhdpi.png android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png \
+magick android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png \
+    -resize 96x96 /tmp/ic_launcher_fg_xhdpi.png
+magick /tmp/ic_launcher_bg_xhdpi.png /tmp/ic_launcher_fg_xhdpi.png \
     -gravity center -composite android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
 cp android/app/src/main/res/mipmap-xhdpi/ic_launcher.png android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
 
 # hdpi: 72x72
 magick -size 72x72 xc:"${BG_COLOR}" /tmp/ic_launcher_bg_hdpi.png
-magick /tmp/ic_launcher_bg_hdpi.png android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png \
+magick android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png \
+    -resize 72x72 /tmp/ic_launcher_fg_hdpi.png
+magick /tmp/ic_launcher_bg_hdpi.png /tmp/ic_launcher_fg_hdpi.png \
     -gravity center -composite android/app/src/main/res/mipmap-hdpi/ic_launcher.png
 cp android/app/src/main/res/mipmap-hdpi/ic_launcher.png android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
 
 # mdpi: 48x48
 magick -size 48x48 xc:"${BG_COLOR}" /tmp/ic_launcher_bg_mdpi.png
-magick /tmp/ic_launcher_bg_mdpi.png android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png \
+magick android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png \
+    -resize 48x48 /tmp/ic_launcher_fg_mdpi.png
+magick /tmp/ic_launcher_bg_mdpi.png /tmp/ic_launcher_fg_mdpi.png \
     -gravity center -composite android/app/src/main/res/mipmap-mdpi/ic_launcher.png
 cp android/app/src/main/res/mipmap-mdpi/ic_launcher.png android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
 
 # Cleanup temp files
-rm /tmp/ic_launcher_bg_*.png
+rm /tmp/ic_launcher_bg_*.png /tmp/ic_launcher_fg_*.png
 
 echo "✅ Legacy fallback icons generated"
 echo ""
