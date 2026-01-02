@@ -138,9 +138,9 @@ This file tracks open design questions for Sereus Health so they can be resolved
   - `schema/taxonomy.md`, `schema/bundles.md`, `schema/logging.md`
   - `specs/api/schema.md` now documents the local “data access” contract (not HTTP)
 
-### Quereus Integration (BLOCKED - Critical RN Incompatibilities)
+### Quereus Integration (IN PROGRESS - RN persistent store now working)
 
-**NOTE:** This section reflects a prior/legacy Quereus exploration. The current `apps/mobile` implementation does **not** include Quereus adapters yet (it currently has only `apps/mobile/src/db/config.ts` and uses mock-backed adapters).
+**NOTE:** This section reflects a prior/legacy Quereus exploration. `apps/mobile` is now wired to use Quereus with a persistent store backend (`@quereus/store-rnleveldb` + `rn-leveldb`). Remaining work is adapter correctness, smoke suite validation, and hardening.
 
 #### Quereus checklist (3 phases)
 
@@ -184,7 +184,7 @@ Goal: validate persistence + stability using a real persistent store backend.
 - [ ] **Performance sanity**:
   - [ ] remove N+1 query patterns in the hottest paths (LogHistory list, catalog lists) if needed for real volumes.
 
-#### React Native persistent store module (planned): `@quereus/store-rnleveldb`
+#### React Native persistent store module (implemented): `@quereus/store-rnleveldb`
 
 Goal: implement a React Native KV-store backend (LevelDB) that can be consumed by `@quereus/plugin-store`'s generic `StoreModule(KVStoreProvider)` without requiring changes to Quereus core or app code other than wiring/registration.
 
@@ -199,41 +199,60 @@ Goal: implement a React Native KV-store backend (LevelDB) that can be consumed b
   - Ensure schema is created with `default_vtab_module = 'store'` (or no explicit default + rely on pragma)
 
 **Implementation checklist**
-- [ ] **Confirm Quereus side API surface**:
-  - [ ] `@quereus/plugin-store` exports `KVStore`, `KVStoreProvider`, `StoreModule`
-  - [ ] `StoreModule` + `StoreTable` require: ordered iteration with bounds, and atomic-ish `batch().write()`
-- [ ] **Pick the underlying RN LevelDB implementation**:
-  - [ ] Confirm `react-native-leveldb` is maintained and supports iOS+Android
-  - [ ] Confirm whether `react-native-leveldb-level-adapter` is needed and what interface it provides
+- [x] **Confirm Quereus side API surface**:
+  - [x] `@quereus/plugin-store` exports `KVStore`, `KVStoreProvider`, `StoreModule` (RN uses `@quereus/plugin-store/common`)
+  - [x] `StoreModule` + `StoreTable` require: ordered iteration with bounds, and atomic-ish `batch().write()`
+- [x] **Pick the underlying RN LevelDB implementation**:
+  - [x] Use `rn-leveldb` (fork with vendored LevelDB + WriteBatch support)
 - [ ] **Define storage location policy (RN)**:
   - [ ] **Android**: internal app storage (e.g. `context.getFilesDir()` or `context.getNoBackupFilesDir()`)
   - [ ] **iOS**: app sandbox non-user-visible directory (e.g. `Library/Application Support/` or `Library/`), not Documents
   - [ ] Decide whether the DB should be included in OS backups (NoBackup vs backed-up)
   - [ ] Define the user-facing “DB reset” strategy (delete store directory)
-- [ ] **Implement `RNLevelDBStore implements KVStore`**:
-  - [ ] `open({ path, createIfMissing, errorIfExists })`
-  - [ ] `get/put/delete/has`
-  - [ ] `iterate({ gte/gt/lte/lt, reverse, limit })` with correct byte-lexicographic ordering
-  - [ ] `batch().put/delete/write/clear` (atomic if supported; document semantics if not)
-  - [ ] `close()`
-  - [ ] `approximateCount()` (can be fallback count-by-iterate initially)
-- [ ] **Implement `RNLevelDBProvider implements KVStoreProvider`**:
-  - [ ] `getStore(schema, table, options?)` with stable mapping to per-table DB instance/path
-  - [ ] `getCatalogStore()` for DDL metadata
-  - [ ] `closeStore()` and `closeAll()`
-  - [ ] Decide whether to use one LevelDB instance with prefixes vs one per table (start with one-per-table if the RN library matches that best)
+- [x] **Implement `RNLevelDBStore implements KVStore`**:
+  - [x] `open({ path, createIfMissing, errorIfExists })`
+  - [x] `get/put/delete/has`
+  - [x] `iterate({ gte/gt/lte/lt, reverse, limit })` with correct byte-lexicographic ordering
+  - [x] `batch().put/delete/write/clear` (atomic via `WriteBatch`)
+  - [x] `close()`
+  - [x] `approximateCount()` (fallback count-by-iterate)
+- [x] **Implement `RNLevelDBProvider implements KVStoreProvider`**:
+  - [x] `getStore(schema, table, options?)` with stable mapping to per-table DB instance/path
+  - [x] `getCatalogStore()` for DDL metadata
+  - [x] `closeStore()` and `closeAll()`
+  - [x] Use one LevelDB instance per table (simpler + matches Quereus expectations)
 - [ ] **Add a minimal Node test harness for the provider/store package** (where possible)
   - [ ] If RN-only, ensure the logic is unit-testable (pure functions for key range checks, option parsing)
   - [ ] Add a small RN-side smoke test plan (manual) for: create table → insert → restart → data persists
-- [ ] **Wire into `apps/mobile` (post-package)**:
-  - [ ] Add dependency on `@quereus/store-rnleveldb`
-  - [ ] Switch Quereus schema default module to `store` for persistent mode
-  - [ ] Ensure first-run schema creation and seed logic runs on persistent tables
+- [x] **Wire into `apps/mobile` (post-package)**:
+  - [x] Add dependency on `@quereus/store-rnleveldb`
+  - [x] Switch Quereus schema default module to `store` for persistent mode (via pragma)
+  - [x] Ensure first-run schema creation and seed logic runs on persistent tables
   - [ ] Add a dev-only “Reset DB” action (optional) to delete the store path for debugging
 
 **Open questions (answer one at a time before coding)**
 - [ ] Which RN LevelDB package + adapter is the target, and what APIs does it expose for iteration + batching?
-- [ ] Do we want the DB included in OS backups (default) or excluded (no-backup directory)?
+- [x] Do we want the DB included in OS backups (default) or excluded (no-backup directory)?
+  - Decision: **include in OS backups by default** (user data); rely on atomic batch semantics for crash consistency.
+- [x] Should `@quereus/store-rnleveldb` support Node for tests?
+  - Decision: **React Native only**. Node already has `@quereus/store-leveldb`.
+
+**Next question (before coding):**
+- [x] What will we use to compute the on-device base directory path in React Native (iOS Library/Application Support; Android filesDir)?
+  - Decision: start with **`react-native-leveldb`'s built-in base directory** (iOS `NSDocumentDirectory`, Android `filesDir`). No extra path helper needed initially.
+  - Note: if we later need finer control (e.g. Application Support vs Documents, or “no-backup”), we can introduce `react-native-fs` and/or an `install(docDir)` override upstream.
+
+**Dependency packaging TODOs (rn-leveldb fork)**
+
+- [ ] **Decide distribution strategy for the fork** (so consumers don’t depend on `prepare` running at install time):
+  - [ ] Publish built artifacts to npm (recommended if we want “just works” installs)
+  - [ ] Or: create GitHub release/tag that includes built `lib/` outputs
+  - [ ] Or: change `"types"` to a committed source entrypoint (no generated `lib/` required)
+- [ ] **Eliminate “missing LevelDB sources” installs** (Android CMake expects `cpp/leveldb/CMakeLists.txt`):
+  - [ ] Avoid git submodules for LevelDB (vendor a snapshot under `cpp/leveldb/` or move to a fetch-on-build approach)
+  - [ ] Or: ensure any GitHub distribution method includes the submodule contents (verify fresh clone + install builds Android)
+  - [ ] Add a CI check in the fork: fail fast if `cpp/leveldb/CMakeLists.txt` is missing
+  - [ ] Update fork README: call out that upstream uses a LevelDB submodule and what consumers must do if installing from source
 
 **Phase 3 — Defer for later.**
 
@@ -250,18 +269,12 @@ These items are “engineering baseline” and may merit brief spec notes if you
 - [ ] **Migration posture**: stories/specs do not state how schema evolution should behave for existing users (defer OK, but call it out).
 
 **Current Status:**
-- **App runs with `USE_QUEREUS = false`** (using Appeus mock data)
-- **Quereus integration is BLOCKED** by fundamental React Native incompatibilities (see below)
-- All Quereus code is committed and documented for future use
+- **App runs with `USE_QUEREUS = true`** (Quereus + persistent store)
+- **Quereus integration is IN PROGRESS** (boot + init works; remaining UI adapter bugs + smoke suite)
+- Quereus + RN store wiring is committed; remaining work is stabilization + completeness
 
-**Blocking Issues** (see `docs/quereus-rn-issues.md` for details):
-1. ✅ **RESOLVED**: Missing `structuredClone` global - Fixed with polyfill in `index.js`
-2. ✅ **RESOLVED**: Dynamic `import()` not supported - Fixed with patches to `node_modules/@quereus/quereus`
-3. ❌ **ACTIVE**: NULL parameter validation bug - Workaround: using direct SQL for nullable columns
-4. ❌ **CRITICAL**: Transaction data loss - Data disappears after COMMIT, autocommit mode has same issue
-5. ❌ **CRITICAL**: Internal data structure corruption - `primaryKeys.add is not a function` errors
-
-**Issues #4 and #5 are fundamental** and suggest Quereus's in-memory MemoryTable is not compatible with React Native's JavaScript engine (Hermes). These cannot be worked around without deep changes to Quereus's core.
+**Notes / prior issues** (see `docs/quereus-rn-issues.md` for details):
+- Quereus’s in-memory backend previously showed RN/Hermes incompatibilities (transaction data loss / internal corruption). We are now bypassing that path by using the store-backed module.
 
 **After Quereus RN Support is Fixed (follow-up checklist)**:
 - [ ] **Remove/adjust any Quereus RN workarounds** (polyfills/patches) if no longer needed.

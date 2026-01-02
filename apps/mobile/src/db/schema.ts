@@ -1,7 +1,7 @@
 /**
  * Quereus schema + minimal seeds.
  *
- * NOTE: Phase 1 uses Quereus in-memory backend; persistence is validated later.
+ * NOTE: uses the StoreModule by setting `pragma default_vtab_module = 'store'` before applying schema.
  */
 import type { Database } from '@quereus/quereus';
 import { createLogger } from '../util/logger';
@@ -9,7 +9,7 @@ import { createLogger } from '../util/logger';
 const logger = createLogger('DB Schema');
 
 const SCHEMA_SQL = `
-declare schema main using (default_vtab_module = 'memory') {
+declare schema main {
   table types (
     id text primary key,
     name text unique,
@@ -150,6 +150,7 @@ export const PRODUCTION_SEEDS = {
 
 export async function applySchema(db: Database): Promise<void> {
   logger.info('Declaring schema...');
+  await db.exec("pragma default_vtab_module = 'store'");
   await db.exec(SCHEMA_SQL);
   logger.info('Applying schema...');
   await db.exec('apply schema main');
