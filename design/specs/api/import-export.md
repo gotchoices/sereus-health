@@ -1,6 +1,8 @@
-# Import/Export (Mobile)
+# Import/Export (Data Portability)
 
-Cross-cutting requirements for **data portability**. Screen-specific placement and UI affordances belong in the relevant screen specs.
+This spec defines the **cross-app** data portability contract for Sereus Health.
+
+Screen-specific placement and UI affordances belong in the relevant screen specs (e.g., LogHistory, ConfigureCatalog, BackupRestore).
 
 ## Supported exports
 
@@ -60,4 +62,5 @@ Imports should be idempotent (re-importing should not multiply data).
 ## Sharing
 
 - After export, offer the system share sheet (Files, cloud providers, email, etc.).
+
 

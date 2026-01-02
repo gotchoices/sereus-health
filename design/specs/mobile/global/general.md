@@ -42,6 +42,7 @@ When a user edits a taxonomy element that is already referenced by historical lo
 
 - **Reusable selection list**: a shared list picker that supports optional filtering and single/multi-select, reused across screens.
 - **Shared dialogs/toasts**: confirmation dialogs and transient notifications are shared components/styles, not one-offs.
+- **Bottom tab bar**: when present, it is visually pinned to the bottom of the screen; scrollable content must not push it upward (content area scrolls above it).
 
 ### Filters (search toggles)
 

@@ -30,7 +30,7 @@ This project is being migrated from Appeus v1 to Appeus v2 to take advantage of 
   - [x] `design/specs/project.md` (mobile toolchain lives here; per-target `toolchain.md` removed)
   - [x] `design/specs/mobile/global/dependencies.md` (likely delete; if any deps are “must-use”, restate elsewhere)
   - [x] `design/specs/mobile/global/inline-taxonomy.md` (deleted; inline-add rules belong in the relevant screen specs if/when desired)
-  - [x] `design/specs/mobile/global/import-export.md`
+- [x] `design/specs/api/import-export.md`
   - [x] `design/specs/mobile/navigation.md`
   - [ ] `design/specs/mobile/screens/index.md`
   - [ ] `design/specs/mobile/screens/log-history.md`
@@ -48,9 +48,11 @@ This project is being migrated from Appeus v1 to Appeus v2 to take advantage of 
     - [x] **In-app navigation from deep link**: `apps/mobile/App.tsx` now consumes `{route, params}` from `VariantProvider` and routes to the correct screen + params.
     - [x] **Platform URL scheme registration**: iOS + Android register the `health://` scheme so `xcrun simctl openurl` / `adb shell am start -a VIEW -d ...` can launch the app into the route.
   - [ ] **Reminders notifications**: confirm requirements in story 08 + any global specs. If required, implement notification permissions + scheduling/canceling based on “no log entries within interval”, and ensure tapping notification deep-links to `EditEntry` in `new` mode.
-  - [ ] **LogHistory import/export**: confirm whether required by `design/specs/mobile/global/import-export.md` and/or a story. If required, add CSV export (Share) + CSV import (document picker) to `apps/mobile/src/screens/LogHistory.tsx` and implement adapters in `apps/mobile/src/data/logHistory.ts`.
+  - [ ] **LogHistory import/export**: confirm whether required by `design/specs/api/import-export.md` and/or a story. If required, add CSV export (Share) + CSV import (document picker) to `apps/mobile/src/screens/LogHistory.tsx` and implement adapters in `apps/mobile/src/data/logHistory.ts`.
   - [ ] **ConfigureCatalog import/export**: confirm whether required by stories/specs. If required, add CSV export/import UI to `apps/mobile/src/screens/ConfigureCatalog.tsx` and implement adapter functions in `apps/mobile/src/data/configureCatalog.ts`.
   - [ ] **Settings backup/restore**: confirm whether required by stories/specs. If required, implement full backup export + restore import from Settings (likely JSON), and wire to underlying import functions (catalog + logs).
+  - [ ] **Import preview UX (deferred)**: decide whether “preview-before-commit” is a shared modal, a dedicated `ImportPreview` screen, or per-screen UI (LogHistory/ConfigureCatalog/BackupRestore). Defer until after basic export is working.
+  - [ ] **Backup status metadata (recommended)**: track “last backup at” and “modified since last backup”, and add guardrails before restore/reset (encourage export first).
   - [ ] **Finalize app ID + scheme**: legacy app used `org.sereus.health` (Android `applicationId`/`namespace`, iOS `PRODUCT_BUNDLE_IDENTIFIER`). Decide whether to keep this for `apps/mobile`, apply it consistently, and document it in `design/specs/project.md` (bundle IDs) and `design/generated/mobile/images/index.md` (scenario capture `appId` + `scheme`).
   - [ ] **EditEntry native date/time picker**: confirm whether required by `design/specs/mobile/screens/edit-entry.md` and/or story behavior. If required, integrate `@react-native-community/datetimepicker` (or approved alternative) and replace current timestamp placeholder UI in `apps/mobile/src/screens/EditEntry.tsx`.
   - [ ] **Persistence layer (beyond mocks)**: confirm target behavior in `design/specs/project.md` + schema specs. Decide storage approach (Quereus vs SQLite/other) and then implement `apps/mobile/src/db/*` + update data adapters to read/write persistent data (not only mock JSON).

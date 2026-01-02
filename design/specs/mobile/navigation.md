@@ -11,22 +11,16 @@ Sitemap (high-level)
       - Add: start a brand new entry (navigates to `EditEntry` in `new` mode).
       - Clone: clone a selected entry (navigates to `EditEntry` in `clone` mode with the source entryId).
       - Graph icon: navigate to `Graphs` screen.
+      - Export: export log entries to CSV (filtered or all).
+      - Import: import historical log entries from CSV/YAML.
   - `EditEntry` (push from `LogHistory`)  
-    - Focused flow for adding/editing/cloning a single entry.
-    - Internal progression: Type selection → Category selection → Item selection → Quantifiers/Comment.
+    - Add/edit/clone a single entry.
   - `Graphs` (push from `LogHistory`)  
-    - List of saved/named graphs Bob has created.
-    - Actions:
-      - Tap graph: navigate to `GraphView` to view/share that graph.
-      - "Create Graph" button: navigate to `GraphCreate`.
+    - Browse saved graphs.
   - `GraphCreate` (push from `Graphs`)  
-    - Item picker (multi-select from all loggable items).
-    - Date range configuration.
-    - Graph name input.
-    - "Generate" button: navigate to `GraphView` with new graph.
+    - Create a graph.
   - `GraphView` (push from `Graphs` or `GraphCreate`)  
-    - Display generated graph.
-    - Share action to export graph image.
+    - View a graph.
 
 - CATALOG Tab (stack)
   - `ConfigureCatalog` (root)  
@@ -36,19 +30,24 @@ Sitemap (high-level)
       - Tap bundle: navigate to `EditBundle` to edit that bundle.
       - "Add" button (Items view): navigate to `EditItem` in create mode.
       - "Add" button (Bundles view): navigate to `EditBundle` in create mode.
+      - Export: export catalog to CSV.
+      - Import: import catalog from CSV/YAML.
   - `EditItem` (push from `ConfigureCatalog`)  
     - Create or edit a catalog item.
-    - Includes category selection (with inline create) and quantifier management.
+    - Create/edit an item.
   - `EditBundle` (push from `ConfigureCatalog`)  
     - Create or edit a bundle.
-    - Includes item picker for bundle members.
+    - Create/edit a bundle.
 
 - SETTINGS Tab (stack)
   - `Settings` (root)  
     - List of setting categories:
       - Sereus Connections → push to `SereusConnections`
       - Reminders → push to `Reminders`
-      - (Future: AI Agent, Preferences, Data Management, About)
+      - Backup & Restore → push to `BackupRestore`
+      - (Future: AI Agent, Preferences, About)
+  - `BackupRestore` (push from `Settings`)
+    - Export/import full backup (and restore) from Settings.
   - `SereusConnections` (push from `Settings`)  
     - View and manage Sereus cadre and guest nodes.
     - Actions: Scan QR to add node, view node status, remove nodes.
@@ -68,6 +67,7 @@ Deep Links
   - `health://screen/GraphCreate`
   - `health://screen/GraphView`
   - `health://screen/Settings`
+  - `health://screen/BackupRestore`
   - `health://screen/SereusConnections`
   - `health://screen/Reminders`
 
@@ -107,6 +107,7 @@ Route Options
 - GraphCreate: title "Create Graph"
 - GraphView: title "{Graph Name}" (dynamic based on graph)
 - Settings: title "Settings"
+- BackupRestore: title "Backup & Restore"
 - SereusConnections: title "Sereus Connections"
 - Reminders: title "Reminders"
 

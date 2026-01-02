@@ -62,6 +62,12 @@ Manage the catalog of items, categories, and bundles that Bob uses when logging 
 | Bottom tab: Home | LogHistory |
 | Bottom tab: Settings | Settings |
 
+## Import / Export (data portability)
+
+- Expose **Export Catalog** and **Import Catalog** actions from ConfigureCatalog.
+- Export format: CSV per `design/specs/api/import-export.md`.
+- Import supports CSV/YAML and is idempotent per `design/specs/api/import-export.md`.
+
 ## Data Requirements
 
 ### Items List

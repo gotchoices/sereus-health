@@ -22,6 +22,7 @@ Screens
 | GraphCreate        | GraphCreate       | Select items + date range, generate new graph       | happy              |
 | GraphView          | GraphView         | Display and share a specific graph                   | happy              |
 | Settings           | Settings          | List of settings sections (Sereus, Reminders, etc.) | happy              |
+| BackupRestore      | BackupRestore     | Export/import full backup from Settings             | happy, error        |
 | SereusConnections  | SereusConnections | View and manage Sereus cadre and guest nodes        | happy, empty, error |
 | Reminders          | Reminders         | Configure reminder notification interval             | happy              |
 

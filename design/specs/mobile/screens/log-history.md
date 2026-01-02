@@ -34,3 +34,10 @@ Each log entry card has a compact 3-line layout:
 - Small pill with semantic color (Activity=blue, Condition=orange, Outcome=green)
 - White text, 600 weight
 
+## Import / Export (data portability)
+
+- Expose **Export** and **Import** actions from LogHistory.
+- Export supports **filtered subset** (if a filter is active) and **all entries**.
+- Export format: CSV per `design/specs/api/import-export.md`.
+- Import supports CSV/YAML and is idempotent per `design/specs/api/import-export.md`.
+
