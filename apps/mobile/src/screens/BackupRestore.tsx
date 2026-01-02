@@ -1,10 +1,14 @@
-import React from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import RNFS from 'react-native-fs';
+import Share from 'react-native-share';
+import yaml from 'js-yaml';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { resetDatabaseForDev } from '../db/reset';
 import { createLogger } from '../util/logger';
+import { exportBackup } from '../data/backup';
 
 const logger = createLogger('BackupRestore');
 
@@ -15,10 +19,52 @@ interface BackupRestoreProps {
 export default function BackupRestore(props: BackupRestoreProps) {
   const theme = useTheme();
   const t = useT();
+  const [isExporting, setIsExporting] = useState(false);
 
-  const handleExportBackup = () => {
-    // TODO: Implement export backup (YAML format per design/specs/api/import-export.md)
-    Alert.alert(t('common.notImplementedTitle'), t('common.notImplementedBody'));
+  const handleExportBackup = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+
+    try {
+      // Export data
+      const backupData = await exportBackup();
+
+      // Convert to YAML
+      const yamlContent = yaml.dump(backupData, {
+        indent: 2,
+        lineWidth: -1, // Don't wrap long lines
+        noRefs: true, // Don't use anchors/aliases
+      });
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const filename = `sereus-health-backup-${timestamp}.yaml`;
+
+      // Write to temporary file
+      const tempPath = `${RNFS.CachesDirectoryPath}/${filename}`;
+      await RNFS.writeFile(tempPath, yamlContent, 'utf8');
+
+      // Share via system share sheet
+      await Share.open({
+        title: 'Export Backup',
+        message: 'Sereus Health Backup',
+        url: Platform.OS === 'android' ? `file://${tempPath}` : tempPath,
+        type: 'text/yaml',
+        filename,
+      });
+
+      // Clean up temp file after sharing (delay to allow share to complete)
+      setTimeout(() => {
+        void RNFS.unlink(tempPath).catch((err: unknown) => {
+          logger.error('Failed to clean up temp backup file:', err);
+        });
+      }, 5000);
+    } catch (err) {
+      logger.error('Export backup failed:', err);
+      Alert.alert('Export Failed', String(err));
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleImportRestore = () => {
@@ -82,12 +128,19 @@ export default function BackupRestore(props: BackupRestoreProps) {
         <View style={{ gap: spacing[2] }}>
           {/* Export Backup */}
           <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: theme.accentPrimary }]}
+            style={[
+              styles.primaryButton,
+              { backgroundColor: theme.accentPrimary },
+              isExporting && { opacity: 0.6 },
+            ]}
             onPress={handleExportBackup}
             activeOpacity={0.7}
+            disabled={isExporting}
           >
             <Ionicons name="download-outline" size={20} color="#FFFFFF" />
-            <Text style={styles.primaryButtonText}>{t('backupRestore.export')}</Text>
+            <Text style={styles.primaryButtonText}>
+              {isExporting ? 'Exporting...' : t('backupRestore.export')}
+            </Text>
           </TouchableOpacity>
 
           {/* Import / Restore */}
