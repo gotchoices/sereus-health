@@ -1951,9 +1951,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@quereus/store-rnleveldb@portal:../../../quereus/packages/quereus-store-rnleveldb::locator=mobile%40workspace%3A.":
+"@quereus/store-rn@portal:../../../quereus/packages/quereus-store-rn::locator=mobile%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@quereus/store-rnleveldb@portal:../../../quereus/packages/quereus-store-rnleveldb::locator=mobile%40workspace%3A."
+  resolution: "@quereus/store-rn@portal:../../../quereus/packages/quereus-store-rn::locator=mobile%40workspace%3A."
   peerDependencies:
     "@quereus/plugin-store": "*"
     react: "*"
@@ -6883,7 +6883,7 @@ __metadata:
     "@babel/runtime": "npm:^7.25.0"
     "@quereus/plugin-store": "portal:../../../quereus/packages/quereus-plugin-store"
     "@quereus/quereus": "portal:../../../quereus/packages/quereus"
-    "@quereus/store-rnleveldb": "portal:../../../quereus/packages/quereus-store-rnleveldb"
+    "@quereus/store-rn": "portal:../../../quereus/packages/quereus-store-rn"
     "@react-native-community/cli": "npm:20.0.0"
     "@react-native-community/cli-platform-android": "npm:20.0.0"
     "@react-native-community/cli-platform-ios": "npm:20.0.0"

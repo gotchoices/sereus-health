@@ -1,11 +1,11 @@
 /**
  * Quereus DB instance (singleton)
  *
- * Phase 2+: persistent store-backed Quereus via `@quereus/plugin-store` + `@quereus/store-rnleveldb`.
+ * Phase 2+: persistent store-backed Quereus via `@quereus/plugin-store` + `@quereus/store-rn`.
  */
 import { Database } from '@quereus/quereus';
 import { StoreModule } from '@quereus/plugin-store/common';
-import { createRNLevelDBProvider } from '@quereus/store-rnleveldb';
+import { createRNProvider } from '@quereus/store-rn';
 import { createLogger } from '../util/logger';
 
 const logger = createLogger('DB');
@@ -19,7 +19,7 @@ export async function getDatabase(): Promise<Database> {
   logger.debug(`Creating database instance #${instanceId}`);
   const db = new Database();
 
-  const provider = createRNLevelDBProvider({ basePath: 'quereus' });
+  const provider = createRNProvider({ basePath: 'quereus' });
   const module = new StoreModule(provider);
   db.registerVtabModule('store', module);
 

@@ -140,7 +140,7 @@ This file tracks open design questions for Sereus Health so they can be resolved
 
 ### Quereus Integration (IN PROGRESS - RN persistent store now working)
 
-**NOTE:** This section reflects a prior/legacy Quereus exploration. `apps/mobile` is now wired to use Quereus with a persistent store backend (`@quereus/store-rnleveldb` + `rn-leveldb`). Remaining work is adapter correctness, smoke suite validation, and hardening.
+**NOTE:** This section reflects a prior/legacy Quereus exploration. `apps/mobile` is now wired to use Quereus with a persistent store backend (`@quereus/store-rn` + `rn-leveldb`). Remaining work is adapter correctness, smoke suite validation, and hardening.
 
 #### Quereus checklist (3 phases)
 
@@ -175,31 +175,31 @@ Goal: demonstrate stable CRUD + key reads using Quereus **memory** backend, with
 
 Goal: validate persistence + stability using a real persistent store backend.
 
-- [ ] **Persistence smoke suite**:
-  - [ ] create entry → restart app → entry still present
-  - [ ] update entry → restart app → update persists
-  - [ ] delete entry → restart app → deletion persists
-- [ ] **Seeding & catalog integrity (idempotency)**:
-  - [ ] **No duplicate seeds across launches**: cold start app 3x; `types/categories/items/bundles` counts remain stable (no growth).
-  - [ ] **Seed guard is correct**: confirm the “should we seed?” check reads from a persistent table and is not fooled by initialization order or schema detection (e.g. `schema()` vs `COUNT(*)`).
-  - [ ] **Constraints actually enforced**:
-    - [ ] `types.name` unique constraint prevents duplicates
-    - [ ] `(type_id, name)` uniqueness prevents duplicate categories per type
-    - [ ] `(category_id, name)` uniqueness prevents duplicate items per category
-    - [ ] Any observed duplicates have a clear explanation (e.g., different IDs inserted; constraints missing; seeds not matching constraints).
-  - [ ] **Index creation is idempotent**: verify schema/apply does not re-create indexes or tables on every launch.
+- [x] **Persistence smoke suite**:
+  - [x] create entry → restart app → entry still present
+  - [x] update entry → restart app → update persists
+  - [x] delete entry → restart app → deletion persists
+- [x] **Seeding & catalog integrity (idempotency)**:
+  - [x] **No duplicate seeds across launches**: cold start app 3x; `types/categories/items/bundles` counts remain stable (no growth).
+  - [x] **Seed guard is correct**: confirm the “should we seed?” check reads from a persistent table and is not fooled by initialization order or schema detection (e.g. `schema()` vs `COUNT(*)`).
+  - [x] **Constraints actually enforced**:
+    - [x] `types.name` unique constraint prevents duplicates
+    - [x] `(type_id, name)` uniqueness prevents duplicate categories per type
+    - [x] `(category_id, name)` uniqueness prevents duplicate items per category
+    - [x] Any observed duplicates have a clear explanation (e.g., different IDs inserted; constraints missing; seeds not matching constraints).
+  - [x] **Index creation is idempotent**: verify schema/apply does not re-create indexes or tables on every launch.
 - [ ] **Durability / recovery behavior**:
   - [ ] decide + implement UX if DB is not openable or appears corrupted (safe reset vs recover vs read-only mode).
 - [ ] **Performance sanity**:
   - [ ] remove N+1 query patterns in the hottest paths (LogHistory list, catalog lists) if needed for real volumes.
 
-#### React Native persistent store module (implemented): `@quereus/store-rnleveldb`
+#### React Native persistent store module (implemented): `@quereus/store-rn`
 
 Goal: implement a React Native KV-store backend (LevelDB) that can be consumed by `@quereus/plugin-store`'s generic `StoreModule(KVStoreProvider)` without requiring changes to Quereus core or app code other than wiring/registration.
 
 **Approach (preferred)**
-- Create a new Quereus package: `quereus/packages/quereus-store-rnleveldb/`
-  - Publish name: `@quereus/store-rnleveldb` (mirrors `@quereus/store-leveldb`, `@quereus/store-indexeddb`)
+- Create a new Quereus package: `quereus/packages/quereus-store-rn/`
+  - Publish name: `@quereus/store-rn` (mirrors `@quereus/store-leveldb`, `@quereus/store-indexeddb`)
   - Runtime dependency: `react-native-leveldb` (and any adapter needed) + a minimal RN filesystem/path helper if required
 - Implement `KVStore` + `KVStoreProvider` for React Native
 - In the app, register the store module:
@@ -234,7 +234,7 @@ Goal: implement a React Native KV-store backend (LevelDB) that can be consumed b
   - [ ] If RN-only, ensure the logic is unit-testable (pure functions for key range checks, option parsing)
   - [ ] Add a small RN-side smoke test plan (manual) for: create table → insert → restart → data persists
 - [x] **Wire into `apps/mobile` (post-package)**:
-  - [x] Add dependency on `@quereus/store-rnleveldb`
+  - [x] Add dependency on `@quereus/store-rn`
   - [x] Switch Quereus schema default module to `store` for persistent mode (via pragma)
   - [x] Ensure first-run schema creation and seed logic runs on persistent tables
   - [x] Add a dev-only “Reset DB” action (optional) to delete the store path for debugging (Settings screen)
@@ -243,7 +243,7 @@ Goal: implement a React Native KV-store backend (LevelDB) that can be consumed b
 - [ ] Which RN LevelDB package + adapter is the target, and what APIs does it expose for iteration + batching?
 - [x] Do we want the DB included in OS backups (default) or excluded (no-backup directory)?
   - Decision: **include in OS backups by default** (user data); rely on atomic batch semantics for crash consistency.
-- [x] Should `@quereus/store-rnleveldb` support Node for tests?
+- [x] Should `@quereus/store-rn` support Node for tests?
   - Decision: **React Native only**. Node already has `@quereus/store-leveldb`.
 
 **Next question (before coding):**
@@ -279,8 +279,8 @@ These items are “engineering baseline” and may merit brief spec notes if you
 
 **Current Status:**
 - **App runs with `USE_QUEREUS = true`** (Quereus + persistent store)
-- **Quereus integration is IN PROGRESS** (boot + init works; remaining UI adapter bugs + smoke suite)
-- Quereus + RN store wiring is committed; remaining work is stabilization + completeness
+- **Quereus integration is IN PROGRESS** (remaining UI adapter bugs + broader smoke suite)
+- CRUD + persistence verified for catalog + log entries; dev-only Reset DB tool is available
 
 **Notes / prior issues** (see `docs/quereus-rn-issues.md` for details):
 - Quereus’s in-memory backend previously showed RN/Hermes incompatibilities (transaction data loss / internal corruption). We are now bypassing that path by using the store-backed module.
