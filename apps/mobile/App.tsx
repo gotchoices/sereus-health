@@ -16,6 +16,7 @@ import GraphView from './src/screens/GraphView';
 import Settings from './src/screens/Settings';
 import SereusConnections from './src/screens/SereusConnections';
 import Reminders from './src/screens/Reminders';
+import BackupRestore from './src/screens/BackupRestore';
 
 type Tab = 'home' | 'catalog' | 'settings';
 type Screen =
@@ -28,6 +29,7 @@ type Screen =
   | 'GraphCreate'
   | 'GraphView'
   | 'Settings'
+  | 'BackupRestore'
   | 'SereusConnections'
   | 'Reminders';
 
@@ -122,6 +124,7 @@ function AppContent() {
       'GraphCreate',
       'GraphView',
       'Settings',
+      'BackupRestore',
       'SereusConnections',
       'Reminders',
     ];
@@ -251,7 +254,10 @@ function AppContent() {
       activeTab={tab}
       onOpenSereus={() => pushScreen('SereusConnections')}
       onOpenReminders={() => pushScreen('Reminders')}
+      onOpenBackupRestore={() => pushScreen('BackupRestore')}
     />
+  ) : screen === 'BackupRestore' ? (
+    <BackupRestore key={navKey} onBack={popScreen} />
   ) : screen === 'SereusConnections' ? (
     <SereusConnections key={navKey} onBack={popScreen} />
   ) : screen === 'Reminders' ? (

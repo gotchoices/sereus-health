@@ -132,6 +132,10 @@ const en: Dict = {
   'settings.sereusConnections': 'Sereus Connections',
   'settings.reminders': 'Reminders',
   'settings.preferences': 'Preferences',
+  'settings.theme': 'Theme',
+  'settings.backupRestore': 'Backup & Restore',
+  'settings.about': 'About',
+  'settings.debug': 'Debug (dev)',
 
   'sereus.title': 'Sereus Connections',
   'sereus.sectionCadre': 'My Nodes',
@@ -153,6 +157,20 @@ const en: Dict = {
   'reminders.hours': '{count} hours',
   'reminders.futureTitle': 'Future reminder options:',
   'reminders.futureList': '• Smart reminders based on patterns\n• Quiet hours\n• Custom messages',
+
+  'backupRestore.title': 'Backup & Restore',
+  'backupRestore.statusTitle': 'Status',
+  'backupRestore.statusLastBackupNever': 'Last backup: Never',
+  'backupRestore.statusModifiedUnknown': 'Modified since last backup: Unknown',
+  'backupRestore.export': 'Export Backup',
+  'backupRestore.import': 'Import / Restore',
+  'backupRestore.dangerZone': 'Danger zone (dev)',
+  'backupRestore.resetDbDev': 'Reset DB (dev)',
+  'backupRestore.resetDbTitle': 'Reset DB',
+  'backupRestore.resetDbConfirm': 'This will delete all local database files. Continue?',
+  'backupRestore.resetDbAction': 'Reset',
+  'backupRestore.resetDbDone': 'Done. Fully close and relaunch the app to re-seed.',
+  'backupRestore.resetDbFailed': 'Failed. See logs for details.',
 };
 
 export function useT() {
