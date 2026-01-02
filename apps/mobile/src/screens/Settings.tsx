@@ -1,11 +1,10 @@
 import React from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { spacing, typography, useTheme } from '../theme/useTheme';
+import { spacing, typography, useTheme, useThemeContext } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 
 type Tab = 'home' | 'catalog' | 'settings';
-type ThemeOption = 'system' | 'light' | 'dark';
 
 interface SettingsProps {
   onNavigateTab: (tab: Tab) => void;
@@ -17,8 +16,8 @@ interface SettingsProps {
 
 export default function Settings(props: SettingsProps) {
   const theme = useTheme();
+  const { themeMode, setThemeMode } = useThemeContext();
   const t = useT();
-  const [selectedTheme, setSelectedTheme] = React.useState<ThemeOption>('system');
 
   const handleReminders = () => {
     if (props.onOpenReminders) return props.onOpenReminders();
@@ -68,18 +67,18 @@ export default function Settings(props: SettingsProps) {
             <View style={styles.themeSelector}>
               <ThemeButton
                 label="System"
-                selected={selectedTheme === 'system'}
-                onPress={() => setSelectedTheme('system')}
+                selected={themeMode === 'system'}
+                onPress={() => setThemeMode('system')}
               />
               <ThemeButton
                 label="Light"
-                selected={selectedTheme === 'light'}
-                onPress={() => setSelectedTheme('light')}
+                selected={themeMode === 'light'}
+                onPress={() => setThemeMode('light')}
               />
               <ThemeButton
                 label="Dark"
-                selected={selectedTheme === 'dark'}
-                onPress={() => setSelectedTheme('dark')}
+                selected={themeMode === 'dark'}
+                onPress={() => setThemeMode('dark')}
               />
             </View>
           </View>

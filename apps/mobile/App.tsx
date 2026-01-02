@@ -17,6 +17,7 @@ import Settings from './src/screens/Settings';
 import SereusConnections from './src/screens/SereusConnections';
 import Reminders from './src/screens/Reminders';
 import BackupRestore from './src/screens/BackupRestore';
+import { ThemeProvider } from './src/theme/useTheme';
 
 type Tab = 'home' | 'catalog' | 'settings';
 type Screen =
@@ -40,11 +41,13 @@ type Screen =
 export default function App() {
   return (
     <SafeAreaProvider>
-      <VariantProvider>
-        <SafeAreaView style={{ flex: 1 }}>
-          <AppContent />
-        </SafeAreaView>
-      </VariantProvider>
+      <ThemeProvider>
+        <VariantProvider>
+          <SafeAreaView style={{ flex: 1 }}>
+            <AppContent />
+          </SafeAreaView>
+        </VariantProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
