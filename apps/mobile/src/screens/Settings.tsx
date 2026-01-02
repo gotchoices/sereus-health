@@ -3,6 +3,8 @@ import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
+import { resetDatabaseForDev } from '../db/reset';
+import { createLogger } from '../util/logger';
 
 type Tab = 'home' | 'catalog' | 'settings';
 
@@ -12,6 +14,7 @@ export default function Settings(props: {
   onOpenSereus?: () => void;
   onOpenReminders?: () => void;
 }) {
+  const logger = createLogger('Settings');
   const theme = useTheme();
   const t = useT();
 
@@ -26,6 +29,27 @@ export default function Settings(props: {
 
   const runDebugStub = () => {
     Alert.alert('Quereus Debug', 'Disabled (used only for temporary debugging sessions).');
+  };
+
+  const resetDb = () => {
+    Alert.alert('Reset DB', 'This will delete all local database files. Continue?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Reset',
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            try {
+              await resetDatabaseForDev();
+              Alert.alert('Reset DB', 'Done. Fully close and relaunch the app to re-seed.');
+            } catch (e) {
+              logger.error('DB reset failed:', e);
+              Alert.alert('Reset DB', 'Failed. See logs for details.');
+            }
+          })();
+        },
+      },
+    ]);
   };
 
   return (
@@ -56,6 +80,14 @@ export default function Settings(props: {
             icon="bug-outline"
             title="Quereus Debug"
             onPress={runDebugStub}
+          />
+        ) : null}
+
+        {__DEV__ ? (
+          <Row
+            icon="trash-outline"
+            title="Reset DB (dev)"
+            onPress={resetDb}
           />
         ) : null}
       </View>

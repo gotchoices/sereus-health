@@ -39,6 +39,8 @@ export async function ensureDatabaseInitialized(): Promise<void> {
         schemaExists = false;
       }
 
+      logger.debug(`Schema exists: ${schemaExists ? 'yes' : 'no'}`);
+
       if (!schemaExists) {
         logger.info('First-time setup: applying schema...');
         await applySchema(db);
@@ -49,19 +51,18 @@ export async function ensureDatabaseInitialized(): Promise<void> {
       const countRow = await countStmt.get();
       await countStmt.finalize();
       const typeCount = (countRow?.count as number) || 0;
+      logger.debug(`Seed guard: types.count=${String(typeCount)}`);
 
+      const didSeed = typeCount === 0;
       if (typeCount === 0) {
         logger.info('Applying production seeds...');
         await applyProductionSeeds(db);
       }
 
-      if (__DEV__ && applySampleData) {
-        // Best-effort: sample data may violate uniqueness if re-run
-        try {
-          await applySampleData(db);
-        } catch (e) {
-          logger.debug('Sample data not applied (likely already present):', e);
-        }
+      // Dev-only: sample data should be idempotent. For now, only apply it on first-time seed to avoid duplicates.
+      if (__DEV__ && applySampleData && didSeed) {
+        logger.info('Applying sample data (dev, first-run only)...');
+        await applySampleData(db);
       }
 
       // Optional verification (keep low-noise; helps spot schema/seed issues during dev)

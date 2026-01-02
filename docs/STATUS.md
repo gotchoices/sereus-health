@@ -179,6 +179,15 @@ Goal: validate persistence + stability using a real persistent store backend.
   - [ ] create entry → restart app → entry still present
   - [ ] update entry → restart app → update persists
   - [ ] delete entry → restart app → deletion persists
+- [ ] **Seeding & catalog integrity (idempotency)**:
+  - [ ] **No duplicate seeds across launches**: cold start app 3x; `types/categories/items/bundles` counts remain stable (no growth).
+  - [ ] **Seed guard is correct**: confirm the “should we seed?” check reads from a persistent table and is not fooled by initialization order or schema detection (e.g. `schema()` vs `COUNT(*)`).
+  - [ ] **Constraints actually enforced**:
+    - [ ] `types.name` unique constraint prevents duplicates
+    - [ ] `(type_id, name)` uniqueness prevents duplicate categories per type
+    - [ ] `(category_id, name)` uniqueness prevents duplicate items per category
+    - [ ] Any observed duplicates have a clear explanation (e.g., different IDs inserted; constraints missing; seeds not matching constraints).
+  - [ ] **Index creation is idempotent**: verify schema/apply does not re-create indexes or tables on every launch.
 - [ ] **Durability / recovery behavior**:
   - [ ] decide + implement UX if DB is not openable or appears corrupted (safe reset vs recover vs read-only mode).
 - [ ] **Performance sanity**:
@@ -228,7 +237,7 @@ Goal: implement a React Native KV-store backend (LevelDB) that can be consumed b
   - [x] Add dependency on `@quereus/store-rnleveldb`
   - [x] Switch Quereus schema default module to `store` for persistent mode (via pragma)
   - [x] Ensure first-run schema creation and seed logic runs on persistent tables
-  - [ ] Add a dev-only “Reset DB” action (optional) to delete the store path for debugging
+  - [x] Add a dev-only “Reset DB” action (optional) to delete the store path for debugging (Settings screen)
 
 **Open questions (answer one at a time before coding)**
 - [ ] Which RN LevelDB package + adapter is the target, and what APIs does it expose for iteration + batching?
