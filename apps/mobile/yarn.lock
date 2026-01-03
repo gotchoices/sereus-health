@@ -2170,6 +2170,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-documents/picker@npm:^12.0.0":
+  version: 12.0.0
+  resolution: "@react-native-documents/picker@npm:12.0.0"
+  peerDependencies:
+    react: "*"
+    react-native: ">=0.79.0"
+  checksum: 10c0/2dd824e75adea2bcd1ef155c314e3c6837c45608b5618352589e2a38a8da32eb1e54eca96a1d941940470892a4f8f740e5f9cc591d773f93878ea68ccc0c1fac
+  languageName: node
+  linkType: hard
+
 "@react-native/assets-registry@npm:0.82.1":
   version: 0.82.1
   resolution: "@react-native/assets-registry@npm:0.82.1"
@@ -6930,6 +6940,7 @@ __metadata:
     "@react-native-community/cli-platform-android": "npm:20.0.0"
     "@react-native-community/cli-platform-ios": "npm:20.0.0"
     "@react-native-community/datetimepicker": "npm:^8.5.0"
+    "@react-native-documents/picker": "npm:^12.0.0"
     "@react-native/babel-preset": "npm:0.82.1"
     "@react-native/eslint-config": "npm:0.82.1"
     "@react-native/metro-config": "npm:0.82.1"

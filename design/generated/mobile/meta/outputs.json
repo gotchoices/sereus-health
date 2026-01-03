@@ -166,10 +166,10 @@
         "design/specs/mobile/global/ui.md"
       ],
       "depHashes": {
-        "design/generated/mobile/screens/BackupRestore.md": "43a3355b4835d87c3c4d43ecf4db05750da4f50f045bba009b388d344579df86",
-        "design/specs/mobile/screens/backup-restore.md": "f9d6df15d2d9e4c6b327628b20cc92d9dc7113c1128e346b32469d249970772f",
+        "design/generated/mobile/screens/BackupRestore.md": "d32788545461eaf3634438915253ea06ed1593ce6c8f4fe03efc9602e25f5e13",
+        "design/specs/mobile/screens/backup-restore.md": "b651571e48c48c26cb23e013f323f1649c0ae62736bb5b311a1ed41f9afe923b",
         "design/specs/mobile/screens/index.md": "56cecc1b2187cb76771d54621493b7911f0a6bc07b77dac3d69e3fdeccf5e219",
-        "design/specs/mobile/navigation.md": "37b2ab1a49c6a0f19f816f8b4e8ae0d3c8a4c4d5b6f32fd37efb7ab01f99c2aa",
+        "design/specs/mobile/navigation.md": "88d4284cabc21f85dcb613883deccc8af07e13ee7d8ca1996029425c146827b4",
         "design/specs/mobile/global/general.md": "62f9472014fd455dcd4020c164deaf7cd424cc4b78dcced623243dce81699b04",
         "design/specs/mobile/global/ui.md": "f019c3e656ad99e35d477d2becda60a2292459265998eeff53b648051d2a7e08"
       }

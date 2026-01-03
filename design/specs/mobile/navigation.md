@@ -30,8 +30,8 @@ Sitemap (high-level)
       - Tap bundle: navigate to `EditBundle` to edit that bundle.
       - "Add" button (Items view): navigate to `EditItem` in create mode.
       - "Add" button (Bundles view): navigate to `EditBundle` in create mode.
-      - Export: export catalog to CSV.
-      - Import: import catalog from CSV/YAML.
+      - Export: export catalog to YAML.
+      - Import: import catalog from CSV/YAML (auto-detected).
   - `EditItem` (push from `ConfigureCatalog`)  
     - Create or edit a catalog item.
     - Create/edit an item.
@@ -47,7 +47,7 @@ Sitemap (high-level)
       - Backup & Restore → push to `BackupRestore`
       - (Future: AI Agent, Preferences, About)
   - `BackupRestore` (push from `Settings`)
-    - Export/import full backup (and restore) from Settings.
+    - Export full backup and import backup from Settings (optionally clear-first for replace semantics).
   - `SereusConnections` (push from `Settings`)  
     - View and manage Sereus cadre and guest nodes.
     - Actions: Scan QR to add node, view node status, remove nodes.

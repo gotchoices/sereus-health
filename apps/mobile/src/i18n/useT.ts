@@ -165,12 +165,12 @@ const en: Dict = {
   'backupRestore.export': 'Export Backup',
   'backupRestore.import': 'Import / Restore',
   'backupRestore.dangerZone': 'Danger zone (dev)',
-  'backupRestore.resetDbDev': 'Reset DB (dev)',
-  'backupRestore.resetDbTitle': 'Reset DB',
-  'backupRestore.resetDbConfirm': 'This will delete all local database files. Continue?',
-  'backupRestore.resetDbAction': 'Reset',
-  'backupRestore.resetDbDone': 'Done. Fully close and relaunch the app to re-seed.',
-  'backupRestore.resetDbFailed': 'Failed. See logs for details.',
+  'backupRestore.clearData': 'Clear Local Data',
+  'backupRestore.clearDataTitle': 'Clear Local Data',
+  'backupRestore.clearDataConfirm': 'This will delete all your data. Continue?',
+  'backupRestore.clearDataAction': 'Clear',
+  'backupRestore.clearDataDone': 'Done. Fully close and relaunch the app.',
+  'backupRestore.clearDataFailed': 'Failed. See logs for details.',
 };
 
 export function useT() {

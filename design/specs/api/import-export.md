@@ -7,7 +7,7 @@ Screen-specific placement and UI affordances belong in the relevant screen specs
 ## Supported exports
 
 - **Log export**: CSV (scope depends on the screen: filtered subset vs all)
-- **Catalog export**: CSV (full taxonomy + quantifier definitions + bundles)
+- **Catalog export**: YAML (full taxonomy + quantifier definitions + bundles)
 - **Backup export**: YAML (everything: catalog + logs + settings)
 
 ## CSV contracts (stable headers)
@@ -19,8 +19,26 @@ Screen-specific placement and UI affordances belong in the relevant screen specs
 
 ### Catalog CSV
 
+Catalog CSV is **not the primary portability format** (YAML is), because CSV is an awkward fit for nested catalog structures (bundles, per-item quantifiers) and versioning.
+
+If/when we add a catalog CSV export, it is intended for **external analysis/editing** rather than perfect round-trip import fidelity.
+
+If implemented:
 - **Header**: `type,category,item,quantifierName,quantifierUnit,quantifierMin,quantifierMax`
 - **Model**: one row per *item × quantifier*; items without quantifiers have empty quantifier columns
+
+## Catalog contract (YAML)
+
+Catalog YAML is the canonical, round-trippable catalog portability format.
+
+- File contains:
+  - `version` (integer)
+  - `exportedAtUtc` (ISO8601)
+  - `catalog`:
+    - `types[]`
+    - `categories[]`
+    - `items[]` (with optional `quantifiers[]`)
+    - `bundles[]` (with members)
 
 ## Backup contract (YAML)
 
@@ -39,6 +57,13 @@ Screen-specific placement and UI affordances belong in the relevant screen specs
   - counts: add / update / skip
   - top errors/warnings (if any)
   - user can confirm or cancel
+
+### Import modes (backup)
+
+For **full backup** imports, the app should support two user-intent modes:
+
+- **Merge (default)**: idempotent import into existing local data (safe to re-run; does not duplicate).
+- **Replace (optional)**: clear local data first, then import (so the device matches the backup more closely).
 
 ### Idempotency / matching rules
 
@@ -61,6 +86,11 @@ Imports should be idempotent (re-importing should not multiply data).
 
 ## Sharing
 
-- After export, offer the system share sheet (Files, cloud providers, email, etc.).
+After export:
+1. **Save to user-accessible storage** (Downloads on Android, Documents on iOS)
+2. **Then** offer the system share sheet (cloud providers, email, etc.)
+3. Show confirmation with file location
+
+Rationale: Users expect "export" to mean "save to my device", not just "temporarily cached until shared elsewhere". User always has a local copy, even if they cancel the share.
 
 
