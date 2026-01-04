@@ -128,11 +128,17 @@ This file tracks open design questions for Sereus Health so they can be resolved
 - [ ] **GraphCreate screen spec**: Create `specs/screens/GraphCreate.md` detailing: item picker UI (reuse SelectionList?), date range picker, graph name input, and generate flow.
 - [ ] **Notification/reminder system spec**: Create `specs/screens/Reminders.md` or add to `specs/global/general.md`: notification permissions, scheduling logic, deep link handling when tapping notification, background task requirements.
 - [x] **Sereus node permissions model**: Specify what data each type of node (cadre vs guest) can read/write, and whether Bob can scope which parts of his history or configuration are shared with which nodes.  
-  - Answered (initial model): Bob, as owner of his database, ultimately controls permissions on his own data. By default, guest nodes such as his doctor’s node are allowed to **read** his data so they can review his progress; stories do not rely on guests writing to Bob’s data. Finer-grained read/write controls can be added later via schema-level permissions without changing current stories.
+  - Answered (initial model): Bob, as owner of his database, ultimately controls permissions on his own data. By default, guest nodes such as his doctor's node are allowed to **read** his data so they can review his progress; stories do not rely on guests writing to Bob's data. Finer-grained read/write controls can be added later via schema-level permissions without changing current stories.
 - [x] **Settings screen structure**: Decided: `Settings` root screen with list of sections (Sereus, Reminders, future: AI/Preferences/About). Each section pushes to dedicated screen. Next: Update `specs/navigation.md` and create screen specs.
 - [ ] **Settings screen spec**: Create `specs/screens/Settings.md` detailing: section list layout, future extensibility (AI, Preferences, Data Management, About).
 - [ ] **SereusConnections screen spec**: Create `specs/screens/SereusConnections.md` detailing: QR scanning flow, node list display (cadre vs guest), node management (rename, status, remove), and add-node prompts.
 - [x] **Sync & conflict resolution**: Describe how real-time sync behaves when multiple nodes update the same data (e.g., tie-breaking strategy, eventual consistency expectations, offline edits).
+- [ ] **Seed data strategy & import interaction**: Decide:
+  - Should the app insert seed catalog entries at first run, or should it instead provide a link/button to download starter catalogs from sereus.org (or other source)?
+  - When DB is cleared (via "Clear Local Data"), should it reset to empty or re-establish seeds?
+  - Clarify expected behavior in this workflow: (1) user imports/gets seed catalog entries, (2) user modifies seeds (comments, renames), (3) user exports backup, (4) user clears DB (which re-seeds), (5) user imports from backup. What happens to the modified seed entries (duplicates, overwrites, merges)?
+  - Should import preview screen offer more granular visibility (e.g., show which specific entries will be inserted vs updated, not just category counts)?
+  - Should import preview offer per-category checkboxes to selectively enable/disable inserts or updates (e.g., "import catalog but not logs", "apply updates but skip new inserts")?
 
 ### Schema & Data Model
 

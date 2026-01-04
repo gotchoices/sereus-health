@@ -15,9 +15,9 @@
     "test": "jest"
   },
   "dependencies": {
-    "@quereus/plugin-store": "portal:../../../quereus/packages/quereus-plugin-store",
-    "@quereus/quereus": "portal:../../../quereus/packages/quereus",
-    "@quereus/store-rn": "portal:../../../quereus/packages/quereus-store-rn",
+    "@quereus/plugin-react-native-leveldb": "^0.1.5",
+    "@quereus/quereus": "^0.9.0",
+    "@quereus/store": "^0.3.10",
     "@react-native-async-storage/async-storage": "^2.1.0",
     "@react-native-community/datetimepicker": "^8.5.0",
     "@react-native-documents/picker": "^12.0.0",
@@ -32,7 +32,7 @@
     "react-native-safe-area-context": "^5.5.2",
     "react-native-share": "^11.0.4",
     "react-native-vector-icons": "^10.0.0",
-    "rn-leveldb": "portal:../../../rn-leveldb"
+    "rn-leveldb": "^3.11.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

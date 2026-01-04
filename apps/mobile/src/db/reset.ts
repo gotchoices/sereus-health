@@ -5,7 +5,8 @@ import { resetInitializationState } from './init';
 
 const logger = createLogger('DB Reset');
 
-const BASE = 'quereus';
+// Must match the `databaseName` passed when registering the LevelDB plugin.
+const DATABASE_NAME = 'quereus';
 const MAIN_TABLES = [
   'types',
   'categories',
@@ -29,7 +30,10 @@ export async function resetDatabaseForDev(): Promise<void> {
   await closeDatabase();
   resetInitializationState();
 
-  const dbNames: string[] = [formatCatalogDbName(BASE), ...MAIN_TABLES.map((t) => formatDbName(BASE, 'main', t))];
+  const dbNames: string[] = [
+    formatCatalogDbName(DATABASE_NAME),
+    ...MAIN_TABLES.map((t) => formatDbName(DATABASE_NAME, 'main', t)),
+  ];
 
   for (const name of dbNames) {
     try {
@@ -44,15 +48,15 @@ export async function resetDatabaseForDev(): Promise<void> {
 }
 
 function formatCatalogDbName(basePath: string): string {
-  return `${safeName(basePath)}__catalog__`;
+  // Matches @quereus/plugin-react-native-leveldb provider naming:
+  // `${databaseName}.__catalog__`
+  return `${basePath}.__catalog__`.toLowerCase();
 }
 
 function formatDbName(basePath: string, schemaName: string, tableName: string): string {
-  return `${safeName(basePath)}__${safeName(schemaName)}__${safeName(tableName)}`;
-}
-
-function safeName(input: string): string {
-  return input.trim().toLowerCase().replace(/[^a-z0-9._-]+/g, '_');
+  // Matches @quereus/plugin-react-native-leveldb provider naming:
+  // `${databaseName}.${schemaName}.${tableName}`
+  return `${basePath}.${schemaName}.${tableName}`.toLowerCase();
 }
 
 

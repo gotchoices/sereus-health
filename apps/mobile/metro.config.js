@@ -16,8 +16,6 @@ const config = {
     path.resolve(__dirname, '../..'),
     // Watch the workspace root so Metro can follow monorepo symlinks (e.g. portal deps).
     path.resolve(__dirname, '../../..'),
-    // Watch Quereus source (portal dependency lives outside `health/`).
-    path.resolve(__dirname, '../../../quereus'),
   ],
   resolver: {
     unstable_enableSymlinks: true,
