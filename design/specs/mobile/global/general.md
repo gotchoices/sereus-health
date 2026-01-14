@@ -15,9 +15,9 @@ Cross-cutting behaviors and assumptions that apply across multiple screens and f
 
 All entity/table details (taxonomy, bundles, logging, quantifiers) live in:
 
-- `design/specs/schema/taxonomy.md`
-- `design/specs/schema/bundles.md`
-- `design/specs/schema/logging.md`
+- `design/specs/domain/taxonomy.md`
+- `design/specs/domain/bundles.md`
+- `design/specs/domain/logging.md`
 
 This file should not restate schema.
 

@@ -1,6 +1,6 @@
 # Project Spec
 
-This document captures key decisions for the project.
+Key decisions for the project.
 
 ## Purpose
 
@@ -26,6 +26,12 @@ Primary persona: Health-conscious individual managing chronic conditions, tracki
 
 Mobile: Native app for quick daily logging, graphs, on-device storage.
 Web: Responsive interface for users and healthcare professionals to review/analyze patient data.
+
+## Identity (publisher + app id)
+
+- **Publisher id (reverse-DNS domain)**: `org.sereus`
+- **Preferred app name**: `health`
+- **Default mobile app id (reverse-DNS)**: `org.sereus.health`
 
 ## Apps
 
@@ -57,16 +63,17 @@ List the apps to be built:
 
 **How will data be managed?**
 
-- [x] Sereus Fabric protocol
-- [x] Sereus in-memory only (no persistence) as debugging/mock fallback
+- [x] Sereus Fabric stack (quereus/optimystic)
+- [x] Quereus in-memory (no persistence) for debugging
+- [x] Quereus store (persistence) for
 - [x] Offline support required (primary use case)
-- [x] Real-time updates needed (across user's cadre and authorized nodes)
+- [x] Real-time updates/sync (across user's cadre and authorized nodes)
 
 ### Data modes (production vs mock)
 
-- **Production mode**: uses the real local storage engine (target: **Quereus**) and persists user data.
+- **Production mode**: uses the real local storage engine quereus/optimystic.
+- **Debug mode**: may configure quereus for in-memory or store for various test situations.
 - **Mock mode (development/scenarios)**: uses versioned mock JSON under `mock/data/*` and supports deep-link `variant=happy|empty|error` for UI development and scenario screenshots.
-- **Contract**: `variant` is **mock-only**; production data interfaces must not accept or depend on `variant`.
 
 **Backend:**
 
@@ -76,7 +83,7 @@ List the apps to be built:
 ## Notes
 
 Healthcare data requires production-grade quality: data integrity.
-HIPAA considerations are minimized since all data is kept by the patient himself.
+HIPAA considerations are minimized since all data is kept/managed by the patient.
 
 Brand assets (logo / icon artwork) live under `docs/images/`. See `docs/APP_ICONS.md` for how each app integrates them.
 

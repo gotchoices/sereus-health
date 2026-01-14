@@ -6,8 +6,8 @@ Allow the user to export a full backup of their data and import it later (e.g., 
 
 ## Behaviors
 
-- **Export backup**: exports a full backup file (YAML) as defined in `design/specs/api/import-export.md`.
-- **Import backup**: selects a backup file and imports what is present, per `design/specs/api/import-export.md`.
+- **Export backup**: exports a full backup file (YAML) as defined in `design/specs/domain/import-export.md`.
+- **Import backup**: selects a backup file and imports what is present, per `design/specs/domain/import-export.md`.
   - Import must be **idempotent** (re-import does not duplicate).
   - Import should support **Merge (default)** and an optional **Replace (clear-first)** mode for full backups.
 

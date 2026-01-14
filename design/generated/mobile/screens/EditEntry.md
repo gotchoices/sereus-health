@@ -16,9 +16,9 @@ dependsOn:
   - design/specs/mobile/navigation.md
   - design/specs/mobile/global/general.md
   - design/specs/mobile/global/ui.md
-  - design/specs/schema/taxonomy.md
-  - design/specs/schema/bundles.md
-  - design/specs/schema/logging.md
+  - design/specs/domain/taxonomy.md
+  - design/specs/domain/bundles.md
+  - design/specs/domain/logging.md
 ---
 
 # EditEntry Screen Consolidation

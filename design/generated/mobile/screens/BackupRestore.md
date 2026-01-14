@@ -6,7 +6,7 @@ needs:
 dependsOn:
   - design/stories/mobile/09-backup.md
   - design/specs/mobile/screens/backup-restore.md
-  - design/specs/api/import-export.md
+  - design/specs/domain/import-export.md
   - design/specs/mobile/navigation.md
   - design/specs/mobile/global/general.md
   - design/specs/mobile/global/ui.md
@@ -48,7 +48,7 @@ Display basic backup status:
 
 **Export Backup**
 - Button: prominent, primary style
-- Action: exports a full YAML backup file per `design/specs/api/import-export.md`
+- Action: exports a full YAML backup file per `design/specs/domain/import-export.md`
 - After export:
   1. Save to user-accessible storage (Downloads on Android, Documents on iOS)
   2. Offer system share sheet (cloud providers, email, etc.)
@@ -69,7 +69,7 @@ Display basic backup status:
   4. User confirms or cancels
   5. If confirmed, apply import
   6. Show summary (added/updated/skipped + any failures)
-- Must be idempotent per `design/specs/api/import-export.md`
+- Must be idempotent per `design/specs/domain/import-export.md`
 - Rationale: Story 09 shows Alice importing Bob's catalog without duplicates, and Bob re-importing on a new phone
 
 #### Danger Zone (dev-only or explicit user action)
@@ -99,7 +99,7 @@ BackupRestore interacts with:
   - `lastBackupAt` (timestamp or null)
   - `modifiedSinceBackup` (boolean)
 - **Export/import logic**:
-  - See `design/specs/api/import-export.md` for YAML contracts and idempotency rules
+  - See `design/specs/domain/import-export.md` for YAML contracts and idempotency rules
   - Import must detect format (CSV/YAML/JSON) and parse accordingly
   - Import preview requires a "dry-run" pass over the data
 
