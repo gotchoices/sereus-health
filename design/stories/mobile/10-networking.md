@@ -1,4 +1,4 @@
-# User Story: Exporting the Data
+# User Story: Networking the Data
 
 ## Story Overview
 I want to be able to network my data with my healthcare professionals and several other trusted parties.  This will give me better safety for my data and will allow real-time access to my data.

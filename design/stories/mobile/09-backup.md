@@ -36,8 +36,8 @@ Context: Bob has been [using the app daily](02-daily.md) and has built up a usef
 
 ## Acceptance Criteria
 - [ ] User can export catalog to YAML
-- [ ] User can import catalog from CSV or YAML (auto-detected, idempotent)
+- [ ] User can import catalog from the canonical app format (YAML or JSON; idempotent)
 - [ ] User can export full backup to YAML
-- [ ] User can import backup (idempotent); optional clear-first to fully replace local data
+- [ ] User can import backup from the canonical app format (YAML or JSON; idempotent); optional clear-first to fully replace local data
 - [ ] Import shows preview before committing
 

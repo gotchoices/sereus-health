@@ -1,1 +1,1 @@
-../../appeus/user-guides/stories.md
+../../../appeus/user-guides/stories.md
