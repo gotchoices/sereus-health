@@ -65,8 +65,8 @@ Manage the catalog of items, categories, and bundles that Bob uses when logging 
 ## Import / Export (data portability)
 
 - Expose **Export Catalog** and **Import Catalog** actions from ConfigureCatalog.
-- Export format: CSV per `design/specs/domain/import-export.md`.
-- Import supports CSV/YAML and is idempotent per `design/specs/domain/import-export.md`.
+- Export format: YAML per `design/specs/domain/import-export.md`.
+- Import supports the canonical app format (YAML/JSON) and is idempotent per `design/specs/domain/import-export.md`.
 
 ## Data Requirements
 
@@ -106,7 +106,7 @@ interface CatalogBundle {
 ## Notes
 
 - Bundles are type-specific (cannot mix Activity items with Outcome items)
-- When editing items/bundles already used in history, follow taxonomy lifecycle rules (see general.md)
+- When editing items/bundles already used in history, follow taxonomy editing rules in `design/specs/domain/rules.md`
 - Categories are not directly visible in list; they appear as metadata on item cards
 - Consider future enhancement: category filtering chips within a type
 

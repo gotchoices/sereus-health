@@ -1,42 +1,18 @@
 ## Sereus Health – General (Mobile)
 
-Cross-cutting behaviors and assumptions that apply across multiple screens and features.
+Cross-cutting behaviors that apply across multiple screens and features.
 
-### Data, Sync, and Ownership
+### First-run / empty database posture
 
-- **Source of truth**: persisted app data lives in the underlying data layer and is treated as authoritative; UI state is a cache/interaction layer.
-- **Mock mode** (development/scenarios): the app may run against `mock/data/*` using deep-link `variant=happy|empty|error`; this must not leak into production data interfaces.
-- **Sync**: replication/conflict handling is owned by the underlying sync layer; the app should not invent per-record conflict UI for MVP.
-- **Ownership & permissions (initial model)**:
-  - Bob controls access to his data.
-  - Guest nodes (e.g., doctor) are assumed **read-only** for MVP unless a screen spec states otherwise.
-
-### Schema source of truth
-
-All entity/table details (taxonomy, bundles, logging, quantifiers) live in:
-
-- `design/specs/domain/taxonomy.md`
-- `design/specs/domain/bundles.md`
-- `design/specs/domain/logging.md`
-
-This file should not restate schema.
-
-### Taxonomy lifecycle (UX rules)
-
-When a user edits a taxonomy element that is already referenced by historical log entries:
-
-- **Ask scope**: “Apply to all existing entries” vs “Future only”.
-- **Future only**: create a new definition for future use; existing entries remain attached to the old definition.
-- **Deletion**: if in use, prefer “retire/hide from future use” over hard delete (and communicate impact clearly).
+- First-run may start with an **empty database** (no seeded catalog rows and no log entries).
+- When empty, primary screens should present a clear “Get started” path:
+  - import a starter catalog (e.g. from `health.sereus.org`), or
+  - create the first catalog entries manually.
 
 ### Time and timestamps (UX rules)
 
 - **Store** timestamps in UTC.
 - **Display/edit** timestamps in the device’s local timezone/locale; convert back to UTC for storage.
-
-### Graphing (until screen specs exist)
-
-- Graphs are **ad-hoc** in MVP (generated from manual item selection) and **not persisted across app restarts** unless a future screen spec says otherwise.
 
 ### Shared UI conventions
 
@@ -54,17 +30,10 @@ For screens that expose a toggleable search/filter bar:
 - When hidden, the **typed filter value is retained**, but the **list is not filtered**.
 - Re-opening the filter input restores the previous value and **re-applies** filtering (until the value is cleared).
 
-### Theming
-
-- Default to **system light/dark**; layouts must remain legible in both.
-
 ### Date/time picker guidance
 
 - Use platform-native date/time picker UX; keep picker presentation consistent (modal/inline with confirm/cancel).
 
-### i18n and iconography
-
-- All user-facing strings go through i18n from day one (e.g., `useT()`), not hard-coded literals.
-- Prefer self-explanatory icons where appropriate; otherwise pair icons with labels and accessible descriptions.
-
-
+### AI Assistant
+ The assistant UX is implemented as a reusable component: see [`mobile/components/assistant.md`](../components/assistant.md).
+- Initial implementation: **screen-only**, accessible from the global menu (bottom tab bar), not an overlay.

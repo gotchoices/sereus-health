@@ -50,9 +50,11 @@ Catalog YAML is the canonical, round-trippable catalog portability format.
   - `settings` (app settings; may be empty for now)
 - Import should apply **only what is present** (partial backups are allowed).
 
-## Import behavior (all formats)
+## Import behavior (canonical formats)
 
-- **Format detection**: by file extension (csv/yaml/yml/json). Reject unknown.
+- Direct import supports only the canonical app formats: **YAML** (`.yaml`/`.yml`) and **JSON** (`.json`).
+- Foreign formats (e.g., spreadsheets) should be handled via the assistant, which proposes canonical data/actions for preview/approval.
+- **Format detection**: by file extension (yaml/yml/json). Reject unknown.
 - **Preview** before commit:
   - counts: add / update / skip
   - top errors/warnings (if any)

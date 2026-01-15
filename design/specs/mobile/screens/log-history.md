@@ -39,5 +39,5 @@ Each log entry card has a compact 3-line layout:
 - Expose **Export** and **Import** actions from LogHistory.
 - Export supports **filtered subset** (if a filter is active) and **all entries**.
 - Export format: CSV per `design/specs/domain/import-export.md`.
-- Import supports CSV/YAML and is idempotent per `design/specs/domain/import-export.md`.
+- Import supports the canonical app format (YAML/JSON) and is idempotent per `design/specs/domain/import-export.md`.
 

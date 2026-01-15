@@ -12,7 +12,7 @@ Sitemap (high-level)
       - Clone: clone a selected entry (navigates to `EditEntry` in `clone` mode with the source entryId).
       - Graph icon: navigate to `Graphs` screen.
       - Export: export log entries to CSV (filtered or all).
-      - Import: import historical log entries from CSV/YAML.
+      - Import: import historical log entries from the canonical app format (YAML/JSON).
   - `EditEntry` (push from `LogHistory`)  
     - Add/edit/clone a single entry.
   - `Graphs` (push from `LogHistory`)  
@@ -31,13 +31,18 @@ Sitemap (high-level)
       - "Add" button (Items view): navigate to `EditItem` in create mode.
       - "Add" button (Bundles view): navigate to `EditBundle` in create mode.
       - Export: export catalog to YAML.
-      - Import: import catalog from CSV/YAML (auto-detected).
+      - Import: import catalog from the canonical app format (YAML/JSON).
   - `EditItem` (push from `ConfigureCatalog`)  
     - Create or edit a catalog item.
     - Create/edit an item.
   - `EditBundle` (push from `ConfigureCatalog`)  
     - Create or edit a bundle.
     - Create/edit a bundle.
+
+- ASSISTANT Tab (screen)
+  - `Assistant` (root)
+    - Assistant UI for proposing actions (catalog/log/import/reminders) with preview-before-commit.
+    - If not configured, the screen shows assistant setup (provider + API key) as described in stories.
 
 - SETTINGS Tab (stack)
   - `Settings` (root)  
@@ -70,6 +75,7 @@ Deep Links
   - `health://screen/BackupRestore`
   - `health://screen/SereusConnections`
   - `health://screen/Reminders`
+  - `health://screen/Assistant`
 
 - Common query parameters:
   - `variant`: optional mock/scenario variant (e.g., `happy`, `empty`, `error`), used in mock mode only.
@@ -110,6 +116,7 @@ Route Options
 - BackupRestore: title "Backup & Restore"
 - SereusConnections: title "Sereus Connections"
 - Reminders: title "Reminders"
+- Assistant: title "Assistant"
 
 Back Navigation
 - Within each tab's stack, the "back" affordance (header back button or system back) should pop to the previous screen in that stack.  
