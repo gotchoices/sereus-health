@@ -3,8 +3,8 @@
  *
  * Persistent store-backed Quereus via `@quereus/plugin-react-native-leveldb`.
  */
-import { Database, registerPlugin } from '@quereus/quereus';
-import leveldbPlugin from '@quereus/plugin-react-native-leveldb/plugin';
+import { Database, enableLogging, registerPlugin } from '@quereus/quereus';
+import { plugin as leveldbPlugin } from '@quereus/plugin-react-native-leveldb';
 import { LevelDB, LevelDBWriteBatch } from 'rn-leveldb';
 import { createLogger } from '../util/logger';
 
@@ -22,12 +22,17 @@ export async function getDatabase(): Promise<Database> {
 
   dbInitPromise = (async () => {
     const db = new Database();
+    if (__DEV__) {
+      // Quereus built-in debug logging (uses `debug` namespaces).
+//      enableLogging('quereus:*', console.log.bind(console));
+    }
 
     await registerPlugin(db, leveldbPlugin, {
       databaseName: 'quereus',
       moduleName: 'store',
-      openFn: (name, createIfMissing, errorIfExists) => new LevelDB(name, createIfMissing, errorIfExists),
-      WriteBatch: LevelDBWriteBatch,
+      openFn: ((name: string, createIfMissing: boolean, errorIfExists: boolean) =>
+        new LevelDB(name, createIfMissing, errorIfExists)) as unknown as any,
+      WriteBatch: LevelDBWriteBatch as unknown as any,
     });
 
     dbInstance = db;

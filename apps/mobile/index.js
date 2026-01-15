@@ -10,8 +10,25 @@ import 'fast-text-encoding';
 
 // Polyfill for structuredClone (needed by Quereus in React Native)
 import structuredClone from '@ungap/structured-clone';
-if (typeof globalThis.structuredClone === 'undefined') {
-  globalThis.structuredClone = structuredClone;
+if (typeof global.structuredClone === 'undefined') {
+  global.structuredClone = structuredClone;
+}
+
+// Polyfill for Symbol.asyncIterator (required for async iterables / for-await-of in some RN/Hermes builds)
+// Quereus isolation uses `Symbol.asyncIterator` explicitly when merging streams.
+if (typeof Symbol !== 'undefined' && typeof Symbol.asyncIterator === 'undefined') {
+  try {
+    Object.defineProperty(Symbol, 'asyncIterator', {
+      // Use the global symbol registry so independent polyfills converge on the same symbol.
+      value: Symbol.for('Symbol.asyncIterator'),
+      configurable: false,
+      enumerable: false,
+      writable: false,
+    });
+  } catch {
+    // Best-effort fallback for runtimes that disallow defineProperty on Symbol.
+    Symbol.asyncIterator = Symbol.for('Symbol.asyncIterator');
+  }
 }
 
 import { AppRegistry } from 'react-native';

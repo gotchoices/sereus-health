@@ -1928,20 +1928,28 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@quereus/plugin-react-native-leveldb@npm:^0.1.5":
-  version: 0.1.5
-  resolution: "@quereus/plugin-react-native-leveldb@npm:0.1.5"
+"@quereus/isolation@portal:../../../quereus/packages/quereus-isolation::locator=mobile%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@quereus/isolation@portal:../../../quereus/packages/quereus-isolation::locator=mobile%40workspace%3A."
   peerDependencies:
-    "@quereus/quereus": ^0.9.0
-    "@quereus/store": ^0.3.10
-    rn-leveldb: ^3.11.0
-  checksum: 10c0/ff8ce39eb0517ac5b0eaca2613f0aa2621bf38392b7cd6bb98b4473f502811eac5f5899dc0ddb1acbba46de356e9b14575a74b3626f9f430156b7788d6018060
+    "@quereus/quereus": "workspace:^"
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@quereus/quereus@npm:^0.9.0":
-  version: 0.9.0
-  resolution: "@quereus/quereus@npm:0.9.0"
+"@quereus/plugin-react-native-leveldb@portal:../../../quereus/packages/quereus-plugin-react-native-leveldb::locator=mobile%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@quereus/plugin-react-native-leveldb@portal:../../../quereus/packages/quereus-plugin-react-native-leveldb::locator=mobile%40workspace%3A."
+  peerDependencies:
+    "@quereus/isolation": "workspace:^"
+    "@quereus/quereus": "workspace:^"
+    "@quereus/store": "workspace:^"
+    rn-leveldb: ^3.11.0
+  languageName: node
+  linkType: soft
+
+"@quereus/quereus@portal:../../../quereus/packages/quereus::locator=mobile%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@quereus/quereus@portal:../../../quereus/packages/quereus::locator=mobile%40workspace%3A."
   dependencies:
     debug: "npm:^4.4.1"
     fast-json-patch: "npm:^3.1.1"
@@ -1949,18 +1957,17 @@ __metadata:
     moat-maker: "npm:^2.2.0"
     temporal-polyfill: "npm:^0.3.0"
     uint8arrays: "npm:^5.1.0"
-  checksum: 10c0/890501d639ab1d0307a88601ccf0574cd191777f33bd877826ca22bf0adf169101beb483380e399e8f1feecdb668e14c43ee8ee104f941df3f010af2c49d4ce3
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@quereus/store@npm:^0.3.10":
-  version: 0.3.10
-  resolution: "@quereus/store@npm:0.3.10"
+"@quereus/store@portal:../../../quereus/packages/quereus-store::locator=mobile%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@quereus/store@portal:../../../quereus/packages/quereus-store::locator=mobile%40workspace%3A."
   peerDependencies:
-    "@quereus/quereus": ^0.9.0
-  checksum: 10c0/e571e38b3cc24686ee6fbeaf9ab1c0d40f329f4198b223dba0e8020723c82509412308f94ac7e5bbc86f1085c413414ef3c9bb3da39944171c3dd43c6671fb31
+    "@quereus/isolation": "workspace:^"
+    "@quereus/quereus": "workspace:^"
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "@react-native-async-storage/async-storage@npm:^2.1.0":
   version: 2.2.0
@@ -6864,9 +6871,10 @@ __metadata:
     "@babel/core": "npm:^7.25.2"
     "@babel/preset-env": "npm:^7.25.3"
     "@babel/runtime": "npm:^7.25.0"
-    "@quereus/plugin-react-native-leveldb": "npm:^0.1.5"
-    "@quereus/quereus": "npm:^0.9.0"
-    "@quereus/store": "npm:^0.3.10"
+    "@quereus/isolation": "portal:../../../quereus/packages/quereus-isolation"
+    "@quereus/plugin-react-native-leveldb": "portal:../../../quereus/packages/quereus-plugin-react-native-leveldb"
+    "@quereus/quereus": "portal:../../../quereus/packages/quereus"
+    "@quereus/store": "portal:../../../quereus/packages/quereus-store"
     "@react-native-async-storage/async-storage": "npm:^2.1.0"
     "@react-native-community/cli": "npm:20.0.0"
     "@react-native-community/cli-platform-android": "npm:20.0.0"

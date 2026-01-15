@@ -4,7 +4,7 @@ name: Bundles
 description: Named collections of items (and optionally other bundles) for fast logging.
 ---
 
-Bundles are a user-defined convenience feature. They are **type-specific** (a bundle belongs to exactly one Type).
+Bundles are a user-defined convenience feature. A bundle is specific to exactly one Type.
 
 ## Entities
 

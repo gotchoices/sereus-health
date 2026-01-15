@@ -1,6 +1,8 @@
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 const path = require('path');
 
+const defaultConfig = getDefaultConfig(__dirname);
+
 /**
  * Metro configuration
  * https://reactnative.dev/docs/metro
@@ -17,8 +19,13 @@ const config = {
     // Watch the workspace root so Metro can follow monorepo symlinks (e.g. portal deps).
     path.resolve(__dirname, '../../..'),
   ],
+  transformer: {
+    babelTransformerPath: require.resolve('./metro.transformer.js'),
+  },
   resolver: {
     unstable_enableSymlinks: true,
+    assetExts: defaultConfig.resolver.assetExts.filter(ext => ext !== 'qsql'),
+    sourceExts: [...defaultConfig.resolver.sourceExts, 'qsql'],
     nodeModulesPaths: [
       path.resolve(__dirname, 'node_modules'),
       path.resolve(__dirname, '../../node_modules'),
@@ -27,4 +34,4 @@ const config = {
   },
 };
 
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+module.exports = mergeConfig(defaultConfig, config);
