@@ -24,6 +24,12 @@ Initial preferences:
 
 - Row navigates to `Reminders`
 
+### Starter catalogs
+
+- Row opens a small chooser:
+  - **Import minimal starter categories (built-in)** (see `design/specs/mobile/global/general.md`)
+  - **Browse more catalogs (online)** (see `design/specs/mobile/global/general.md`)
+
 ### Sereus Connections
 
 - Row navigates to `SereusConnections`
@@ -32,7 +38,7 @@ Initial preferences:
 
 - Row navigates to `ApiKeys` (Assistant Setup)
 
-### Backup & Restore
+### Backup & Import
 
 - Row navigates to `BackupRestore`
 
@@ -43,6 +49,7 @@ Initial preferences:
   GotChoices.org
   Sereus.org
   MyCHIPs.org
+  VoteTorrent.org
 
 ## Debug (dev-only)
 - Normally routes to a stub: Not implemented

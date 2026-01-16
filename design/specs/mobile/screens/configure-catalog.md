@@ -1,115 +1,79 @@
 # ConfigureCatalog Screen Spec
 
 ## Purpose
-Manage the catalog of items, categories, and bundles that Bob uses when logging entries. The catalog is organized by Type, with items grouped into categories and optionally organized into bundles.
+Manage the catalog of items, categories, and bundles used for logging. The catalog is organized by Type, with items grouped into categories.
 
-## Layout Structure
+## Layout
 
-```
-┌─────────────────────────────────────────┐
-│ Catalog                      🔍  (+)    │  Header
-├─────────────────────────────────────────┤
-│ [Search filter input]                   │  (visible when 🔍 active)
-├─────────────────────────────────────────┤
-│ Activity │ Condition │ Outcome          │  Type selector (always visible)
-├─────────────────────────────────────────┤
-│ [Items]  [Bundles]                      │  View toggle (filtered by type)
-├─────────────────────────────────────────┤
-│                                         │
-│  Item/Bundle cards...                   │  Scrollable list
-│                                         │
-├─────────────────────────────────────────┤
-│              Bottom tabs                │
-└─────────────────────────────────────────┘
-```
+- Header: title “Catalog”
+  - Search toggle (optional; see `design/specs/mobile/global/general.md` filter rules)
+  - **(+) Add** action
+  - Optional overflow/menu for Import/Export
+- Type selector: visible when at least one Type exists
+- View toggle: `Items | Bundles`
+- Content: scrollable list (items or bundles)
+- Bottom tab bar: see `design/specs/mobile/navigation.md`
 
 ## Key Behaviors
 
-### Type Selector
-- Always visible below header
-- Applies to both Items and Bundles views
-- Selected type highlighted with type-specific color (Activity=blue, Condition=amber, Outcome=green)
+### Type selector
 
-### Items View
-- Shows all items belonging to categories of the selected type
-- Each card displays: name, category, chevron for navigation
-- Tap → navigates to EditItem screen
-- Filter searches by item name or category name
+- Applies to both Items and Bundles views.
+- Shows the available Types (no seeded assumptions).
+- Selecting a Type filters the list below to that Type.
 
-### Bundles View
-- Shows all bundles of the selected type
-- Each card displays: bundle icon, name, item count, chevron
-- Tap → navigates to EditBundle screen
-- Filter searches by bundle name
+### Items view
 
-### Add Button (+)
-- In header, right side
-- When Items tab active → navigates to EditItem with type pre-selected
-- When Bundles tab active → navigates to EditBundle with type pre-selected
+- Shows items for the selected Type (grouped by category implicitly).
+- Each row/card shows: item name, category label, and chevron.
+- Search filters by item name and category name.
 
-### Empty States
-- Items empty: "No items yet"
-  - CTAs:
-    - "Add your first [Type] item"
-    - "Import minimal starter categories (built-in)" (see `design/specs/mobile/global/general.md`)
-    - "Browse more catalogs (online)" (see `design/specs/mobile/global/general.md`)
-- Bundles empty: "No bundles yet" + "Create a bundle to group items together"
+### Bundles view
+
+- Shows bundles for the selected Type.
+- Each row/card shows: bundle icon, bundle name, item count, and chevron.
+- Search filters by bundle name.
+
+### (+) Add
+
+- Located in the header (upper-right).
+- Behavior depends on the active view:
+  - Items → create a new Item (with Type pre-selected)
+  - Bundles → create a new Bundle (with Type pre-selected)
+
+### Empty states (required)
+
+**No Types yet** (catalog is empty):
+
+- Show a “Get started” panel with:
+  - **Import minimal starter categories (built-in)** (see `design/specs/mobile/global/general.md`)
+  - **Browse more catalogs (online)** (see `design/specs/mobile/global/general.md`)
+  - A clear path to create the first Type (via (+) Add, if supported; otherwise via a Settings/Catalog flow)
+
+**Items empty** (for the selected Type):
+
+- Show “No items yet”
+- CTAs:
+  - “Add your first [Type] item”
+  - “Browse more catalogs (online)” (see `design/specs/mobile/global/general.md`)
+
+**Bundles empty** (for the selected Type):
+
+- Show “No bundles yet”
+- CTA: “Create a bundle”
 
 ## Navigation
 
 | Action | Target |
 |--------|--------|
-| Tap item card | EditItem (id=item.id) |
-| Tap bundle card | EditBundle (id=bundle.id) |
-| Tap (+) in Items view | EditItem (type=selectedType) |
-| Tap (+) in Bundles view | EditBundle (type=selectedType) |
+| Tap item card | `EditItem` |
+| Tap bundle card | `EditBundle` |
+| Tap (+) in Items view | `EditItem` (Type pre-selected) |
+| Tap (+) in Bundles view | `EditBundle` (Type pre-selected) |
 | Bottom tab navigation | See `design/specs/mobile/navigation.md` |
 
 ## Import / Export (data portability)
 
-- Expose **Export Catalog** and **Import Catalog** actions from ConfigureCatalog.
-- Export format: YAML per `design/specs/domain/import-export.md`.
-- Import supports the canonical app format (YAML/JSON) and is idempotent per `design/specs/domain/import-export.md`.
-
-## Data Requirements
-
-### Items List
-```typescript
-interface CatalogItem {
-  id: string;
-  name: string;
-  type: 'Activity' | 'Condition' | 'Outcome';
-  category: string;
-  hasQuantifiers: boolean;
-}
-```
-
-### Bundles List
-```typescript
-interface CatalogBundle {
-  id: string;
-  name: string;
-  type: 'Activity' | 'Condition' | 'Outcome';  // NEW: bundles are typed
-  itemCount: number;
-}
-```
-
-## Variants
-
-- **happy**: Catalog has items and bundles across all types
-- **empty**: No items or bundles; emphasizes onboarding path
-- **error**: Network/data error state
-
-## Related Screens
-
-- **EditItem**: Create/edit individual items with quantifiers
-- **EditBundle**: Create/edit bundles with member management
-- **EditCategory**: Create/edit categories (inline modal or separate screen TBD)
-
-## Notes
-
-- Bundles are type-specific (cannot mix Activity items with Outcome items)
-- When editing items/bundles already used in history, follow taxonomy editing rules in `design/specs/domain/rules.md`
-- Categories are not directly visible in list; they appear as metadata on item cards
-- Consider future enhancement: category filtering chips within a type
+- ConfigureCatalog exposes **Import Catalog** and **Export Catalog** actions.
+- Formats and idempotency rules are defined in `design/specs/domain/import-export.md`.
 

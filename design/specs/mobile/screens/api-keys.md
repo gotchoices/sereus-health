@@ -23,5 +23,5 @@ Each line contains:
 ## Notes
 - Only one key can be enabled at a time
 - Multiple keys may be stored
-- Page contents are persistent, stored in securestorage
+- Page contents are persistent and stored in **device secure storage** (Keychain on iOS, Keystore on Android; not plain AsyncStorage).
 - Delete function issues confirmation prompt dialog before deleting

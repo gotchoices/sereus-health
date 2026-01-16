@@ -27,22 +27,23 @@ This checklist tracks spec review work for the **mobile** target. Treat it as th
 ### Mobile screens (UX contracts)
 
 - [x] `design/specs/mobile/screens/log-history.md` — empty DB behavior: no log entries; prominent “Get started” CTA.
-- [ ] `design/specs/mobile/screens/edit-entry.md` and `design/specs/mobile/screens/edit-entry-wizard.md` — behavior when there are **no Types/Categories/Items** yet.
-- [ ] `design/specs/mobile/screens/configure-catalog.md` — first-run catalog creation path (create first Type/Category/Item) and/or “popular imports” entry.
-- [ ] `design/specs/mobile/screens/backup-restore.md` — clear local data should yield truly empty DB (no reseed); import/export canonical formats; preview-before-commit.
-- [ ] `design/specs/mobile/screens/settings.md` — links/entrypoints for Assistant config + GettingStarted + Backup & Import.
-- [ ] `design/specs/mobile/screens/sereus-connections.md` — verify how networking interacts with schema versioning + import/export.
+- [x] `design/specs/mobile/screens/edit-entry.md` and `design/specs/mobile/screens/edit-entry-wizard.md` — behavior when there are **no Types/Categories/Items** yet.
+- [x] `design/specs/mobile/screens/configure-catalog.md` — first-run catalog creation path (create first Type/Category/Item) and/or “popular imports” entry.
+- [x] `design/specs/mobile/screens/backup-restore.md` — clear local data should yield truly empty DB (no reseed); import/export canonical formats; preview-before-commit.
+- [x] `design/specs/mobile/screens/settings.md` — links/entrypoints for Assistant config + GettingStarted + Backup & Import.
+- [x] `design/specs/mobile/screens/sereus-connections.md` — verify how networking interacts with schema versioning + import/export.
 
 ### Mobile components (if needed)
 
-- [ ] `design/specs/mobile/components/index.md` — add component-level contracts for: empty-state panel, “import starter catalog” CTA, assistant action preview list.
+- [x] `design/specs/mobile/components/index.md` — add component-level contracts for: empty-state panel, “import starter catalog” CTA, assistant action preview list.
 
 ## Non-spec checklist (things to consider during refactor)
 
-- [ ] **Story ordering/numbering**: decide whether assistant/import/export/backups should be earlier/later in the numbered story sequence.
-- [ ] **Seed removal migration**: decide how existing installs behave after removing seeds (do we wipe? do we keep old seed rows?).
+- [x] **Story ordering/numbering**: decide whether assistant/import/export/backups should be earlier/later in the numbered story sequence.
+- [x] **Seed removal migration**: decide how existing installs behave after removing seeds (do we wipe? do we keep old seed rows?).
 - [ ] **Hosted starter catalogs**: define `health.sereus.org` starter catalog URLs, versioning, and compatibility guarantees.
 - [ ] **Security/privacy**: define where AI API keys are stored (device keychain/secure store), redaction rules, and user consent when uploading files/images.
+  - [x] API key storage location: stored in device secure storage (Keychain/Keystore) — see `design/specs/mobile/screens/api-keys.md` and `design/specs/mobile/global/assistant/vercel-ai-sdk.md`.
 - [ ] **Offline behavior**: assistant unavailable offline; ensure canonical import still works offline.
 - [ ] **Test matrix**: empty DB flows, import idempotency, clear+import replace, assistant preview/approval, export CSV readability, export YAML/JSON re-import.
 

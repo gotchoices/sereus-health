@@ -100,8 +100,8 @@ Shared rules for the Type, Category, and Items/Bundles pickers:
   - Type picker: single-select
   - Category picker: single-select, filtered to the selected Type
   - Items/Bundles picker: multi-select (bundles visually distinguished)
-  - For all three pickers, a single tap on a list row selects it and closes the picker (returning to the previous screen).
-    - For the multi-select Items/Bundles picker, this applies to the final “Done/Confirm” action: a single tap commits the selection and closes the picker.
+  - Type/Category: a single tap selects the row and closes the picker (returns to the previous screen).
+  - Items/Bundles: supports selecting multiple rows (checkboxes) and stays open while selecting; user taps **Done/Confirm** to commit and close.
 
 Timestamp picker uses platform-native date/time picker UX.
 
