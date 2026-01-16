@@ -6,12 +6,20 @@ description: Cross-cutting invariants and constraints for Sereus Health data mod
 
 ## Cross-cutting invariants (intentional "hard rules")
 
-- **IDs**: Stable UUIDs (string) for all entities.
+- **Identifiers / keys**
+  - User-visible entities (Type, Category, Item, Bundle, QuantifierDefinition, LogEntry) have stable **UUID** IDs.
+  - Join tables may use **composite keys** (see `logging.md`).
 - **Time**: All stored timestamps are **UTC**; UI displays in device locale.
 - **Flat categories (MVP)**: No category nesting.
 - **Single-type log entries**: A log entry contains items/bundles of exactly one Type.
 - **Bundle expansion**: Bundles are expanded to items at log-time; entries store items, with optional "source bundle" for display/grouping.
 - **Quantifiers**: Defined per item; recorded values are optional (only stored when provided).
+- **Name uniqueness is case-insensitive**
+  - Type names are unique globally.
+  - Category names are unique within a Type.
+  - Item names are unique within a Category.
+  - Bundle names are unique within a Type.
+  - QuantifierDefinition names are unique within an Item.
 
 ## First-run / empty database (UX)
 
@@ -23,13 +31,7 @@ description: Cross-cutting invariants and constraints for Sereus Health data mod
 ## Editing taxonomy that is referenced by history (UX)
 
 When a user edits a taxonomy element that is already referenced by historical log entries:
-- Description can be edited freely
-- If name is edited, ask scope: “Apply to all existing entries” vs “Future only”.
+- **Description** can be edited freely.
+- If **name** is edited, ask scope: “Apply to all existing entries” vs “Future only”.
   - If “Future only”, create a new definition for future use; existing entries remain attached to the old definition.
-  - If deletion is requested and the element is in use, prefer “retire/hide from future use” over hard delete, and communicate the impact clearly.
-
-## Notes
-
-- Join tables (e.g. logged items / quantifier values) may use **composite primary keys** instead of separate `id` fields; see `logging.md`.
-- Prefer keeping schema specs **short and stable**; detailed rationale and examples belong in AI consolidations (`design/generated/…`) or other non-authoritative notes.
-
+- If **deletion** is requested and the element is in use, prefer “retire/hide from future use” over hard delete, and communicate the impact clearly.

@@ -1,40 +1,49 @@
-# UI Spec
+# UI (Mobile)
 
-iconSet: ionicons            # ionicons | material-community | feather
-uiKit: none                  # none | react-native-paper | tamagui | native-base
-theme: system                # system | light | dark, Settable from preferences screen
+This spec defines the shared visual foundations for the mobile app.
 
-colors:
-  # Light mode
-  backgroundLight: "#ffffff"
-  surfaceLight:    "#ffffff"
-  textPrimaryLight:   "#111111"
-  textSecondaryLight: "#555555"
-  borderLight:     "#dddddd"
-  bannerErrorLight: "#ffeeee"
-  # Dark mode
-  backgroundDark: "#000000"
-  surfaceDark:    "#111111"
-  textPrimaryDark:   "#eeeeee"
-  textSecondaryDark: "#bbbbbb"
-  borderDark:     "#333333"
-  bannerErrorDark: "#330000"
+## Icon set
 
-spacing: [4, 8, 12, 16, 20, 24]
+- Use **Ionicons** for app icons.
+- Icon names should be specified by feature specs (e.g. tab bar icons in `navigation.md`).
 
-typography:
-  title:
-    size: 20
-    weight: 600
-  body:
-    size: 16
-    weight: 400
-  small:
-    size: 12
-    weight: 400
+## UI kit
 
-notes:
-- Semantic names map to framework components; refine over time.
-- For icons, choose names from the selected icon set; adjust per platform if needed.
-- Date/time inputs should use native platform pickers (React Native DateTimePicker).
-- Navigation theming can adopt these colors via a navigation theme if/when added.
+- No UI kit is assumed at this time (plain React Native components).
+
+## Theme
+
+- Theme is user-selectable: `System | Light | Dark` (see `screens/settings.md`).
+- Theme affects background/surface, text, borders, and error banners.
+
+## Colors (semantic tokens)
+
+Light mode:
+- `background`: `#ffffff`
+- `surface`: `#ffffff`
+- `textPrimary`: `#111111`
+- `textSecondary`: `#555555`
+- `border`: `#dddddd`
+- `bannerError`: `#ffeeee`
+
+Dark mode:
+- `background`: `#000000`
+- `surface`: `#111111`
+- `textPrimary`: `#eeeeee`
+- `textSecondary`: `#bbbbbb`
+- `border`: `#333333`
+- `bannerError`: `#330000`
+
+## Spacing scale
+
+- 4, 8, 12, 16, 20, 24
+
+## Typography
+
+- **Title**: 20 / 600
+- **Body**: 16 / 400
+- **Small**: 12 / 400
+
+## Date/time inputs
+
+- Use platform-native pickers; keep presentation consistent (modal/inline) across screens.

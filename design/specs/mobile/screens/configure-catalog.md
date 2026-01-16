@@ -1,7 +1,7 @@
 # ConfigureCatalog Screen Spec
 
 ## Purpose
-Manage the catalog of items, categories, and bundles that Bob uses when logging entries. The catalog is organized by type (Activity, Condition, Outcome), with items grouped into categories and optionally organized into bundles.
+Manage the catalog of items, categories, and bundles that Bob uses when logging entries. The catalog is organized by Type, with items grouped into categories and optionally organized into bundles.
 
 ## Layout Structure
 
@@ -48,7 +48,11 @@ Manage the catalog of items, categories, and bundles that Bob uses when logging 
 - When Bundles tab active → navigates to EditBundle with type pre-selected
 
 ### Empty States
-- Items empty: "No items yet" + "Add your first [Type] item" button
+- Items empty: "No items yet"
+  - CTAs:
+    - "Add your first [Type] item"
+    - "Import minimal starter categories (built-in)" (see `design/specs/mobile/global/general.md`)
+    - "Browse more catalogs (online)" (see `design/specs/mobile/global/general.md`)
 - Bundles empty: "No bundles yet" + "Create a bundle to group items together"
 
 ## Navigation

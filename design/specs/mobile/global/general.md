@@ -6,8 +6,15 @@ Cross-cutting behaviors that apply across multiple screens and features.
 
 - First-run may start with an **empty database** (no seeded catalog rows and no log entries).
 - When empty, primary screens should present a clear “Get started” path:
-  - import a starter catalog (e.g. from `health.sereus.org`), or
+  - import a starter catalog, or
   - create the first catalog entries manually.
+
+### Starter catalogs (built-in + online)
+
+When the catalog is empty, the app should offer:
+
+- **Import minimal starter categories (built-in)**: imports a tiny, bundled canonical catalog containing Types + Categories only (no items). Source file to bundle: `design/specs/domain/catalog/categories.yaml`.
+- **Browse more catalogs (online)**: opens `health.sereus.org` in the system browser so the user can download richer catalog files and import them.
 
 ### Time and timestamps (UX rules)
 

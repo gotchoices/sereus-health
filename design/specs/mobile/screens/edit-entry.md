@@ -1,7 +1,7 @@
 # EditEntry Screen Spec
 
 ## Purpose
-Single-screen form for adding, editing, or cloning log entries. Uses modal pickers for type/category/item selection rather than multi-screen wizard. **Smart defaults and usage-based ordering for efficiency.**
+Single-screen form for creating, editing, or cloning log entries, optimized for fast daily use.
 
 ## Route
 - `EditEntry`
@@ -10,12 +10,12 @@ Single-screen form for adding, editing, or cloning log entries. Uses modal picke
 ## Modes
 
 ### New Mode
-- **Type**: Auto-selected to most frequently used type in dataset (default: Activity if no data)
-- **Category**: Auto-selected to most frequently used category within selected type (or first if no data)
-- **Items**: Empty (optional for note entries)
-- **Quantifiers**: None
-- **Timestamp**: Current time (editable)
-- **Comment**: Empty (optional, but typical for note entries)
+- **Type**: defaults to the last-selected Type (if one has ever been selected); otherwise user selects
+- **Category**: defaults to the last-selected Category **within the currently selected Type** (if any); otherwise user selects or leaves empty
+- **Items/Bundles**: empty; user must select (no default)
+- **Quantifiers**: shown only for selected items that define them; values optional
+- **Timestamp**: defaults to current time (editable)
+- **Comment**: optional
 
 ### Edit Mode
 - Load entry by `entryId`
@@ -35,37 +35,31 @@ Single-screen form for adding, editing, or cloning log entries. Uses modal picke
 ### Header
 - Back button (← or "Cancel")
 - Title: "New Entry" | "Edit Entry" | "Clone Entry"
-- Delete button (trash icon, edit mode only)
+- Delete button (trash icon, edit mode only; confirm required)
 
 ### Form Fields (single scrollable screen)
 
 1. **Type Selector** (required)
-   - **Default (new mode)**: Most frequently used type in dataset (fallback: Activity)
    - Shows: Selected type name OR "Select Type" placeholder
-   - Tap → Opens modal with type picker (Activity/Condition/Outcome + user-defined)
+   - Tap → Opens modal with type picker
    - Single-select
-   - After selection, Category selector updates to most common category for that type
+   - Type applies to the whole entry (single-type rule)
 
-2. **Category Selector** (required, disabled until type selected)
-   - **Default (new mode)**: Most frequently used category within selected type
+2. **Category Selector** (optional, disabled until type selected)
    - Shows: Selected category name OR "Select Category" placeholder (grayed if disabled)
    - Tap → Opens modal with categories filtered by type
-   - **Modal includes**: Search filter at top (story 03: "bac" → bacon pattern)
-   - **Ordering**: Categories sorted by usage frequency (most used first)
+   - Modal supports search/filter (see `design/specs/mobile/global/general.md`)
    - Single-select
-   - After selection, Items selector becomes enabled
+   - Used to narrow item selection; not required to save an entry
 
-3. **Items Selector** (optional - can skip for note entries)
+3. **Items/Bundles Selector** (optional)
    - Shows: Chip list of selected item names + bundles OR "Select Items" placeholder
    - Tap → Opens modal with SelectionList (multi-select)
    - **Modal includes**: 
-     - Search/filter input at top (story 03:9 - "bac" → bacon)
+     - Search/filter input (see `design/specs/mobile/global/general.md`)
      - Multi-select checkboxes
-     - Items from selected category + all bundles (bundles marked with icon/badge)
-     - **Ordering**: Items sorted by usage frequency (most logged items first)
-     - **Bundle preview**: Shows member items "(BLT: bacon, lettuce, tomato, ...)"
+     - Items (optionally filtered by selected Category) + Bundles (visually distinguished)
    - Can select multiple items and/or bundles
-   - Can skip entirely for comment-only note entries
 
 4. **Quantifiers Section** (conditional, shows if any selected item has quantifiers defined)
    - For each selected item that has quantifiers:
@@ -89,106 +83,56 @@ Single-screen form for adding, editing, or cloning log entries. Uses modal picke
 ### Footer
 - **Save/Commit Button**: Primary action
   - Label: "Save" (edit), "Add Entry" (new), "Clone Entry" (clone)
-  - Disabled if required fields missing (type, category, items)
+  - Disabled if required fields missing (Type, Timestamp, Items/Bundles)
   - On success → navigate back to LogHistory
 - **Cancel**: Secondary (or just use header back)
 
-## Modal Picker Pattern
+## Picker behavior (high-level)
 
-### Type Picker Modal
-- Full-screen or bottom sheet
-- Header: "Select Type" + Close button (×)
-- **Search Filter**: Text input at top of list
-- **List**: Activity, Condition, Outcome, + user-defined types
-- **Ordering**: Types sorted by usage frequency (most logged type first)
-- Single-select (radio buttons or tap-to-select)
-- On selection → close modal, update main screen, reset category to most common for new type
+Shared rules for the Type, Category, and Items/Bundles pickers:
 
-### Category Picker Modal
-- Same pattern as Type
-- Header: "Select Category" + Close button (×)
-- **Search Filter**: Text input at top of list
-- **Filtered by selected type**: Only shows categories for current type
-- **Ordering**: Categories sorted by usage frequency within selected type
-- Single-select
-- On selection → close modal, update main screen
+- **Header controls**
+  - Upper-left: **Back** button (not an “X”) when manual close/back is needed.
+  - Upper-right: **(+) Add** button to add a new value on the fly.
+- **Search/filter**
+  - Supports search/filter behavior per `design/specs/mobile/global/general.md`.
+- **Selection**
+  - Type picker: single-select
+  - Category picker: single-select, filtered to the selected Type
+  - Items/Bundles picker: multi-select (bundles visually distinguished)
+  - For all three pickers, a single tap on a list row selects it and closes the picker (returning to the previous screen).
+    - For the multi-select Items/Bundles picker, this applies to the final “Done/Confirm” action: a single tap commits the selection and closes the picker.
 
-### Items Picker Modal
-- Full-screen (needs more space for filtering)
-- Header: "Select Items" + Done button
-- Uses SelectionList component:
-  - **Search Filter**: Text input at top (story 03:9 - "bac" → bacon)
-  - Multi-select checkboxes
-  - Items from selected category + all bundles (bundles marked with icon/badge)
-  - **Ordering**: Items sorted by usage frequency (most logged first)
-  - **Bundle preview**: Shows member items "(BLT: bacon, lettuce, tomato, ...)"
-  - Scroll list
-- Done button → close modal, update main screen with chips
+Timestamp picker uses platform-native date/time picker UX.
 
-### Date/Time Picker
-- Use native RN DateTimePicker (platform-specific UI)
-- Mode: datetime
-- Displays in device locale
+## Empty database behavior (required)
 
-## Smart Defaults & Ordering
+This app may start with an **empty database** (no catalog rows).
 
-### Usage Frequency API Requirements
+- If there are **no Types**, the Type picker shows:
+  - “No types yet”
+  - CTAs:
+    - **Import minimal starter categories (built-in)** (see `design/specs/mobile/global/general.md`)
+    - **Browse more catalogs (online)** (see `design/specs/mobile/global/general.md`)
+    - **Go to Catalog**
+- If a Type exists but there are **no Items/Bundles** for that Type, the Items picker shows:
+  - “No items yet”
+  - CTAs:
+    - **Go to Catalog**
+    - **Browse more catalogs (online)** (see `design/specs/mobile/global/general.md`)
 
-To support smart defaults and usage-based ordering, the following API calls are needed:
+## Defaults and ordering
 
-1. **`getTypeStats()`** → `Array<{id, name, usageCount}>`
-   - Returns all types with usage counts from log history
-   - Used to: Auto-select most common type, order type picker
-   - Mock: Return Activity=100, Condition=50, Outcome=30
-
-2. **`getCategoryStats(typeId)`** → `Array<{id, name, usageCount}>`
-   - Returns categories for given type with usage counts
-   - Used to: Auto-select most common category, order category picker
-   - Mock: Return usage counts per category (e.g., Eating=80, Exercise=40)
-
-3. **`getItemStats(categoryId)`** → `Array<{id, name, usageCount, isBundle}>`
-   - Returns items for given category with usage counts
-   - Includes both individual items and bundles
-   - Used to: Order items picker by frequency
-   - Mock: Return usage counts per item (e.g., Omelette=50, BLT=30, Toast=25)
-
-### Default Selection Logic
-
-**New Mode Only** (edit/clone use existing entry data):
-
-1. **On screen load**:
-   - Call `getTypeStats()`
-   - Auto-select type with highest `usageCount` (or first if tie)
-   - If no types exist, default to Activity
-
-2. **On type selection/default**:
-   - Call `getCategoryStats(selectedType.id)`
-   - Auto-select category with highest `usageCount` (or first if tie)
-   - If no categories exist, leave empty
-
-3. **Items remain empty** (user must explicitly select)
-
-### Search Filter Behavior
-
-- **Live filtering**: Updates list as user types
-- **Case-insensitive**: "bac" matches "Bacon", "BACON", "bacon"
-- **Substring match**: "bac" matches "bacon", "tobacco"
-- **Searches**: Item/category/type names only (not descriptions)
-- **Empty state**: Shows "No results found" if filter excludes all items
-
-### Ordering Priority
-
-Within each picker modal:
-1. **Primary sort**: Usage count (descending - most used first)
-2. **Secondary sort**: Alphabetical (for items with equal usage)
+- Timestamp defaults to “now” in New/Clone modes.
+- Pickers may show recently used or frequently used options first, but behavior should remain predictable and easy to understand.
 
 ## Validation
 
 ### On Save
 - **Required**: type, timestamp
-- **Items**: Optional (can be 0 for note entries); if items selected, category is required
+- **Items**: Required (at least one item and/or bundle must be selected)
 - **Quantifiers**: If item has quantifiers defined, values are optional (can log item without quantifying)
-- **Comment**: Optional (but typically present for note entries with 0 items)
+- **Comment**: Optional
 
 ### Error Display
 - Show error banner at top if validation fails
@@ -197,10 +141,8 @@ Within each picker modal:
 ## Behavior Notes
 
 ### Adding New Items/Categories (story 01, 02)
-- If Bob wants to add a new item/category while in EditEntry:
-  - **Out of scope for EditEntry screen**
-  - Bob must cancel EditEntry → go to Catalog → add item → return and start EditEntry again
-  - OR (future): "Add New Item" link in Items Picker modal that navigates to Catalog with deep link back
+- Users can add taxonomy on the fly from within pickers using the **(+) Add** button.
+  - If that flow is not available for a given picker, provide a clear “Go to Catalog” path.
 
 ### Bundles (story 03)
 - Bundles appear in Items Picker alongside individual items
@@ -219,8 +161,8 @@ Within each picker modal:
 ### Entry Points
 - From LogHistory:
   - Add button → EditEntry (mode=new)
-  - Clone icon on entry → EditEntry (mode=clone, entryId=X)
-  - Tap entry card → EditEntry (mode=edit, entryId=X)
+  - Clone icon on entry → EditEntry (mode=clone, entryId=…)
+  - Tap entry card → EditEntry (mode=edit, entryId=…)
 
 ### Exit Points
 - Save → back to LogHistory (with success toast?)
@@ -233,40 +175,6 @@ Within each picker modal:
 - Modal pickers follow same theme
 - All inputs use semantic colors (border, text, placeholders)
 
-## Data Requirements (API/Engine Stubs)
+## Notes
 
-### Read Operations
-- `getTypeStats()` → Array<{id, name, usageCount}>
-- `getCategoryStats(typeId)` → Array<{id, name, usageCount}>
-- `getItemStats(categoryId)` → Array<{id, name, usageCount, isBundle}>
-- `getLogEntry(entryId)` → LogEntry (for edit/clone modes)
-
-### Write Operations
-- `createLogEntry(data)` → {success, entryId}
-- `updateLogEntry(entryId, data)` → {success}
-- `deleteLogEntry(entryId)` → {success}
-
-### Mock Variants
-- **happy**: Typical stats with realistic usage counts (Activity most common, Eating most common within Activity)
-- **empty**: No usage data (all counts = 0, defaults to first alphabetically)
-- **bundle**: Include bundles in item stats with usage counts
-- **balanced**: Equal usage across all types/categories (test tie-breaking)
-
-## Open Questions (for later refinement)
-- Unsaved changes warning? (if user taps back with edits)
-- Toast/snackbar on successful save?
-- Inline "Add New Item" link in pickers, or always require Catalog navigation?
-- Should quantifier inputs have stepper buttons or just numeric keyboard?
-- Maximum number of items selectable in one entry?
-- Show usage count in picker UI (e.g., "Omelette (50)" or just order)?
-
----
-
-**Decision Date**: 2025-11-29
-**Updated**: 2025-11-29 (added smart defaults, search filters, usage-based ordering)
-**Rationale**: 
-- Single screen with modal pickers chosen over multi-screen wizard for speed, overview, and standard mobile form UX. Aligns with story emphasis on efficiency (02-daily: "not be a distraction").
-- Smart defaults reduce taps for common entries (most users log similar activities repeatedly).
-- Usage-based ordering surfaces frequently logged items first (faster selection, fewer scrolls).
-- Search filters essential for large catalogs (story 03: "bac" → bacon pattern).
-
+- Keep this spec user-observable; implementation details belong in consolidations.

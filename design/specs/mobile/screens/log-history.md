@@ -1,43 +1,57 @@
 # LogHistory Screen Spec
 
-## Entry Card Layout
+## Purpose
 
-Each log entry card has a compact 3-line layout:
+Show the user’s log entries over time and provide fast entry creation, editing, cloning, and export.
 
-### Line 1 (Header Row)
-| Position | Element |
-|----------|---------|
-| **Left** | Type badge (Activity/Condition/Outcome) - pill with semantic color |
-| **Center-left** | Date/time, immediately after type badge |
-| **Right** | Clone icon (copy-outline) |
+## Layout
 
-### Line 2 (Items)
-- List of items/bundles, comma-separated
-- Truncate with "+N more" if >3 items
+- Header: title “History”
+  - Optional search/filter toggle (see `design/specs/mobile/global/general.md` filter rules)
+- Content: scrollable list of log entries (newest first)
+- Bottom tab bar: see `design/specs/mobile/navigation.md`
 
-### Line 3 (Comment, optional)
-- Italicized comment snippet, single line, truncated
+## Primary actions
 
-## Vertical Spacing
-- **Compact**: Minimize vertical padding for denser list display
-- Card padding: 12px (was 16px)
-- Line spacing: 4px between rows (was 8px)
-- Card margin: 8px bottom
+- **Tap entry**: open entry details/edit flow (screen name TBD)
+- **New entry**: create a new log entry (primary CTA)
+- **Clone entry**: duplicate an entry as a starting point for a new one
+- **Graphs**: navigate to graphs/analysis (if/when implemented)
 
-## Clone Button
-- Positioned absolutely in top-right corner of card
-- Same vertical alignment as type badge and date
-- Touch target: 44pt minimum with hitSlop
+## Entry card (compact)
 
-## Type Badge
-- Left-aligned, not right-aligned
-- Small pill with semantic color (Activity=blue, Condition=orange, Outcome=green)
-- White text, 600 weight
+Each entry card uses a compact 3-line layout:
 
-## Import / Export (data portability)
+- **Line 1 (header row)**:
+  - left: Type badge (Activity / Condition / Outcome; semantic color)
+  - center-left: timestamp (local display)
+  - right: Clone icon/button
+- **Line 2 (items)**:
+  - comma-separated item list
+  - if more than 3 items, truncate and show “+N more”
+- **Line 3 (comment, optional)**:
+  - single-line snippet, truncated
 
-- Expose **Export** and **Import** actions from LogHistory.
-- Export supports **filtered subset** (if a filter is active) and **all entries**.
-- Export format: CSV per `design/specs/domain/import-export.md`.
-- Import supports the canonical app format (YAML/JSON) and is idempotent per `design/specs/domain/import-export.md`.
+Interaction rules:
+- Clone icon has a comfortable touch target (don’t require pixel-perfect taps).
+
+## Empty state (required)
+
+When there are no log entries:
+
+- Show “No entries yet” and a primary “Get started” path:
+  - **Import minimal starter categories (built-in)** (see `design/specs/mobile/global/general.md`)
+  - **Browse more catalogs (online)** (see `design/specs/mobile/global/general.md`)
+  - **Create your first entry**
+
+## Import / export (data portability)
+
+- Expose **Export logs** from LogHistory.
+  - Export supports **filtered subset** (if a filter is active) and **all entries**.
+  - Export format: **CSV** per `design/specs/domain/import-export.md`.
+- If we expose **Import logs** from LogHistory, it must accept only **canonical YAML/JSON** (no direct CSV import), with preview-before-commit per `design/specs/domain/import-export.md`.
+
+## Navigation (summary)
+
+- This is the **Home** tab root: `LogHistory` (see `design/specs/mobile/navigation.md`).
 

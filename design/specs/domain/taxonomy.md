@@ -6,6 +6,12 @@ description: Types → Categories → Items, plus per-item quantifier definition
 
 Defines the user-editable catalog used for logging and analysis.
 
+Notes:
+
+- **Bundles** are defined separately (see `bundles.md`) but reference Items from this taxonomy.
+- Taxonomy edits that affect historical data follow `rules.md` (rename scope; retire/hide vs hard delete).
+- Case sensitivity for name matching/uniqueness is defined in one place: see `rules.md`.
+
 ## Entities
 
 ### Type (`types`)

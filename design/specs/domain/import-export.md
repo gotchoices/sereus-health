@@ -1,98 +1,106 @@
 # Import/Export (Data Portability)
 
-This spec defines the **cross-app** data portability contract for Sereus Health.
+This spec defines the **shared, user-observable** data portability contract for Sereus Health.
 
-Screen-specific placement and UI affordances belong in the relevant screen specs (e.g., LogHistory, ConfigureCatalog, BackupRestore).
+## What users can export
 
-## Supported exports
+- **Logs (CSV)**: for sharing and external analysis (filtered or all, depending on the screen).
+- **Catalog (canonical)**: for safe round-trip import/export.
+- **Backup (canonical)**: for moving a complete local setup between devices.
 
-- **Log export**: CSV (scope depends on the screen: filtered subset vs all)
-- **Catalog export**: YAML (full taxonomy + quantifier definitions + bundles)
-- **Backup export**: YAML (everything: catalog + logs + settings)
+Canonical exports are **YAML or JSON**.
 
-## CSV contracts (stable headers)
+## Canonical formats (YAML / JSON)
+
+Direct import supports only:
+
+- **YAML**: `.yaml` / `.yml`
+- **JSON**: `.json`
+
+All other formats (spreadsheets, screenshots, arbitrary files) are handled via the **assistant**, which converts them into canonical data and proposes a preview/approval plan.
+
+### Canonical: Catalog file
+
+A catalog export contains (names are illustrative; structure is canonical):
+
+- `version` (integer)
+- `exportedAtUtc` (ISO8601 string; may be omitted for hand-authored starter catalogs)
+- `catalog`
+  - `types[]`
+  - `categories[]`
+  - `items[]` (each may include `quantifiers[]`; may be empty/omitted for starter catalogs)
+  - `bundles[]` (with member references; may be empty/omitted for starter catalogs)
+
+### Canonical: Backup file
+
+A backup export contains:
+
+- `version` (integer)
+- `exportedAtUtc` (ISO8601 string)
+- `catalog` (taxonomy + bundles)
+- `logs` (log entries)
+- `settings` (may be empty for now)
+
+Imports apply **only what is present** (partial backups are allowed).
+
+## Logs CSV export (stable header)
 
 ### Log entries CSV
 
 - **Header**: `timestampUtc,type,category,item,quantifier,value,unit,comment`
 - **Model**: one row per *entry × item × quantifier* (entries with multiple items/quantifiers span multiple rows)
 
-### Catalog CSV
+Notes:
+- CSV is export-only for logs in the MVP; direct CSV import is not part of the contract.
 
-Catalog CSV is **not the primary portability format** (YAML is), because CSV is an awkward fit for nested catalog structures (bundles, per-item quantifiers) and versioning.
+## Import behavior
 
-If/when we add a catalog CSV export, it is intended for **external analysis/editing** rather than perfect round-trip import fidelity.
+### Preview-before-commit (required)
 
-If implemented:
-- **Header**: `type,category,item,quantifierName,quantifierUnit,quantifierMin,quantifierMax`
-- **Model**: one row per *item × quantifier*; items without quantifiers have empty quantifier columns
+Before applying any import, the app shows a preview with:
 
-## Catalog contract (YAML)
+- A scrollable list showing all records to import
+- Summary data at end:
+  - counts: **add / update / skip**
+  - top warnings/errors (if any)
+- explicit user choice: **confirm** or **cancel**
 
-Catalog YAML is the canonical, round-trippable catalog portability format.
+### Backup import modes
 
-- File contains:
-  - `version` (integer)
-  - `exportedAtUtc` (ISO8601)
-  - `catalog`:
-    - `types[]`
-    - `categories[]`
-    - `items[]` (with optional `quantifiers[]`)
-    - `bundles[]` (with members)
-
-## Backup contract (YAML)
-
-- Backup file contains:
-  - `version` (integer)
-  - `exportedAtUtc` (ISO8601)
-  - `catalog` (taxonomy + bundles)
-  - `logs` (log entries)
-  - `settings` (app settings; may be empty for now)
-- Import should apply **only what is present** (partial backups are allowed).
-
-## Import behavior (canonical formats)
-
-- Direct import supports only the canonical app formats: **YAML** (`.yaml`/`.yml`) and **JSON** (`.json`).
-- Foreign formats (e.g., spreadsheets) should be handled via the assistant, which proposes canonical data/actions for preview/approval.
-- **Format detection**: by file extension (yaml/yml/json). Reject unknown.
-- **Preview** before commit:
-  - counts: add / update / skip
-  - top errors/warnings (if any)
-  - user can confirm or cancel
-
-### Import modes (backup)
-
-For **full backup** imports, the app should support two user-intent modes:
+For **backup** imports, the app supports two user-intent modes:
 
 - **Merge (default)**: idempotent import into existing local data (safe to re-run; does not duplicate).
-- **Replace (optional)**: clear local data first, then import (so the device matches the backup more closely).
+- **Replace (optional)**: clear local data first, then import (device matches the backup more closely).
 
 ### Idempotency / matching rules
 
-Imports should be idempotent (re-importing should not multiply data).
+Imports must be idempotent (re-importing does not multiply data).
 
-- **Catalog item identity**: `(typeName, categoryName, itemName)` case-insensitive
-- **Quantifier definition identity**: `(itemIdentity, quantifierName)` case-insensitive
-- **Bundle identity**: `(typeName, bundleName)` case-insensitive
-- **Log entry identity** (MVP): `(timestampUtc, typeName, set(items))`
-  - If a match exists, update differing quantifier values/comments rather than creating duplicates.
+- **String matching**: comparisons for user-defined names follow `rules.md` (case sensitivity / normalization policy).
+- **Catalog item identity**: `(typeName, categoryName, itemName)`
+- **Quantifier definition identity**: `(itemIdentity, quantifierName)`
+- **Bundle identity**: `(typeName, bundleName)`
+- **Log entry identity (MVP)**: `(timestampUtc, typeName, set(items))`
+  - When a match exists, import **updates** differing values/comments rather than creating duplicates.
 
 ### Missing taxonomy during log import
 
-- If an imported log references unknown types/categories/items, the importer may create the missing taxonomy definitions (or present a warning and skip those rows). The import preview should make this explicit.
+If an imported log references unknown types/categories/items, import must make the outcome explicit in the preview:
 
-## Error handling
+- either **create missing taxonomy** needed to represent the logs, or
+- **skip** the affected rows with clear warnings.
 
-- Invalid format / missing required columns: show error and abort.
-- Partial success: show a summary (added/updated/skipped + failures).
+## Errors
 
-## Sharing
+- Invalid format: show an error and abort.
+- Partial success: show a summary (added/updated/skipped + failures) with the top reasons.
+
+## Sharing / where exported files go
 
 After export:
+
 1. **Save to user-accessible storage** (Downloads on Android, Documents on iOS)
 2. **Then** offer the system share sheet (cloud providers, email, etc.)
 3. Show confirmation with file location
 
-Rationale: Users expect "export" to mean "save to my device", not just "temporarily cached until shared elsewhere". User always has a local copy, even if they cancel the share.
-
-
+Rationale: users expect “export” to mean “saved to my device,” not “temporarily cached until shared.”

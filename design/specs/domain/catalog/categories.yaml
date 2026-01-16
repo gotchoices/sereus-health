@@ -1,0 +1,38 @@
+version: 1
+catalog:
+  # Minimal starter catalog:
+  # - Types + Categories only
+  types:
+    - name: Activity
+    - name: Condition
+    - name: Outcome
+  categories:
+    # Activity
+    - typeName: Activity
+      name: Eating
+    - typeName: Activity
+      name: Exercise
+    - typeName: Activity
+      name: Sleep
+    - typeName: Activity
+      name: Medication
+
+    # Condition
+    - typeName: Condition
+      name: Symptoms
+    - typeName: Condition
+      name: Mood
+    - typeName: Condition
+      name: Stress
+    - typeName: Condition
+      name: Pain
+
+    # Outcome
+    - typeName: Outcome
+      name: Energy
+    - typeName: Outcome
+      name: Weight
+    - typeName: Outcome
+      name: Blood Pressure
+    - typeName: Outcome
+      name: Blood Sugar

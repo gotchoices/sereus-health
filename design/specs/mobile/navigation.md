@@ -6,14 +6,12 @@ This spec defines the **user-visible** navigation structure: what tabs exist, wh
 
 Tabs are pinned to the bottom; screen content scrolls above them.
 
-| Tab | Purpose | Root |
-|-----|---------|------|
-| Home | History and logging | `LogHistory` |
-| Catalog | Manage catalog items/bundles | `ConfigureCatalog` |
-| Assistant | AI assistant | `Assistant` |
-| Settings | Preferences and utilities | `Settings` |
-
-Icons should be simple and recognizable (home, list, sparkles, gear).
+| Tab | Purpose | Root | Icon (see `global/ui.md`) |
+|-----|---------|------|--------------------------|
+| Home | History and logging | `LogHistory` | `home` |
+| Catalog | Manage catalog items/bundles | `ConfigureCatalog` | `list` |
+| Assistant | AI assistant | `Assistant` | `sparkles` |
+| Settings | Preferences and utilities | `Settings` | `sgear` |
 
 ## What lives under each tab
 

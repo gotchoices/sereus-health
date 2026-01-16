@@ -12,21 +12,21 @@ This checklist tracks spec review work for the **mobile** target. Treat it as th
 
 ### Domain contract (shared)
 
-- [ ] `design/specs/domain/import-export.md` — align with canonical YAML/JSON only; move “foreign formats” to assistant-mediated flow; confirm idempotency rules and identity keys for all entities.
-- [ ] `design/specs/domain/rules.md` — remove “first-run seed expectations”; add empty-first-run + onboarding expectations.
-- [ ] `design/specs/domain/logging.md` — confirm log-entry export/import contract remains consistent (CSV export for analysis is OK; import should be canonical only).
-- [ ] `design/specs/domain/taxonomy.md` — confirm terminology (Type/Category/Item/Bundle) matches story language and UI wording.
-  - [ ] **No CSV import in specs**: confirm there is **no direct CSV import** path described anywhere in specs; foreign formats must be assistant-mediated into canonical YAML/JSON before preview/approval.
+- [x] `design/specs/domain/import-export.md` — align with canonical YAML/JSON only; move “foreign formats” to assistant-mediated flow; confirm idempotency rules and identity keys for all entities.
+- [x] `design/specs/domain/rules.md` — remove “first-run seed expectations”; add empty-first-run + onboarding expectations.
+- [x] `design/specs/domain/logging.md` — confirm log-entry export/import contract remains consistent (CSV export for analysis is OK; import should be canonical only).
+- [x] `design/specs/domain/taxonomy.md` — confirm terminology (Type/Category/Item/Bundle) matches story language and UI wording.
+  - [x] **No CSV import in specs**: confirmed there is **no direct CSV import** path described anywhere in specs; foreign formats must be assistant-mediated into canonical YAML/JSON before preview/approval.
 
 ### Mobile global + navigation
 
-- [ ] `design/specs/mobile/navigation.md` — add/confirm routes for: GettingStarted/Onboarding, Assistant (config + chat), Import flows entrypoints.
-- [ ] `design/specs/mobile/global/general.md` — add guidance for empty states and onboarding entrypoints.
-- [ ] `design/specs/mobile/global/ui.md` — confirm empty-state patterns (CTA to import starter catalog, CTA to create first Type/Category).
+- [x] `design/specs/mobile/navigation.md` — add/confirm routes for: GettingStarted/Onboarding, Assistant (config + chat), Import flows entrypoints.
+- [x] `design/specs/mobile/global/general.md` — add guidance for empty states and onboarding entrypoints.
+- [x] `design/specs/mobile/global/ui.md` — confirm empty-state patterns (CTA to import starter catalog, CTA to create first Type/Category).
 
 ### Mobile screens (UX contracts)
 
-- [ ] `design/specs/mobile/screens/log-history.md` — empty DB behavior: no log entries; prominent “Get started” CTA.
+- [x] `design/specs/mobile/screens/log-history.md` — empty DB behavior: no log entries; prominent “Get started” CTA.
 - [ ] `design/specs/mobile/screens/edit-entry.md` and `design/specs/mobile/screens/edit-entry-wizard.md` — behavior when there are **no Types/Categories/Items** yet.
 - [ ] `design/specs/mobile/screens/configure-catalog.md` — first-run catalog creation path (create first Type/Category/Item) and/or “popular imports” entry.
 - [ ] `design/specs/mobile/screens/backup-restore.md` — clear local data should yield truly empty DB (no reseed); import/export canonical formats; preview-before-commit.

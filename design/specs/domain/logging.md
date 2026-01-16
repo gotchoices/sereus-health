@@ -10,6 +10,11 @@ This covers the data model for what the user actually logs over time.
 
 When a user logs a Bundle, the system **expands** it into its member Items at log-time and stores those Items on the entry. This preserves historical accuracy if the bundle definition changes later.
 
+Implications:
+
+- Historical entries should not “change” when a bundle definition changes.
+- Entries may retain an optional **source bundle** reference for UI grouping, but the logged facts are the Items.
+
 ## Entities
 
 ### LogEntry (`log_entries`)
@@ -61,7 +66,7 @@ An Item present in a LogEntry. Bundles do **not** appear here as bundle referenc
 - No duplicates within an entry: `(logEntryId, itemId)` unique.
 - Enforce the single-type rule by validating `itemId`’s Type matches the entry’s Type.
 
-#### Keying (implementation choice)
+#### Keying
 
 - **Recommended (matches prior implementation)**: primary key = `(logEntryId, itemId)`
 - Alternative: add a surrogate `id` column and keep `(logEntryId, itemId)` unique
@@ -93,14 +98,19 @@ Optional numeric values recorded for a specific Item’s QuantifierDefinition in
 - `quantifierDefinitionId` must belong to `itemId`.
 - If QuantifierDefinition has min/max, `value` must be within that range.
 
-#### Keying (implementation choice)
+#### Keying
 
 - **Recommended (matches prior implementation)**: primary key = `(logEntryId, itemId, quantifierDefinitionId)`
 - Alternative: add a surrogate `id` column and keep `(logEntryId, itemId, quantifierDefinitionId)` unique
 
+## Import/export implications (high-level)
+
+- Logs are exportable as **CSV** for external analysis/sharing (see `import-export.md`).
+- Canonical import/export of logs uses the app’s canonical YAML/JSON structures (see `import-export.md`).
+
 ## Deletion / integrity (high-level)
 
 - Deleting a LogEntry deletes its LoggedItems and QuantifierValues.
-- Taxonomy deletions are restricted/managed (see `specs/mobile/global/general.md` taxonomy lifecycle).
+- Taxonomy lifecycle is managed to preserve history (rename scope, retire/hide vs hard delete): see `rules.md`.
 
 
