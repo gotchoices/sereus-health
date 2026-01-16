@@ -17,9 +17,10 @@ import Settings from './src/screens/Settings';
 import SereusConnections from './src/screens/SereusConnections';
 import Reminders from './src/screens/Reminders';
 import BackupRestore from './src/screens/BackupRestore';
+import Assistant from './src/screens/Assistant';
 import { ThemeProvider } from './src/theme/useTheme';
 
-type Tab = 'home' | 'catalog' | 'settings';
+type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
 type Screen =
   | 'LogHistory'
   | 'EditEntry'
@@ -32,7 +33,8 @@ type Screen =
   | 'Settings'
   | 'BackupRestore'
   | 'SereusConnections'
-  | 'Reminders';
+  | 'Reminders'
+  | 'Assistant';
 
 /**
  * Note: This is a minimal navigation shell to get back to a running baseline.
@@ -108,7 +110,15 @@ function AppContent() {
 
   const resetToTabRoot = (nextTab: Tab) => {
     setTab(nextTab);
-    setScreenStack([nextTab === 'catalog' ? 'ConfigureCatalog' : nextTab === 'settings' ? 'Settings' : 'LogHistory']);
+    const rootScreen: Screen =
+      nextTab === 'assistant'
+        ? 'Assistant'
+        : nextTab === 'catalog'
+          ? 'ConfigureCatalog'
+          : nextTab === 'settings'
+            ? 'Settings'
+            : 'LogHistory';
+    setScreenStack([rootScreen]);
   };
 
   // Deep link navigation:
@@ -130,6 +140,7 @@ function AppContent() {
       'BackupRestore',
       'SereusConnections',
       'Reminders',
+      'Assistant',
     ];
 
     if (!allowed.includes(route as Screen)) return;
@@ -157,6 +168,8 @@ function AppContent() {
     // Set tab for screen family (legacy parity).
     if (target === 'LogHistory' || target === 'EditEntry' || target === 'Graphs' || target === 'GraphCreate' || target === 'GraphView') {
       setTab('home');
+    } else if (target === 'Assistant') {
+      setTab('assistant');
     } else if (target === 'ConfigureCatalog' || target === 'EditItem' || target === 'EditBundle') {
       setTab('catalog');
     } else {
@@ -250,11 +263,19 @@ function AppContent() {
         error={graphsError}
       />
     )
+  ) : screen === 'Assistant' ? (
+    <Assistant
+      key={navKey}
+      onNavigateTab={resetToTabRoot}
+      activeTab={tab}
+      isConfigured={false} // TODO: check if API key is configured
+    />
   ) : screen === 'Settings' ? (
     <Settings
       key={navKey}
       onNavigateTab={resetToTabRoot}
       activeTab={tab}
+      onOpenAssistantSetup={() => pushScreen('Assistant')} // TODO: should go to ApiKeys when implemented
       onOpenSereus={() => pushScreen('SereusConnections')}
       onOpenReminders={() => pushScreen('Reminders')}
       onOpenBackupRestore={() => pushScreen('BackupRestore')}

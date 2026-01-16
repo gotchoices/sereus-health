@@ -238,7 +238,7 @@ export default function LogHistory(props: {
         />
       )}
 
-      {/* Bottom tab bar (4 tabs per navigation.md) */}
+      {/* Bottom tab bar (4 tabs per navigation.md: Home, Assistant, Catalog, Settings) */}
       <View style={[styles.tabBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
         <TouchableOpacity style={styles.tab} onPress={() => props.onNavigateTab('home')}>
           <Ionicons
@@ -251,17 +251,6 @@ export default function LogHistory(props: {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tab} onPress={() => props.onNavigateTab('catalog')}>
-          <Ionicons
-            name={props.activeTab === 'catalog' ? 'list' : 'list-outline'}
-            size={20}
-            color={props.activeTab === 'catalog' ? theme.accentPrimary : theme.textSecondary}
-          />
-          <Text style={[styles.tabLabel, { color: props.activeTab === 'catalog' ? theme.accentPrimary : theme.textSecondary }]}>
-            {t('navigation.catalog')}
-          </Text>
-        </TouchableOpacity>
-
         <TouchableOpacity style={styles.tab} onPress={() => props.onNavigateTab('assistant')}>
           <Ionicons
             name={props.activeTab === 'assistant' ? 'sparkles' : 'sparkles-outline'}
@@ -270,6 +259,17 @@ export default function LogHistory(props: {
           />
           <Text style={[styles.tabLabel, { color: props.activeTab === 'assistant' ? theme.accentPrimary : theme.textSecondary }]}>
             {t('navigation.assistant')}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.tab} onPress={() => props.onNavigateTab('catalog')}>
+          <Ionicons
+            name={props.activeTab === 'catalog' ? 'list' : 'list-outline'}
+            size={20}
+            color={props.activeTab === 'catalog' ? theme.accentPrimary : theme.textSecondary}
+          />
+          <Text style={[styles.tabLabel, { color: props.activeTab === 'catalog' ? theme.accentPrimary : theme.textSecondary }]}>
+            {t('navigation.catalog')}
           </Text>
         </TouchableOpacity>
 

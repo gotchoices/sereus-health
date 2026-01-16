@@ -1,57 +1,163 @@
 ---
-id: ConfigureCatalog
-route: ConfigureCatalog
-variants: [happy, empty, error]
 provides:
   - screen:mobile:ConfigureCatalog
 needs:
   - schema:taxonomy
   - schema:bundles
-description: >
-  Screen for managing the catalog of items, categories, and bundles used when logging entries.
 dependsOn:
   - design/stories/mobile/01-exploring.md
   - design/stories/mobile/02-daily.md
   - design/stories/mobile/03-configuring.md
-  - design/specs/mobile/screens/index.md
   - design/specs/mobile/screens/configure-catalog.md
   - design/specs/mobile/navigation.md
   - design/specs/mobile/global/general.md
   - design/specs/mobile/global/ui.md
   - design/specs/domain/taxonomy.md
   - design/specs/domain/bundles.md
+  - design/specs/domain/import-export.md
 ---
 
-## Purpose and Role
+# ConfigureCatalog Screen Consolidation
 
-ConfigureCatalog lets Bob curate the vocabulary he uses in Sereus Health:
-categories, items, groups, and the quantifiers attached to items.
-It supports bulk creation (e.g., “fridge pass”) and group creation
-for combinations like a BLT.
+## Purpose
 
-> Note: current human spec uses **Items/Bundles** terminology; older story language uses “groups”.
-> In this app version, “group” maps to **bundle**.
+Manage the catalog of items, categories, and bundles used for logging. The catalog is organized by Type, with items grouped into categories.
 
-## Key Behaviors
+## Route
 
-- Show a list of existing **items and groups** within a selected type/category,
-  using the reusable selection list widget (list + optional filter).
-- Allow Bob to **add new items** quickly (e.g., entering many foods in a row).
-- Allow Bob to create and edit **groups** that contain items (and possibly other groups),
-  including:
-  - Choosing items via filter-as-you-type search.
-  - Showing which items are already in the group.
-- Provide a simple entry point to define or edit **quantifiers** for items.
-- Respect taxonomy lifecycle rules when editing items/groups that already appear in history
-  (prompt whether changes apply to all entries or only future ones).
+- **Route**: `ConfigureCatalog` (Catalog tab root)
+- **Title**: "Catalog"
 
-## Variants
+## Layout
 
-- **happy**: Catalog contains a non-empty set of categories, items, and at least one group
-  (e.g., BLT) so Bob can see and edit realistic data.
-- **empty**: No items or groups yet; emphasizes the “fridge pass” path where Bob adds many
-  items rapidly.
-- **error**: Used for validation or edit conflict scenarios (e.g., attempting to delete an
-  item that is already used), to be refined later.
+### Header
 
+- **Left**: Title "Catalog"
+- **Right actions**:
+  - Search toggle icon
+  - (+) Add (context-sensitive: adds Item or Bundle based on active view)
+  - (Optional) overflow menu for Import/Export
 
+### Filter bar (toggleable)
+
+- Text input with search icon, placeholder "Filter…"
+- Clear button (×) when text present
+- Follows `general.md` filter rules
+
+### Type selector
+
+- Shows available Types from database (data-driven, not hardcoded)
+- Selecting a Type filters Items/Bundles below
+- Only visible when at least one Type exists
+
+### View toggle
+
+- `Items | Bundles` segmented control
+- Switches between Items view and Bundles view for the selected Type
+
+### Content list (scrollable)
+
+**Items view**:
+- Each card: item name, category label, chevron
+- Tap → `EditItem`
+
+**Bundles view**:
+- Each card: bundle icon, bundle name, item count, chevron
+- Tap → `EditBundle`
+
+### Empty states (required)
+
+**No Types yet** (catalog is truly empty):
+
+- Show "Get started" panel with CTAs:
+  - **Import minimal starter categories (built-in)** → triggers built-in catalog import (`general.md`)
+  - **Browse more catalogs (online)** → opens `health.sereus.org` in system browser (`general.md`)
+  - **Create first Type** (if supported; otherwise guide to add via import)
+
+**Items empty** (for selected Type):
+
+- "No items yet"
+- CTAs:
+  - "Add your first [Type] item"
+  - "Browse more catalogs (online)"
+
+**Bundles empty** (for selected Type):
+
+- "No bundles yet"
+- CTA: "Create a bundle"
+
+### Bottom tab bar
+
+Per `navigation.md`, 4 tabs (left → right):
+
+| Tab       | Icon (Ionicons)                       | Active state      |
+| --------- | ------------------------------------- | ----------------- |
+| Home      | `home` / `home-outline`               | filled when active|
+| Catalog   | `list` / `list-outline`               | filled when active|
+| Assistant | `sparkles` / `sparkles-outline`       | filled when active|
+| Settings  | `settings` / `settings-outline`       | filled when active|
+
+## Navigation
+
+| Action | Target |
+|--------|--------|
+| Tap item card | `EditItem` |
+| Tap bundle card | `EditBundle` |
+| (+) in Items view | `EditItem` (Type pre-selected) |
+| (+) in Bundles view | `EditBundle` (Type pre-selected) |
+| Tab bar | switch tabs |
+
+## Data shaping
+
+ConfigureCatalog needs:
+
+- `types: CatalogType[]` (from database, not hardcoded)
+- `items: CatalogItem[]` (id, name, type, category)
+- `bundles: CatalogBundle[]` (id, name, type, itemCount)
+
+## Screen state
+
+- `types: CatalogType[]`
+- `items: CatalogItem[]`
+- `bundles: CatalogBundle[]`
+- `selectedType: CatalogType | null`
+- `viewMode: 'items' | 'bundles'`
+- `filterText: string`
+- `filterVisible: boolean`
+- `loading: boolean`
+- `error?: string`
+
+## Import / Export
+
+- ConfigureCatalog exposes **Import Catalog** and **Export Catalog** actions
+- Formats per `import-export.md`
+
+## Mock variants
+
+- **happy**: Multiple types, items, bundles
+- **empty**: No types at all; shows "Get started" empty state
+- **error**: Load failure; shows error with retry
+
+## i18n keys
+
+```
+configureCatalog.title: "Catalog"
+configureCatalog.filterPlaceholder: "Filter…"
+configureCatalog.items: "Items"
+configureCatalog.bundles: "Bundles"
+configureCatalog.emptyNoTypes: "No catalog yet"
+configureCatalog.emptyNoTypesMessage: "Get started by importing a catalog or creating your first type."
+configureCatalog.emptyImportBuiltin: "Import minimal starter categories"
+configureCatalog.emptyBrowseOnline: "Browse more catalogs online"
+configureCatalog.emptyItemsTitle: "No items yet"
+configureCatalog.emptyItemsBody: "Add your first {type} item."
+configureCatalog.emptyBundlesTitle: "No bundles yet"
+configureCatalog.emptyBundlesBody: "Create a bundle to group items together."
+configureCatalog.bundleCount: "{count} items"
+configureCatalog.errorLoading: "Failed to load catalog."
+```
+
+---
+
+**Status**: Fresh consolidation
+**Last Updated**: 2026-01-16

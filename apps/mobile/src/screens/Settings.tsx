@@ -4,11 +4,12 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { spacing, typography, useTheme, useThemeContext } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 
-type Tab = 'home' | 'catalog' | 'settings';
+type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
 
 interface SettingsProps {
   onNavigateTab: (tab: Tab) => void;
   activeTab: Tab;
+  onOpenAssistantSetup?: () => void;
   onOpenReminders?: () => void;
   onOpenSereus?: () => void;
   onOpenBackupRestore?: () => void;
@@ -18,6 +19,11 @@ export default function Settings(props: SettingsProps) {
   const theme = useTheme();
   const { themeMode, setThemeMode } = useThemeContext();
   const t = useT();
+
+  const handleAssistantSetup = () => {
+    if (props.onOpenAssistantSetup) return props.onOpenAssistantSetup();
+    Alert.alert(t('common.notImplementedTitle'), t('common.notImplementedBody'));
+  };
 
   const handleReminders = () => {
     if (props.onOpenReminders) return props.onOpenReminders();
@@ -66,17 +72,17 @@ export default function Settings(props: SettingsProps) {
             </Text>
             <View style={styles.themeSelector}>
               <ThemeButton
-                label="System"
+                label={t('settings.themeSystem')}
                 selected={themeMode === 'system'}
                 onPress={() => setThemeMode('system')}
               />
               <ThemeButton
-                label="Light"
+                label={t('settings.themeLight')}
                 selected={themeMode === 'light'}
                 onPress={() => setThemeMode('light')}
               />
               <ThemeButton
-                label="Dark"
+                label={t('settings.themeDark')}
                 selected={themeMode === 'dark'}
                 onPress={() => setThemeMode('dark')}
               />
@@ -86,6 +92,12 @@ export default function Settings(props: SettingsProps) {
 
         {/* Navigation Rows */}
         <View style={{ gap: spacing[2] }}>
+          <SettingsRow
+            icon="sparkles-outline"
+            title={t('settings.assistantSetup')}
+            onPress={handleAssistantSetup}
+          />
+
           <SettingsRow
             icon="notifications-outline"
             title={t('settings.reminders')}
@@ -121,52 +133,48 @@ export default function Settings(props: SettingsProps) {
         </View>
       </ScrollView>
 
-      {/* Bottom Tab Bar (pinned to bottom) */}
+      {/* Bottom tab bar (4 tabs per navigation.md: Home, Assistant, Catalog, Settings) */}
       <View style={[styles.tabBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
         <TouchableOpacity style={styles.tab} onPress={() => props.onNavigateTab('home')}>
           <Ionicons
-            name="home-outline"
+            name={props.activeTab === 'home' ? 'home' : 'home-outline'}
             size={20}
             color={props.activeTab === 'home' ? theme.accentPrimary : theme.textSecondary}
           />
-          <Text
-            style={[
-              styles.tabLabel,
-              { color: props.activeTab === 'home' ? theme.accentPrimary : theme.textSecondary },
-            ]}
-          >
+          <Text style={[styles.tabLabel, { color: props.activeTab === 'home' ? theme.accentPrimary : theme.textSecondary }]}>
             {t('navigation.home')}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.tab} onPress={() => props.onNavigateTab('assistant')}>
+          <Ionicons
+            name={props.activeTab === 'assistant' ? 'sparkles' : 'sparkles-outline'}
+            size={20}
+            color={props.activeTab === 'assistant' ? theme.accentPrimary : theme.textSecondary}
+          />
+          <Text style={[styles.tabLabel, { color: props.activeTab === 'assistant' ? theme.accentPrimary : theme.textSecondary }]}>
+            {t('navigation.assistant')}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.tab} onPress={() => props.onNavigateTab('catalog')}>
           <Ionicons
-            name="list-outline"
+            name={props.activeTab === 'catalog' ? 'list' : 'list-outline'}
             size={20}
             color={props.activeTab === 'catalog' ? theme.accentPrimary : theme.textSecondary}
           />
-          <Text
-            style={[
-              styles.tabLabel,
-              { color: props.activeTab === 'catalog' ? theme.accentPrimary : theme.textSecondary },
-            ]}
-          >
+          <Text style={[styles.tabLabel, { color: props.activeTab === 'catalog' ? theme.accentPrimary : theme.textSecondary }]}>
             {t('navigation.catalog')}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.tab} onPress={() => props.onNavigateTab('settings')}>
           <Ionicons
-            name="settings-outline"
+            name={props.activeTab === 'settings' ? 'settings' : 'settings-outline'}
             size={20}
             color={props.activeTab === 'settings' ? theme.accentPrimary : theme.textSecondary}
           />
-          <Text
-            style={[
-              styles.tabLabel,
-              { color: props.activeTab === 'settings' ? theme.accentPrimary : theme.textSecondary },
-            ]}
-          >
+          <Text style={[styles.tabLabel, { color: props.activeTab === 'settings' ? theme.accentPrimary : theme.textSecondary }]}>
             {t('navigation.settings')}
           </Text>
         </TouchableOpacity>

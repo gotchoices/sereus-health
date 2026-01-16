@@ -9,9 +9,9 @@ Tabs are pinned to the bottom; screen content scrolls above them.
 | Tab | Purpose | Root | Icon (see `global/ui.md`) |
 |-----|---------|------|--------------------------|
 | Home | History and logging | `LogHistory` | `home` |
-| Catalog | Manage catalog items/bundles | `ConfigureCatalog` | `list` |
 | Assistant | AI assistant | `Assistant` | `sparkles` |
-| Settings | Preferences and utilities | `Settings` | `sgear` |
+| Catalog | Manage catalog items/bundles | `ConfigureCatalog` | `list` |
+| Settings | Preferences and utilities | `Settings` | `settings` |
 
 ## What lives under each tab
 
@@ -19,13 +19,13 @@ Tabs are pinned to the bottom; screen content scrolls above them.
   - `LogHistory` (history list)
   - From history, users can create a new entry, clone an entry, and navigate to graphs.
 
-- **Catalog**
-  - `ConfigureCatalog` (items/bundles management)
-  - From catalog, users can create/edit items and bundles, and import/export catalog data.
-
 - **Assistant**
   - `Assistant` (assistant UI)
   - If not configured, the user can navigate to **Assistant Setup** (`ApiKeys`).
+
+- **Catalog**
+  - `ConfigureCatalog` (items/bundles management)
+  - From catalog, users can create/edit items and bundles, and import/export catalog data.
 
 - **Settings**
   - `Settings` (root list of settings sections)

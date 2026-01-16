@@ -12,12 +12,12 @@
         "design/specs/mobile/global/ui.md"
       ],
       "depHashes": {
-        "design/generated/mobile/screens/LogHistory.md": "5f36af0e1d931033e123bfad3445167309ead5df6f8b95639570268dc63d55b0",
-        "design/specs/mobile/screens/index.md": "cb0617ed616661cc69cbaab5637a94385ca6301d408bbfc0f63c59ad029c3006",
-        "design/specs/mobile/screens/log-history.md": "78bf222507785b26b6487c3f8e37dc1fe861c67dd8a0b4dc1ee5b258ad55acea",
-        "design/specs/mobile/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
-        "design/specs/mobile/global/general.md": "c7428ec105560a84a4ceca085dd6ef8ecefa4369512c0ca518d06f4b083cbcee",
-        "design/specs/mobile/global/ui.md": "4d8687e3cdf479c3aac789b56b4fefca96a3e08351657b14dec537ecd819d707"
+        "design/generated/mobile/screens/LogHistory.md": "b3b2ee1be125086b3f69342c08d3a4be294fe7cafea54777e040d43db5475e51",
+        "design/specs/mobile/screens/index.md": "11e5d90a998c93e9e732a3ab84cef6c47d6001dbb5ab862293a0cf45d19badd4",
+        "design/specs/mobile/screens/log-history.md": "4c67492499986835c5dc48292a554f40f2a54ba58ac3183b6c7cffbfd80fe5f2",
+        "design/specs/mobile/navigation.md": "533a973ca3e323bced661fd1cf7208f4a5c2f3c8bb15ddf8bf85c9413d47ffde",
+        "design/specs/mobile/global/general.md": "e859bc37ab930410e40a0cc1f088c72f9ee35d662f6d17a36ec3917a9e3a270c",
+        "design/specs/mobile/global/ui.md": "906ee138ab4d2ac1d9cb5a9fbbfdfeeb3f94c88bdc07263fe3ee444af9e8d9c1"
       }
     },
     {
@@ -52,12 +52,12 @@
         "design/specs/mobile/global/ui.md"
       ],
       "depHashes": {
-        "design/generated/mobile/screens/ConfigureCatalog.md": "b8f3f29a234206eddf3558cb8f3643edda43dadedcc892bd26cf33357ec3abeb",
-        "design/specs/mobile/screens/index.md": "cb0617ed616661cc69cbaab5637a94385ca6301d408bbfc0f63c59ad029c3006",
-        "design/specs/mobile/screens/configure-catalog.md": "37bab970da5cdb1fa94989720d088cd621119074dd7a94def9d8ce0bcc8a39c2",
-        "design/specs/mobile/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
-        "design/specs/mobile/global/general.md": "c7428ec105560a84a4ceca085dd6ef8ecefa4369512c0ca518d06f4b083cbcee",
-        "design/specs/mobile/global/ui.md": "4d8687e3cdf479c3aac789b56b4fefca96a3e08351657b14dec537ecd819d707"
+        "design/generated/mobile/screens/ConfigureCatalog.md": "583cec99f02d2407b06ffcb54eeb970c3a647df1dadac69240da8ceea3078098",
+        "design/specs/mobile/screens/index.md": "11e5d90a998c93e9e732a3ab84cef6c47d6001dbb5ab862293a0cf45d19badd4",
+        "design/specs/mobile/screens/configure-catalog.md": "b775c86502873609e3d6624532a5823f3c088b3605a615869c7f70706dd4a241",
+        "design/specs/mobile/navigation.md": "533a973ca3e323bced661fd1cf7208f4a5c2f3c8bb15ddf8bf85c9413d47ffde",
+        "design/specs/mobile/global/general.md": "e859bc37ab930410e40a0cc1f088c72f9ee35d662f6d17a36ec3917a9e3a270c",
+        "design/specs/mobile/global/ui.md": "906ee138ab4d2ac1d9cb5a9fbbfdfeeb3f94c88bdc07263fe3ee444af9e8d9c1"
       }
     },
     {
@@ -185,11 +185,11 @@
         "design/specs/mobile/global/ui.md"
       ],
       "depHashes": {
-        "design/generated/mobile/screens/Settings.md": "65d32a2df706996bf160006b62168760ce91ae821f08f46c4e9d1ea20ef583c5",
-        "design/specs/mobile/screens/index.md": "56cecc1b2187cb76771d54621493b7911f0a6bc07b77dac3d69e3fdeccf5e219",
-        "design/specs/mobile/navigation.md": "37b2ab1a49c6a0f19f816f8b4e8ae0d3c8a4c4d5b6f32fd37efb7ab01f99c2aa",
-        "design/specs/mobile/global/general.md": "62f9472014fd455dcd4020c164deaf7cd424cc4b78dcced623243dce81699b04",
-        "design/specs/mobile/global/ui.md": "f019c3e656ad99e35d477d2becda60a2292459265998eeff53b648051d2a7e08"
+        "design/generated/mobile/screens/Settings.md": "8bc4944fa0f21d834e33b40d508069b95dc8df72991b77d2f4f73aecf5443f75",
+        "design/specs/mobile/screens/index.md": "11e5d90a998c93e9e732a3ab84cef6c47d6001dbb5ab862293a0cf45d19badd4",
+        "design/specs/mobile/navigation.md": "533a973ca3e323bced661fd1cf7208f4a5c2f3c8bb15ddf8bf85c9413d47ffde",
+        "design/specs/mobile/global/general.md": "e859bc37ab930410e40a0cc1f088c72f9ee35d662f6d17a36ec3917a9e3a270c",
+        "design/specs/mobile/global/ui.md": "906ee138ab4d2ac1d9cb5a9fbbfdfeeb3f94c88bdc07263fe3ee444af9e8d9c1"
       }
     },
     {
@@ -233,6 +233,83 @@
         "design/specs/mobile/global/ui.md": "997a13bf6fcb3b49cdc5e4cafd2139379e7717a843d6fe3d58a7c319bd4e4e99",
         "design/stories/mobile/08-reminders.md": "6a24afeaa611baf8d4253a6102e34caef592a6c93455ac320b3595f534696c08"
       }
+    },
+    {
+      "route": "Assistant",
+      "dependsOn": [
+        "design/specs/project.md",
+        "design/specs/domain/schema-indexes.md",
+        "design/specs/domain/taxonomy.md",
+        "design/specs/domain/bundles.md",
+        "design/specs/domain/index.md",
+        "design/specs/domain/logging.md",
+        "design/specs/domain/rules.md",
+        "design/specs/domain/import-export.md",
+        "design/specs/mobile/navigation.md",
+        "design/specs/mobile/screens/index.md",
+        "design/specs/mobile/screens/assistant.md",
+        "design/specs/mobile/screens/Assistant.md",
+        "design/stories/mobile/07-graphing.md",
+        "design/stories/mobile/09-backup.md",
+        "design/stories/mobile/05-assistant.md",
+        "design/stories/mobile/04-cloning.md",
+        "design/stories/mobile/08-reminders.md",
+        "design/stories/mobile/03-configuring.md",
+        "design/stories/mobile/01-exploring.md",
+        "design/stories/mobile/06-imp-exp.md",
+        "design/stories/mobile/02-daily.md",
+        "design/stories/mobile/10-networking.md"
+      ],
+      "depHashes": {
+        "design/specs/project.md": "477c5dc0523450b7008e21e65e5f651cac2a2865e6873b11c4854ec798eee3dc",
+        "design/specs/domain/schema-indexes.md": "049f38eb3b0352922a1ff5c08c89c218de66b203e166fcb1b1d5d0d12d8e1efd",
+        "design/specs/domain/taxonomy.md": "f2340138cb6cfb88878dd6617145280f7bac0d203a0518526ce38db3ea4e8336",
+        "design/specs/domain/bundles.md": "000d96f23d2584b6f753aabac9ac3a2c8d1e761b098e907def8e29d4bc49bfa6",
+        "design/specs/domain/index.md": "e50289c157a5944f953dfe6cfcd23a5fb484ac41da5918115107c8ca11669066",
+        "design/specs/domain/logging.md": "3d11215241098c8d4ab88880ffaeb286d08d676c5cc83e947c4c22ee0c498aab",
+        "design/specs/domain/rules.md": "315e9cb86374f939beb08473299708ac98a2e2126c6e10cae99c4d2d38222cae",
+        "design/specs/domain/import-export.md": "bcb428fbe5d6ea6c122806fedddf31164f779c899ab6ebef1f1fc230263c4294",
+        "design/specs/mobile/navigation.md": "533a973ca3e323bced661fd1cf7208f4a5c2f3c8bb15ddf8bf85c9413d47ffde",
+        "design/specs/mobile/screens/index.md": "11e5d90a998c93e9e732a3ab84cef6c47d6001dbb5ab862293a0cf45d19badd4",
+        "design/specs/mobile/screens/assistant.md": "77fea417bcfc00d994b02f1bf30e0b53d0814cf735347e01912450b61e3e8673",
+        "design/specs/mobile/screens/Assistant.md": "77fea417bcfc00d994b02f1bf30e0b53d0814cf735347e01912450b61e3e8673",
+        "design/stories/mobile/07-graphing.md": "02d5a34b76448a3107ec9c0b3564e85e48234d633848babe02515f90779d3c8a",
+        "design/stories/mobile/09-backup.md": "b6c4bf5a3a2ac3891df575ce3b1a25167033d4c8ad2d7cfe152146f6cc869a04",
+        "design/stories/mobile/05-assistant.md": "95893ca08e2f9173ab0c672e91236a74f0a4ff16db3890e961c6e7024d6fbac8",
+        "design/stories/mobile/04-cloning.md": "51954dc5dfcd5073fb726e03ebc64ddb10d76c9529ef491cc79e616226b6a9ba",
+        "design/stories/mobile/08-reminders.md": "0adfd210b1ea919d16309c32869c973701a793677cc9c765b9119cbfebeb5660",
+        "design/stories/mobile/03-configuring.md": "a522b6ee7985949ca8bcc03ec44374650f81ce47f1948e03cf0ce752cf45ee76",
+        "design/stories/mobile/01-exploring.md": "3c2267da11a140bb22035f139fca0f3a4d7afff6618a63776e0dc6f95edef92a",
+        "design/stories/mobile/06-imp-exp.md": "19638e6208a079c9c41574d8bccefedfb0af327b7473813e59462bdc92a24320",
+        "design/stories/mobile/02-daily.md": "6b2c6d4d91881c454cb6563cc0491c4feaf1c4bb945a6c597ace0d668ea315d4",
+        "design/stories/mobile/10-networking.md": "6ef01b8793263cd987880e3bad94354c3e3b10c8cc7ef6717bc0fc44639e7a96"
+      }
+    },
+    {
+      "route": "ApiKeys",
+      "dependsOn": [
+        "design/specs/project.md",
+        "design/specs/domain/schema-indexes.md",
+        "design/specs/domain/taxonomy.md",
+        "design/specs/domain/bundles.md",
+        "design/specs/domain/index.md",
+        "design/specs/domain/logging.md",
+        "design/specs/domain/rules.md",
+        "design/specs/domain/import-export.md",
+        "design/specs/mobile/navigation.md",
+        "design/specs/mobile/screens/index.md",
+        "design/stories/mobile/07-graphing.md",
+        "design/stories/mobile/09-backup.md",
+        "design/stories/mobile/05-assistant.md",
+        "design/stories/mobile/04-cloning.md",
+        "design/stories/mobile/08-reminders.md",
+        "design/stories/mobile/03-configuring.md",
+        "design/stories/mobile/01-exploring.md",
+        "design/stories/mobile/06-imp-exp.md",
+        "design/stories/mobile/02-daily.md",
+        "design/stories/mobile/10-networking.md"
+      ],
+      "depHashes": {}
     }
   ]
 }
