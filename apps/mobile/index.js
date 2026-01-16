@@ -14,6 +14,22 @@ if (typeof global.structuredClone === 'undefined') {
   global.structuredClone = structuredClone;
 }
 
+// Polyfill for Web Streams API (needed by Vercel AI SDK in React Native)
+import {
+  ReadableStream,
+  WritableStream,
+  TransformStream,
+} from 'web-streams-polyfill';
+if (typeof global.ReadableStream === 'undefined') {
+  global.ReadableStream = ReadableStream;
+}
+if (typeof global.WritableStream === 'undefined') {
+  global.WritableStream = WritableStream;
+}
+if (typeof global.TransformStream === 'undefined') {
+  global.TransformStream = TransformStream;
+}
+
 // Polyfill for Symbol.asyncIterator (required for async iterables / for-await-of in some RN/Hermes builds)
 // Quereus isolation uses `Symbol.asyncIterator` explicitly when merging streams.
 if (typeof Symbol !== 'undefined' && typeof Symbol.asyncIterator === 'undefined') {
