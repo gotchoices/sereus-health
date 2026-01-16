@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   Image,
+  Linking,
   StyleSheet,
   Text,
   TextInput,
@@ -13,7 +14,7 @@ import { getLogHistory, type LogEntry } from '../data/logHistory';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 
-type Tab = 'home' | 'catalog' | 'settings';
+type Tab = 'home' | 'catalog' | 'assistant' | 'settings';
 
 export default function LogHistory(props: {
   onAddNew: () => void;
@@ -21,6 +22,7 @@ export default function LogHistory(props: {
   onEdit: (entryId: string) => void;
   onOpenGraphs: () => void;
   onNavigateTab: (tab: Tab) => void;
+  onImportBuiltinCatalog?: () => void;
   activeTab: Tab;
 }) {
   const theme = useTheme();
@@ -42,7 +44,6 @@ export default function LogHistory(props: {
       })
       .catch((err) => {
         if (!alive) return;
-        // Keep UI error message user-friendly, but log the underlying cause for debugging.
         // eslint-disable-next-line no-console
         console.error('[LogHistory] Failed to load history', err);
         setError(t('logHistory.errorLoading'));
@@ -82,11 +83,18 @@ export default function LogHistory(props: {
   };
 
   const badgeColor = (type: string) => {
-    const t = type.toLowerCase();
-    if (t === 'activity') return theme.accentActivity;
-    if (t === 'condition') return theme.accentCondition;
-    if (t === 'outcome') return theme.accentOutcome;
+    const lowerType = type.toLowerCase();
+    if (lowerType === 'activity') return theme.accentActivity;
+    if (lowerType === 'condition') return theme.accentCondition;
+    if (lowerType === 'outcome') return theme.accentOutcome;
     return theme.accentPrimary;
+  };
+
+  const handleBrowseOnline = () => {
+    Linking.openURL('https://health.sereus.org').catch((err) => {
+      // eslint-disable-next-line no-console
+      console.error('[LogHistory] Failed to open URL', err);
+    });
   };
 
   const renderEntry = ({ item }: { item: LogEntry }) => {
@@ -135,12 +143,45 @@ export default function LogHistory(props: {
     );
   };
 
+  const renderEmptyState = () => (
+    <View style={styles.center}>
+      <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>{t('logHistory.emptyTitle')}</Text>
+      <Text style={{ color: theme.textSecondary, textAlign: 'center', marginBottom: spacing[3] }}>
+        {t('logHistory.emptyMessage')}
+      </Text>
+
+      {/* CTA: Import built-in starter */}
+      <TouchableOpacity
+        style={[styles.ctaButton, { backgroundColor: theme.accentPrimary }]}
+        onPress={props.onImportBuiltinCatalog}
+      >
+        <Text style={styles.ctaButtonText}>{t('logHistory.emptyImportBuiltin')}</Text>
+      </TouchableOpacity>
+
+      {/* CTA: Browse online */}
+      <TouchableOpacity
+        style={[styles.ctaButtonOutline, { borderColor: theme.accentPrimary }]}
+        onPress={handleBrowseOnline}
+      >
+        <Text style={[styles.ctaButtonOutlineText, { color: theme.accentPrimary }]}>
+          {t('logHistory.emptyBrowseOnline')}
+        </Text>
+      </TouchableOpacity>
+
+      {/* CTA: Create first entry */}
+      <TouchableOpacity style={styles.ctaLink} onPress={props.onAddNew}>
+        <Text style={{ color: theme.accentPrimary }}>{t('logHistory.emptyCreateFirst')}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <View style={styles.headerLeft}>
           <Image source={require('../assets/logo.png')} style={styles.logo} />
-          <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>{t('app.title')}</Text>
+          <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>{t('logHistory.title')}</Text>
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity onPress={props.onOpenGraphs} style={styles.headerIcon}>
@@ -155,6 +196,7 @@ export default function LogHistory(props: {
         </View>
       </View>
 
+      {/* Filter bar */}
       {filterVisible ? (
         <View style={[styles.filterBar, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
           <Ionicons name="search-outline" size={18} color={theme.textSecondary} />
@@ -173,6 +215,7 @@ export default function LogHistory(props: {
         </View>
       ) : null}
 
+      {/* Content */}
       {loading ? (
         <View style={styles.center}>
           <Text style={{ color: theme.textSecondary }}>Loading…</Text>
@@ -185,10 +228,7 @@ export default function LogHistory(props: {
           </TouchableOpacity>
         </View>
       ) : filtered.length === 0 ? (
-        <View style={styles.center}>
-          <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>{t('logHistory.emptyTitle')}</Text>
-          <Text style={{ color: theme.textSecondary, textAlign: 'center' }}>{t('logHistory.emptyMessage')}</Text>
-        </View>
+        renderEmptyState()
       ) : (
         <FlatList
           data={filtered}
@@ -198,11 +238,11 @@ export default function LogHistory(props: {
         />
       )}
 
-      {/* Bottom tabs (minimal) */}
+      {/* Bottom tab bar (4 tabs per navigation.md) */}
       <View style={[styles.tabBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
         <TouchableOpacity style={styles.tab} onPress={() => props.onNavigateTab('home')}>
           <Ionicons
-            name="home-outline"
+            name={props.activeTab === 'home' ? 'home' : 'home-outline'}
             size={20}
             color={props.activeTab === 'home' ? theme.accentPrimary : theme.textSecondary}
           />
@@ -210,27 +250,36 @@ export default function LogHistory(props: {
             {t('navigation.home')}
           </Text>
         </TouchableOpacity>
+
         <TouchableOpacity style={styles.tab} onPress={() => props.onNavigateTab('catalog')}>
           <Ionicons
-            name="list-outline"
+            name={props.activeTab === 'catalog' ? 'list' : 'list-outline'}
             size={20}
             color={props.activeTab === 'catalog' ? theme.accentPrimary : theme.textSecondary}
           />
-          <Text
-            style={[styles.tabLabel, { color: props.activeTab === 'catalog' ? theme.accentPrimary : theme.textSecondary }]}
-          >
+          <Text style={[styles.tabLabel, { color: props.activeTab === 'catalog' ? theme.accentPrimary : theme.textSecondary }]}>
             {t('navigation.catalog')}
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity style={styles.tab} onPress={() => props.onNavigateTab('assistant')}>
+          <Ionicons
+            name={props.activeTab === 'assistant' ? 'sparkles' : 'sparkles-outline'}
+            size={20}
+            color={props.activeTab === 'assistant' ? theme.accentPrimary : theme.textSecondary}
+          />
+          <Text style={[styles.tabLabel, { color: props.activeTab === 'assistant' ? theme.accentPrimary : theme.textSecondary }]}>
+            {t('navigation.assistant')}
+          </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.tab} onPress={() => props.onNavigateTab('settings')}>
           <Ionicons
-            name="settings-outline"
+            name={props.activeTab === 'settings' ? 'settings' : 'settings-outline'}
             size={20}
             color={props.activeTab === 'settings' ? theme.accentPrimary : theme.textSecondary}
           />
-          <Text
-            style={[styles.tabLabel, { color: props.activeTab === 'settings' ? theme.accentPrimary : theme.textSecondary }]}
-          >
+          <Text style={[styles.tabLabel, { color: props.activeTab === 'settings' ? theme.accentPrimary : theme.textSecondary }]}>
             {t('navigation.settings')}
           </Text>
         </TouchableOpacity>
@@ -266,7 +315,7 @@ const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
     borderRadius: 12,
-    padding: 12, // per spec
+    padding: 12,
     marginBottom: 8,
   },
   row1: {
@@ -284,6 +333,22 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing[4], gap: spacing[2] },
   emptyTitle: { ...typography.title, marginBottom: spacing[1] },
   retry: { padding: spacing[2] },
+  ctaButton: {
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[4],
+    borderRadius: 8,
+    marginBottom: spacing[2],
+  },
+  ctaButtonText: { color: '#fff', fontWeight: '600' },
+  ctaButtonOutline: {
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[4],
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: spacing[2],
+  },
+  ctaButtonOutlineText: { fontWeight: '600' },
+  ctaLink: { padding: spacing[2] },
   tabBar: {
     borderTopWidth: 1,
     flexDirection: 'row',
@@ -293,5 +358,3 @@ const styles = StyleSheet.create({
   tab: { alignItems: 'center', gap: 4 },
   tabLabel: { ...typography.small },
 });
-
-

@@ -42,7 +42,7 @@ This checklist tracks spec review work for the **mobile** target. Treat it as th
 - [x] **Story ordering/numbering**: decide whether assistant/import/export/backups should be earlier/later in the numbered story sequence.
 - [x] **Seed removal migration**: decide how existing installs behave after removing seeds (do we wipe? do we keep old seed rows?).
 - [ ] **Hosted starter catalogs**: define `health.sereus.org` starter catalog URLs, versioning, and compatibility guarantees.
-- [ ] **Security/privacy**: define where AI API keys are stored (device keychain/secure store), redaction rules, and user consent when uploading files/images.
+- [x] **Security/privacy**: define where AI API keys are stored (device keychain/secure store), redaction rules, and user consent when uploading files/images.
   - [x] API key storage location: stored in device secure storage (Keychain/Keystore) — see `design/specs/mobile/screens/api-keys.md` and `design/specs/mobile/global/assistant/vercel-ai-sdk.md`.
 - [ ] **Offline behavior**: assistant unavailable offline; ensure canonical import still works offline.
 - [ ] **Test matrix**: empty DB flows, import idempotency, clear+import replace, assistant preview/approval, export CSV readability, export YAML/JSON re-import.
