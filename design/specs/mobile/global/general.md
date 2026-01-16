@@ -34,6 +34,6 @@ For screens that expose a toggleable search/filter bar:
 
 - Use platform-native date/time picker UX; keep picker presentation consistent (modal/inline with confirm/cancel).
 
-### AI Assistant
+### Assistant
  The assistant UX is implemented as a reusable component: see [`mobile/components/assistant.md`](../components/assistant.md).
 - Initial implementation: **screen-only**, accessible from the global menu (bottom tab bar), not an overlay.

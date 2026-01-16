@@ -62,7 +62,7 @@ Export log entries as CSV per `IMPORT_EXPORT_DOC`.
 
 ## Tool: `export.catalog`
 
-Export catalog as canonical YAML/JSON per `design/specs/domain/import-export.md`.
+Export catalog as canonical YAML/JSON per `IMPORT_EXPORT_DOC`.
 
 - **Input**
   - `format`: `'yaml' | 'json'`
@@ -71,7 +71,7 @@ Export catalog as canonical YAML/JSON per `design/specs/domain/import-export.md`
 
 ## Tool: `export.backup`
 
-Export full backup as canonical YAML/JSON per `design/specs/domain/import-export.md`.
+Export full backup as canonical YAML/JSON per `IMPORT_EXPORT_DOC`.
 
 - **Input**
   - `format`: `'yaml' | 'json'`

@@ -1,9 +1,5 @@
 # Screens Plan (Human Proposal)
 
-Purpose
-- Make a first pass at screen names and routes before generation.
-- If you leave this as-is, the agent will propose names from stories.
-
 Instructions
 - List each screen with a clear, stable name and short purpose.
 - Add a proposed route (used for deep links and navigation).
@@ -21,12 +17,12 @@ Screens
 | Graphs             | Graphs            | Browse saved/named graphs                            | happy, empty        |
 | GraphCreate        | GraphCreate       | Select items + date range, generate new graph       | happy              |
 | GraphView          | GraphView         | Display and share a specific graph                   | happy              |
+| Assistant          | Assistant         | Assistant UI (propose actions with preview/approval) | happy, empty        |
+| ApiKeys            | ApiKeys           | Assistant setup: provider + API key(s)               | happy, empty        |
 | Settings           | Settings          | List of settings sections (Sereus, Reminders, etc.) | happy              |
 | BackupRestore      | BackupRestore     | Export/import full backup from Settings             | happy, error        |
 | SereusConnections  | SereusConnections | View and manage Sereus cadre and guest nodes        | happy, empty, error |
 | Reminders          | Reminders         | Configure reminder notification interval             | happy              |
 
 Notes
-- Add/remove rows as needed. You can refine names later, but avoiding churn helps.
-- Screen-specific requirements go in `design/specs/mobile/screens/<screen-id>.md` (kebab-case).
-
+- Screen-specific requirements go in `screens/<screen-id>.md` (kebab-case).

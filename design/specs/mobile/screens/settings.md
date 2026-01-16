@@ -8,7 +8,7 @@ Provide a simple, stable entry point for app-wide configuration and data managem
 
 - Header: title “Settings”
 - Content: list of sections (rows)
-- Bottom tabs: pinned at bottom (per global navigation layout)
+- Bottom tabs: pinned at bottom
 
 ## Sections (order)
 
@@ -27,6 +27,10 @@ Initial preferences:
 ### Sereus Connections
 
 - Row navigates to `SereusConnections`
+
+### Assistant
+
+- Row navigates to `ApiKeys` (Assistant Setup)
 
 ### Backup & Restore
 

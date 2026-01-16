@@ -19,7 +19,7 @@ Manage the catalog of items, categories, and bundles that Bob uses when logging 
 │  Item/Bundle cards...                   │  Scrollable list
 │                                         │
 ├─────────────────────────────────────────┤
-│  🏠 Home    📋 Catalog    ⚙️ Settings   │  Bottom tabs
+│              Bottom tabs                │
 └─────────────────────────────────────────┘
 ```
 
@@ -59,8 +59,7 @@ Manage the catalog of items, categories, and bundles that Bob uses when logging 
 | Tap bundle card | EditBundle (id=bundle.id) |
 | Tap (+) in Items view | EditItem (type=selectedType) |
 | Tap (+) in Bundles view | EditBundle (type=selectedType) |
-| Bottom tab: Home | LogHistory |
-| Bottom tab: Settings | Settings |
+| Bottom tab navigation | See `design/specs/mobile/navigation.md` |
 
 ## Import / Export (data portability)
 

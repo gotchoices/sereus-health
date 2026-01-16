@@ -8,6 +8,7 @@ This folder intentionally contains **two kinds of resources**:
 ## Local: build notes (not for inclusion in agent turns)
 
 - Prompt pack construction: `pack.md`
+- Vercel AI SDK (bare RN) plan: `vercel-ai-sdk.md`
 - UI shell spec (layout/controls): `design/specs/mobile/components/assistant.md`
 - Domain truth (schema and portability):
   - `design/specs/domain/schema.qsql`
