@@ -186,6 +186,15 @@ const en: Dict = {
   'backupRestore.clearDataDone': 'Done. Fully close and relaunch the app.',
   'backupRestore.clearDataFailed': 'Failed. See logs for details.',
 
+  'apiKeys.title': 'Assistant Setup',
+  'apiKeys.emptyTitle': 'No API keys configured',
+  'apiKeys.emptyMessage': 'Tap + to add your first API key',
+  'apiKeys.provider': 'Provider',
+  'apiKeys.model': 'Model (optional)',
+  'apiKeys.apiKey': 'API Key',
+  'apiKeys.deleteTitle': 'Delete API key?',
+  'apiKeys.deleteMessage': 'This cannot be undone.',
+
   'assistant.title': 'Assistant',
   'assistant.notConfiguredTitle': 'Assistant not configured',
   'assistant.notConfiguredMessage': 'Set up an API key to use the assistant.',

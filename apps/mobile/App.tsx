@@ -18,6 +18,8 @@ import SereusConnections from './src/screens/SereusConnections';
 import Reminders from './src/screens/Reminders';
 import BackupRestore from './src/screens/BackupRestore';
 import Assistant from './src/screens/Assistant';
+import ApiKeys from './src/screens/ApiKeys';
+import { isAssistantConfigured } from './src/data/apiKeys';
 import { ThemeProvider } from './src/theme/useTheme';
 
 type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
@@ -34,7 +36,8 @@ type Screen =
   | 'BackupRestore'
   | 'SereusConnections'
   | 'Reminders'
-  | 'Assistant';
+  | 'Assistant'
+  | 'ApiKeys';
 
 /**
  * Note: This is a minimal navigation shell to get back to a running baseline.
@@ -76,6 +79,14 @@ function AppContent() {
   const [graphsLoading, setGraphsLoading] = useState(false);
   const [graphsError, setGraphsError] = useState<string | null>(null);
   const [currentGraphId, setCurrentGraphId] = useState<string | null>(null);
+
+  // Assistant configuration status
+  const [assistantConfigured, setAssistantConfigured] = useState(false);
+
+  // Check assistant configuration on mount and when screen changes
+  useEffect(() => {
+    isAssistantConfigured().then(setAssistantConfigured);
+  }, [screen]);
 
   useEffect(() => {
     let alive = true;
@@ -141,6 +152,7 @@ function AppContent() {
       'SereusConnections',
       'Reminders',
       'Assistant',
+      'ApiKeys',
     ];
 
     if (!allowed.includes(route as Screen)) return;
@@ -268,14 +280,17 @@ function AppContent() {
       key={navKey}
       onNavigateTab={resetToTabRoot}
       activeTab={tab}
-      isConfigured={false} // TODO: check if API key is configured
+      onOpenApiKeys={() => pushScreen('ApiKeys')}
+      isConfigured={assistantConfigured}
     />
+  ) : screen === 'ApiKeys' ? (
+    <ApiKeys key={navKey} onBack={popScreen} />
   ) : screen === 'Settings' ? (
     <Settings
       key={navKey}
       onNavigateTab={resetToTabRoot}
       activeTab={tab}
-      onOpenAssistantSetup={() => pushScreen('Assistant')} // TODO: should go to ApiKeys when implemented
+      onOpenAssistantSetup={() => pushScreen('ApiKeys')}
       onOpenSereus={() => pushScreen('SereusConnections')}
       onOpenReminders={() => pushScreen('Reminders')}
       onOpenBackupRestore={() => pushScreen('BackupRestore')}

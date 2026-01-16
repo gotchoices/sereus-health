@@ -34,7 +34,7 @@ Initial preferences:
 
 - Row navigates to `SereusConnections`
 
-### Assistant
+### Assistant API Keys
 
 - Row navigates to `ApiKeys` (Assistant Setup)
 

@@ -309,7 +309,28 @@
         "design/stories/mobile/02-daily.md",
         "design/stories/mobile/10-networking.md"
       ],
-      "depHashes": {}
+      "depHashes": {
+        "design/specs/project.md": "477c5dc0523450b7008e21e65e5f651cac2a2865e6873b11c4854ec798eee3dc",
+        "design/specs/domain/schema-indexes.md": "049f38eb3b0352922a1ff5c08c89c218de66b203e166fcb1b1d5d0d12d8e1efd",
+        "design/specs/domain/taxonomy.md": "f2340138cb6cfb88878dd6617145280f7bac0d203a0518526ce38db3ea4e8336",
+        "design/specs/domain/bundles.md": "000d96f23d2584b6f753aabac9ac3a2c8d1e761b098e907def8e29d4bc49bfa6",
+        "design/specs/domain/index.md": "e50289c157a5944f953dfe6cfcd23a5fb484ac41da5918115107c8ca11669066",
+        "design/specs/domain/logging.md": "3d11215241098c8d4ab88880ffaeb286d08d676c5cc83e947c4c22ee0c498aab",
+        "design/specs/domain/rules.md": "315e9cb86374f939beb08473299708ac98a2e2126c6e10cae99c4d2d38222cae",
+        "design/specs/domain/import-export.md": "bcb428fbe5d6ea6c122806fedddf31164f779c899ab6ebef1f1fc230263c4294",
+        "design/specs/mobile/navigation.md": "533a973ca3e323bced661fd1cf7208f4a5c2f3c8bb15ddf8bf85c9413d47ffde",
+        "design/specs/mobile/screens/index.md": "11e5d90a998c93e9e732a3ab84cef6c47d6001dbb5ab862293a0cf45d19badd4",
+        "design/stories/mobile/07-graphing.md": "02d5a34b76448a3107ec9c0b3564e85e48234d633848babe02515f90779d3c8a",
+        "design/stories/mobile/09-backup.md": "b6c4bf5a3a2ac3891df575ce3b1a25167033d4c8ad2d7cfe152146f6cc869a04",
+        "design/stories/mobile/05-assistant.md": "95893ca08e2f9173ab0c672e91236a74f0a4ff16db3890e961c6e7024d6fbac8",
+        "design/stories/mobile/04-cloning.md": "51954dc5dfcd5073fb726e03ebc64ddb10d76c9529ef491cc79e616226b6a9ba",
+        "design/stories/mobile/08-reminders.md": "0adfd210b1ea919d16309c32869c973701a793677cc9c765b9119cbfebeb5660",
+        "design/stories/mobile/03-configuring.md": "a522b6ee7985949ca8bcc03ec44374650f81ce47f1948e03cf0ce752cf45ee76",
+        "design/stories/mobile/01-exploring.md": "3c2267da11a140bb22035f139fca0f3a4d7afff6618a63776e0dc6f95edef92a",
+        "design/stories/mobile/06-imp-exp.md": "19638e6208a079c9c41574d8bccefedfb0af327b7473813e59462bdc92a24320",
+        "design/stories/mobile/02-daily.md": "6b2c6d4d91881c454cb6563cc0491c4feaf1c4bb945a6c597ace0d668ea315d4",
+        "design/stories/mobile/10-networking.md": "6ef01b8793263cd987880e3bad94354c3e3b10c8cc7ef6717bc0fc44639e7a96"
+      }
     }
   ]
 }

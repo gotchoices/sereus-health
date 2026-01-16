@@ -17,7 +17,8 @@ Each line contains:
   - a radio button to exclusively enable the line
   - A provider selector (determined by what `global/assistant/vercel-ai-sdk.md` package supports)
   - A model selector (if supported by package)
-  - An entry for the api key
+  - An entry for the API key (masked by default)
+    - An eyeball icon to toggle visibility of the key
   - A trash icon (remove this key)
 
 ## Notes
