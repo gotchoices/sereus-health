@@ -2,62 +2,78 @@
 
 ## Purpose
 
-View and manage the user’s Sereus connections (other devices/services that can participate in sharing or redundancy).
+View and manage the user's [Sereus](https://sereus.org) network: keys, nodes, and strand guests.
 
 ## Layout
 
-- Header: title “Sereus Connections”
-  - Optional **Scan / Add** action
-- Content: two sections:
-  - **My devices** (devices the user controls)
-  - **Shared access** (connections to trusted third parties)
+- Header: title "Sereus Connections"
+- Content sections:
 
-## Connection row (card)
+### Network ID
 
-Each connection row shows:
+- Displays the user's private network identifier
+- Tap-to-copy action
 
-- **Icon**: device type (phone/server/desktop/other)
-- **Name**: user-friendly label
-- **Status**: `Online` or `Unreachable`
-- **Identifier**: truncated ID with a copy action (“Copy ID”)
-- **Action**:
-  - My devices: **Remove**
-  - Shared access: **Revoke access**
+### My Keys
 
-### Status meaning
+Authority keys that can authorize changes to the network.
 
-- **Online**: currently reachable.
-- **Unreachable**: not currently reachable. This does not necessarily imply data loss.
+- **(+)** button to add a new key (see Key Management below)
+- List of keys, each showing:
+  - **Icon**: key type (vault / dongle / external)
+  - **Type**: vault, dongle, or external
+  - **Protection**: login / password / biometric
+  - **Key**: public key (abbreviated; expandable to full)
 
-No “syncing” state is required in the UI.
+### My Nodes
 
-## Add connection
+Devices in the user's cadre that store/sync data.
 
-The user can add a connection by scanning a code provided by another device or a trusted party.
+- **(+)** button to add a new node (disabled until at least one key exists)
+- List of nodes, each showing:
+  - **Icon**: device type (phone / server / desktop / other)
+  - **Name**: user-friendly label
+  - **Status**: Online / Unknown / Unreachable
+  - **Identifier**: Peer ID (abbreviated; tap to copy)
+  - **Trash**: remove node from the cadre
 
-- On scan, show a confirmation step with the connection’s name/type (and ID if present).
-- User confirms → connection appears in the appropriate section.
-- If scan content is invalid, show a clear error.
+### Strand Guests
 
-## Remove / revoke
+Trusted third parties (doctors, friends) who can access specific strands.
 
-- **Remove (my device)**:
-  - Requires confirmation.
-  - Warn that removing devices may reduce redundancy.
-- **Revoke access (shared)**:
-  - Requires confirmation.
-  - Clearly indicates it revokes access rather than “deleting data.”
+- **(+)** button to invite a guest (disabled until at least one key exists)
+- List of guests, each showing:
+  - **Icon**: guest icon
+  - **Name**: provider, doctor, friend, etc.
+  - **Status**: Online / Unknown / Unreachable
+  - **Identifier**: Member ID (cadre-level)
+  - **Trash**: revoke guest access
 
-## Empty states
+---
 
-- **My devices**:
-  - If shown empty (rare), state that “This device is your first node” and prompt to add another for redundancy.
-- **Shared access**:
-  - “No shared access”
-  - CTA: “Scan a code to connect”
+## Initialization (First Run)
 
-## Accessibility
+On first launch:
 
-- Status announced as “Online” or “Unreachable”.
-- Copy action labeled “Copy ID”.
-- Actions labeled distinctly: “Remove device” vs “Revoke access”.
+1. App initializes the cadre management schema (control database).
+2. No keys exist yet → My Keys list is empty.
+3. **(+)** buttons for My Nodes and Strand Guests are **disabled** until at least one key is created.
+
+---
+
+## Key Management
+At least one key must be created before more nodes, guests can be added.  When adding a new key, the user selects:
+- Local vault (default unless at least one local vault key already exists)
+- External (default if local key exists)
+- Dongle (future implementation)
+
+When choosing local vault, the user needs to choose whether to protect the key with biometrics or to have it accessible automatically any time the phone is unlocked (login).
+
+When choosing external, a key is created, then:
+- the user is prompted for a passcode to protect it (empty means no protection)
+- the private key can be shared as:
+  - a file stored to the device' file system
+  - a QR code printed, emailed, texted
+
+## Connectivity
+Each time the screen is entered, the interface will probe down to the Fret (DHT) level to determine if a peer ID is currently connected, unknown or disconnected.  There is no API at the Sereus level for this status.
