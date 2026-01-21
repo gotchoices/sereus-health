@@ -1,4 +1,13 @@
 {
+  "partyId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "keys": [
+    {
+      "id": "key-1",
+      "type": "vault",
+      "protection": "biometric",
+      "publicKey": "0x1234abcd5678ef90"
+    }
+  ],
   "cadreNodes": [
     {
       "id": "node-phone-1",

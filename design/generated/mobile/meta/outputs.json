@@ -198,20 +198,16 @@
       "dependsOn": [
         "design/generated/mobile/screens/SereusConnections.md",
         "design/specs/mobile/screens/sereus-connections.md",
-        "design/specs/mobile/screens/index.md",
+        "design/specs/domain/cadre.md",
         "design/specs/mobile/navigation.md",
-        "design/specs/mobile/global/general.md",
-        "design/specs/mobile/global/ui.md",
-        "design/stories/mobile/07-networking.md"
+        "design/specs/mobile/global/ui.md"
       ],
       "depHashes": {
-        "design/generated/mobile/screens/SereusConnections.md": "d0aa5ab9f3f85d3a8478dc4a549ae0a9095214ec710f538a8d765818b2eaf795",
-        "design/specs/mobile/screens/sereus-connections.md": "ba6dc62730e9cd7e9701e16625efab6aee2cf79cbe45e30cad45965a43bbc648",
-        "design/specs/mobile/screens/index.md": "cb0617ed616661cc69cbaab5637a94385ca6301d408bbfc0f63c59ad029c3006",
-        "design/specs/mobile/navigation.md": "469ac5cb6b4aebd2e466e64db8a5417b59893edbc47ed29b6318df03947651dd",
-        "design/specs/mobile/global/general.md": "c7428ec105560a84a4ceca085dd6ef8ecefa4369512c0ca518d06f4b083cbcee",
-        "design/specs/mobile/global/ui.md": "997a13bf6fcb3b49cdc5e4cafd2139379e7717a843d6fe3d58a7c319bd4e4e99",
-        "design/stories/mobile/07-networking.md": "1ba4164e9b93b4976e8f962f605c6459006842bfb3edfbdefa9ddb4eef2420c7"
+        "design/generated/mobile/screens/SereusConnections.md": "228c29a39b2512831a3bfbabaf6d9a0c9a962fe26842099a67285ddc360800d7",
+        "design/specs/mobile/screens/sereus-connections.md": "c6b91be65de160fa59fc44cbebdf8b5bb15f33902f871653cb1aa53190575f9a",
+        "design/specs/domain/cadre.md": "0bea7b40e16ad8a1790e43f35de93e2b7a004835032af74f34f63eaf39f9df09",
+        "design/specs/mobile/navigation.md": "533a973ca3e323bced661fd1cf7208f4a5c2f3c8bb15ddf8bf85c9413d47ffde",
+        "design/specs/mobile/global/ui.md": "906ee138ab4d2ac1d9cb5a9fbbfdfeeb3f94c88bdc07263fe3ee444af9e8d9c1"
       }
     },
     {

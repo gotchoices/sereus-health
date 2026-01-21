@@ -4,114 +4,54 @@
 provides:
   - screen:mobile:SereusConnections
 dependsOn:
-  - design/stories/mobile/07-networking.md
-  - design/specs/mobile/navigation.md
-  - design/specs/mobile/screens/index.md
   - design/specs/mobile/screens/sereus-connections.md
-  - design/specs/mobile/global/general.md
+  - design/specs/domain/cadre.md
+  - design/specs/mobile/navigation.md
   - design/specs/mobile/global/ui.md
 ---
 
 ## Purpose
-View and manage Sereus nodes that make up Bob's network—both his own cadre nodes and guest nodes shared by healthcare providers and other trusted parties.
+
+View and manage the user's Sereus network: keys, nodes, and strand guests.
 
 ## Screen Identity
+
 - **Route**: `SereusConnections` (push from Settings)
 - **Title**: "Sereus Connections"
-- **Deep Link**: `health://screen/SereusConnections?variant={happy|empty}`
 
-## User Journey Context
-From stories:
-- **07-networking.md**:
-  - Bob scans QR codes to add nodes to his network
-  - Nodes can be "cadre" (Bob controls) or "guest" (someone else controls)
-  - He can view his whole cohort in settings
-  - He can remove nodes any time
-  - Data is distributed across nodes for safety
+## Layout
 
-## Layout & Information Architecture
+Per spec, four content sections in order:
 
-### Header
-- **Back Button** (left): Returns to Settings
-- **Title**: "Sereus Connections" (centered)
-- **Add Button** (right): QR scan icon to add new node
-
-### Main Content Area
-
-#### When Nodes Exist
-Two sections:
-
-**My Nodes (Cadre)**
-- Section header with count badge
-- List of nodes Bob controls:
-  - **Node name/identifier**
-  - **Device type** icon (phone, server, etc.)
-  - **Status indicator** (online/offline/syncing)
-  - **Last sync time**: "2 min ago" or "Yesterday"
-  - **Remove action**: Swipe or menu
-
-**Guest Nodes**
-- Section header with count badge
-- List of shared nodes from others:
-  - **Node name/source** (e.g., "Dr. Smith's Office")
-  - **Type indicator**: "Guest" badge
-  - **Status indicator**
-  - **Last sync time**
-  - **Remove action**: Swipe or menu
-
-#### Empty State (no nodes)
-- Cloud icon (large, centered)
-- Title: "No nodes connected"
-- Subtitle: "Scan a QR code to add your first Sereus node"
-- CTA: "Scan QR Code" button
-
-### Floating Action
-- QR scan button (or use header action)
-
-## Interaction Patterns
-
-### Primary Actions
-1. **Add Node** (QR scan):
-   - Opens camera for QR scanning
-   - Parses deep link: `health://sereus/add-node?nodeId={id}&type={cadre|guest}`
-   - Shows confirmation prompt before adding
-   - Distinguishes cadre vs guest based on QR data
-
-2. **Remove Node**:
-   - Swipe-to-reveal delete or long-press menu
-   - Confirmation dialog: "Remove this node from your network?"
-   - Cadre removal: Warn about data safety implications
-   - Guest removal: Simpler confirmation
-
-3. **View Node Details** (future):
-   - Tap node card for detailed status
-   - Sync history, connection info
-
-### Navigation
-- **Back**: Returns to Settings
-- **Deep Links**: 
-  - `health://screen/SereusConnections` - view screen
-  - `health://sereus/add-node?nodeId={id}&type={cadre|guest}` - add node flow
+1. **Network ID** — Party ID with tap-to-copy
+2. **My Keys** — Authority keys that authorize changes
+3. **My Nodes** — Devices in the user's cadre
+4. **Strand Guests** — Trusted third parties with strand access
 
 ## Data Model
 
-### Node
 ```typescript
+interface AuthorityKey {
+  id: string;
+  type: 'vault' | 'dongle' | 'external';
+  protection: 'login' | 'biometric' | 'password';
+  publicKey: string;  // Abbreviated for display
+}
+
 interface SereusNode {
   id: string;
   name: string;
   type: 'cadre' | 'guest';
   deviceType: 'phone' | 'server' | 'desktop' | 'other';
-  status: 'online' | 'offline' | 'syncing';
-  lastSync: string;           // ISO 8601 timestamp
-  addedAt: string;            // ISO 8601 timestamp
-  source?: string;            // For guest nodes, who shared it
+  status: 'online' | 'unknown' | 'unreachable';
+  peerId: string;
+  addedAt: string;
+  source?: string;  // For guests: who shared it
 }
-```
 
-### Screen State
-```typescript
 interface SereusConnectionsState {
+  partyId: string | null;      // Network ID
+  keys: AuthorityKey[];
   cadreNodes: SereusNode[];
   guestNodes: SereusNode[];
   loading: boolean;
@@ -119,84 +59,109 @@ interface SereusConnectionsState {
 }
 ```
 
+## Section Details
+
+### Network ID
+
+- Display abbreviated Party ID (first 8 chars + "...")
+- Tap to copy full ID to clipboard
+- Toast confirmation on copy
+
+### My Keys
+
+- **(+)** button to add key (opens add-key flow)
+- List of keys, each showing:
+  - Icon: `key-outline` (vault), `hardware-chip-outline` (dongle), `document-outline` (external)
+  - Type label
+  - Protection label
+  - Abbreviated public key
+- Empty state: "No keys yet" with CTA to add first key
+
+### My Nodes
+
+- **(+)** button disabled until at least one key exists
+- Each node shows: device icon, name, status dot, Peer ID, trash action
+- Empty state: "No nodes" (but main empty state covers first-run)
+
+### Strand Guests
+
+- **(+)** button disabled until at least one key exists
+- Each guest shows: icon, name, status, Member ID, revoke action
+- Empty state: "No shared access"
+
+## First Run / Empty State
+
+Per spec:
+1. No keys → My Keys empty, (+) for Nodes/Guests disabled
+2. Show guidance to create first key
+
+## Status Detection
+
+On screen entry, probe Fret (DHT) layer for peer status:
+- `online` — connected
+- `unknown` — not yet checked
+- `unreachable` — not responding
+
 ## Mock Variants
 
 ### happy
-- 2 cadre nodes:
-  - "My iPhone" (phone, online, synced 2 min ago)
-  - "Home Server" (server, online, synced 5 min ago)
-- 2 guest nodes:
-  - "Dr. Smith's Office" (server, online)
-  - "Family Clinic" (server, offline)
+
+```json
+{
+  "partyId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "keys": [
+    { "id": "k1", "type": "vault", "protection": "biometric", "publicKey": "0x1234...abcd" }
+  ],
+  "cadreNodes": [
+    { "id": "n1", "name": "My iPhone", "type": "cadre", "deviceType": "phone", "status": "online", "peerId": "12D3KooW..." }
+  ],
+  "guestNodes": [
+    { "id": "g1", "name": "Dr. Smith's Office", "type": "guest", "deviceType": "server", "status": "online", "source": "Family Medicine" }
+  ]
+}
+```
 
 ### empty
-- No nodes at all
-- Shows empty state with CTA
 
-## Theming & Accessibility
-- **Theme**: Follow system light/dark mode
-- **Colors**:
-  - Background: `theme.background`
-  - Cards: `theme.surface` with `theme.border`
-  - Online status: Green (#36B37E)
-  - Offline status: Gray (#8993A4)
-  - Syncing status: Blue (#4C9AFF)
-  - Remove action: Red (#FF5630)
-- **Touch Targets**: Minimum 44×44pt
-- **Accessibility**: 
-  - Node cards announce name, type, status
-  - Status changes announced
+```json
+{
+  "partyId": null,
+  "keys": [],
+  "cadreNodes": [],
+  "guestNodes": []
+}
+```
 
 ## i18n Keys
+
 ```
 sereus.title: "Sereus Connections"
-sereus.cadreNodes: "My Nodes"
-sereus.guestNodes: "Guest Nodes"
-sereus.addNode: "Add Node"
-sereus.scanQR: "Scan QR Code"
-sereus.removeNode: "Remove Node"
-sereus.emptyTitle: "No nodes connected"
-sereus.emptyMessage: "Scan a QR code to add your first Sereus node"
-sereus.confirmRemove: "Remove this node from your network?"
-sereus.confirmRemoveCadre: "Removing your own node may affect data safety. Continue?"
+sereus.networkId: "Network ID"
+sereus.myKeys: "My Keys"
+sereus.myNodes: "My Nodes"
+sereus.strandGuests: "Strand Guests"
+sereus.noKeys: "No keys yet"
+sereus.addFirstKey: "Add your first key to get started"
+sereus.noNodes: "No nodes"
+sereus.noGuests: "No shared access"
 sereus.statusOnline: "Online"
-sereus.statusOffline: "Offline"
-sereus.statusSyncing: "Syncing..."
-sereus.lastSync: "Last sync: {time}"
-sereus.addConfirmCadre: "Add this node to your cadre?"
-sereus.addConfirmGuest: "Add this guest node to your network?"
+sereus.statusUnknown: "Unknown"
+sereus.statusUnreachable: "Unreachable"
+sereus.copied: "Copied to clipboard"
+sereus.removeCadreTitle: "Remove Node"
+sereus.removeCadreBody: "Remove this device from your cadre?"
+sereus.revokeGuestTitle: "Revoke Access"
+sereus.revokeGuestBody: "Revoke this guest's access?"
 ```
 
-## Design Rationale
+## Implementation Notes
 
-### Why Two Sections?
-- **Story Evidence**: Distinction between "cadre" (Bob's nodes) and "guest" (shared) is important
-- **Mental Model**: Users understand ownership/control implications
-- **Visual Clarity**: Different sections help scan quickly
-
-### Why QR Code for Adding?
-- **Story Evidence**: "He scans the QR with his phone camera"
-- **Security**: QR contains node credentials, harder to type
-- **Convenience**: Quick pairing without manual entry
-
-### Why Show Status?
-- **Confidence**: Users want to know their data is syncing
-- **Troubleshooting**: Helps identify connection issues
-- **Real-time**: Story emphasizes "real-time access to my data"
-
-## Component Reuse
-- **Theme Hook**: `useTheme()` for current palette
-- **i18n Hook**: `useT()` for all UI strings
-- **Confirmation Dialog**: Shared dialog component
-
-## Open Questions / Future Enhancements
-- **Node Details Screen**: Tap for sync history, advanced settings
-- **Manual Node Entry**: Add by URL/ID for desktop users
-- **Permission Scoping**: Control what data each guest can access
-- **Sync Status Details**: Show what's syncing, progress
+- Use `Clipboard.setString()` for Party ID copy
+- Key icons: map type to Ionicons name
+- Status colors: online=green, unknown=gray, unreachable=red
+- (+) buttons: disabled state when no keys exist
 
 ---
 
-**Status**: Fresh consolidation
-**Last Updated**: 2025-12-03
-
+**Status**: Updated to match spec with Network ID and My Keys sections
+**Last Updated**: 2026-01-20

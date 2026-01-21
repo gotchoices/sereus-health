@@ -1,17 +1,29 @@
 import { getVariant } from '../mock';
 
+export type AuthorityKey = {
+  id: string;
+  type: 'vault' | 'dongle' | 'external';
+  protection: 'login' | 'biometric' | 'password';
+  publicKey: string;
+};
+
 export type SereusNode = {
   id: string;
   name: string;
   type: 'cadre' | 'guest';
   deviceType: 'phone' | 'server' | 'desktop' | 'other';
-  status: 'online' | 'unreachable';
+  status: 'online' | 'unknown' | 'unreachable';
   peerId: string;
   addedAt: string;
   source?: string;
 };
 
-type MockData = { cadreNodes: SereusNode[]; guestNodes: SereusNode[] };
+type MockData = {
+  partyId: string | null;
+  keys: AuthorityKey[];
+  cadreNodes: SereusNode[];
+  guestNodes: SereusNode[];
+};
 
 function loadMock(variant: string): MockData {
   switch (variant) {
@@ -23,13 +35,18 @@ function loadMock(variant: string): MockData {
   }
 }
 
-export async function getSereusConnections(): Promise<{ cadreNodes: SereusNode[]; guestNodes: SereusNode[] }> {
+export async function getSereusConnections(): Promise<MockData> {
   const variant = getVariant();
   if (variant === 'error') {
     throw new Error('mock:error');
   }
   const raw = loadMock(variant);
-  return { cadreNodes: raw.cadreNodes ?? [], guestNodes: raw.guestNodes ?? [] };
+  return {
+    partyId: raw.partyId ?? null,
+    keys: raw.keys ?? [],
+    cadreNodes: raw.cadreNodes ?? [],
+    guestNodes: raw.guestNodes ?? [],
+  };
 }
 
 export function formatPeerId(peerId: string): string {
@@ -38,4 +55,8 @@ export function formatPeerId(peerId: string): string {
   return `${s.slice(0, 6)}...${s.slice(-4)}`;
 }
 
-
+export function formatPartyId(partyId: string | null): string {
+  if (!partyId) return '—';
+  if (partyId.length <= 12) return partyId;
+  return `${partyId.slice(0, 8)}...`;
+}
