@@ -57,6 +57,10 @@ export default function SereusConnections(props: { onBack: () => void }) {
     };
   }, [t]);
 
+  // -----------------------------------------------------------------------
+  // Handlers
+  // -----------------------------------------------------------------------
+
   const handleCopyPartyId = () => {
     if (partyId) {
       Clipboard.setString(partyId);
@@ -64,17 +68,94 @@ export default function SereusConnections(props: { onBack: () => void }) {
     }
   };
 
+  const handleCopyPeerId = (peerId: string) => {
+    Clipboard.setString(peerId);
+    Alert.alert(t('sereus.copied'));
+  };
+
   const handleAddKey = () => {
-    Alert.alert(t('common.notImplementedTitle'), t('sereus.addNotImplemented'));
+    Alert.alert(
+      t('sereus.addKey'),
+      undefined,
+      [
+        {
+          text: t('sereus.keyVault'),
+          onPress: () => {
+            // Phase 2: generate Ed25519 keypair, insert via ControlDatabase.insertAuthorityKey(),
+            // store private key in device secure storage (Keychain/Keystore).
+            Alert.alert(t('common.notImplementedTitle'), t('sereus.addKeyStub'));
+          },
+        },
+        {
+          text: t('sereus.keyExternal'),
+          onPress: () => {
+            Alert.alert(t('common.notImplementedTitle'), t('sereus.addKeyStub'));
+          },
+        },
+        {
+          text: `${t('sereus.keyDongle')} (${t('sereus.dongleFuture')})`,
+          // Disabled — dongle support is future.  iOS Alert buttons don't have
+          // a "disabled" style, so we use 'cancel' to visually de-emphasize.
+          style: 'cancel',
+        },
+        { text: t('common.cancel'), style: 'cancel' },
+      ],
+    );
   };
 
   const handleAddNode = () => {
-    Alert.alert(t('common.notImplementedTitle'), t('sereus.addNotImplemented'));
+    Alert.alert(
+      t('sereus.addNode'),
+      undefined,
+      [
+        {
+          text: t('sereus.addNodeDrone'),
+          onPress: () => {
+            // Phase 3: createSeed() → send via provider API → deliverSeed()
+            Alert.alert(t('common.notImplementedTitle'), t('sereus.addNodeStub'));
+          },
+        },
+        {
+          text: t('sereus.addNodeServer'),
+          onPress: () => {
+            // Phase 3: scan QR/link → parse CadreInvite → dialInvite()
+            Alert.alert(t('common.notImplementedTitle'), t('sereus.addNodeStub'));
+          },
+        },
+        { text: t('common.cancel'), style: 'cancel' },
+      ],
+    );
   };
 
   const handleAddGuest = () => {
-    Alert.alert(t('common.notImplementedTitle'), t('sereus.addNotImplemented'));
+    // Phase 4: createOpenInvitation(sAppId) → share via QR/link
+    Alert.alert(t('common.notImplementedTitle'), t('sereus.addGuestStub'));
   };
+
+  const handleRemoveNode = (node: SereusNode) => {
+    const isCadre = node.type === 'cadre';
+    Alert.alert(
+      isCadre ? t('sereus.removeCadreTitle') : t('sereus.revokeGuestTitle'),
+      isCadre ? t('sereus.removeCadreBody') : t('sereus.revokeGuestBody'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: () => {
+            // Phase 3+: remove from CadrePeer table or revoke strand membership.
+            // For now, update local state.
+            if (isCadre) setCadre((prev) => prev.filter((n) => n.id !== node.id));
+            else setGuests((prev) => prev.filter((n) => n.id !== node.id));
+          },
+        },
+      ],
+    );
+  };
+
+  // -----------------------------------------------------------------------
+  // Renderers
+  // -----------------------------------------------------------------------
 
   const getKeyIcon = (type: AuthorityKey['type']) => {
     switch (type) {
@@ -145,32 +226,15 @@ export default function SereusConnections(props: { onBack: () => void }) {
             <View style={[styles.dot, { backgroundColor: statusColor }]} />
             <Text style={{ color: theme.textSecondary, ...typography.small }}>{statusText}</Text>
             <Text style={{ color: theme.textSecondary, ...typography.small }}>·</Text>
-            <Text style={{ color: theme.textSecondary, ...typography.small }}>
-              {formatPeerId(node.peerId)}
-            </Text>
+            <TouchableOpacity onPress={() => handleCopyPeerId(node.peerId)} hitSlop={HIT_SLOP}>
+              <Text style={{ color: theme.textSecondary, ...typography.small }}>
+                {formatPeerId(node.peerId)}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
-        <TouchableOpacity
-          hitSlop={HIT_SLOP}
-          onPress={() =>
-            Alert.alert(
-              isCadre ? t('sereus.removeCadreTitle') : t('sereus.revokeGuestTitle'),
-              isCadre ? t('sereus.removeCadreBody') : t('sereus.revokeGuestBody'),
-              [
-                { text: t('common.cancel'), style: 'cancel' },
-                {
-                  text: t('common.delete'),
-                  style: 'destructive',
-                  onPress: () => {
-                    if (isCadre) setCadre((prev) => prev.filter((n) => n.id !== node.id));
-                    else setGuests((prev) => prev.filter((n) => n.id !== node.id));
-                  },
-                },
-              ]
-            )
-          }
-        >
+        <TouchableOpacity hitSlop={HIT_SLOP} onPress={() => handleRemoveNode(node)}>
           <Ionicons
             name={removeIcon}
             size={20}
@@ -185,10 +249,12 @@ export default function SereusConnections(props: { onBack: () => void }) {
     title: string,
     count: number,
     onAdd?: () => void,
-    addDisabled?: boolean
+    addDisabled?: boolean,
   ) => (
     <View style={styles.sectionHeader}>
-      <Text style={{ color: theme.textSecondary, ...typography.small, fontWeight: '700', flex: 1 }}>
+      <Text
+        style={{ color: theme.textSecondary, ...typography.small, fontWeight: '700', flex: 1 }}
+      >
         {title} ({count})
       </Text>
       {onAdd && (
@@ -207,6 +273,10 @@ export default function SereusConnections(props: { onBack: () => void }) {
       )}
     </View>
   );
+
+  // -----------------------------------------------------------------------
+  // Render
+  // -----------------------------------------------------------------------
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -234,7 +304,12 @@ export default function SereusConnections(props: { onBack: () => void }) {
           {/* Network ID */}
           <View style={styles.sectionHeader}>
             <Text
-              style={{ color: theme.textSecondary, ...typography.small, fontWeight: '700', flex: 1 }}
+              style={{
+                color: theme.textSecondary,
+                ...typography.small,
+                fontWeight: '700',
+                flex: 1,
+              }}
             >
               {t('sereus.networkId')}
             </Text>
@@ -257,7 +332,9 @@ export default function SereusConnections(props: { onBack: () => void }) {
               <Text style={{ color: theme.textSecondary, textAlign: 'center' }}>
                 {t('sereus.noKeys')}
               </Text>
-              <Text style={{ color: theme.textSecondary, ...typography.small, textAlign: 'center' }}>
+              <Text
+                style={{ color: theme.textSecondary, ...typography.small, textAlign: 'center' }}
+              >
                 {t('sereus.addFirstKey')}
               </Text>
             </View>
@@ -278,7 +355,12 @@ export default function SereusConnections(props: { onBack: () => void }) {
           )}
 
           {/* Strand Guests */}
-          {renderSectionHeader(t('sereus.strandGuests'), guests.length, handleAddGuest, !hasKeys)}
+          {renderSectionHeader(
+            t('sereus.strandGuests'),
+            guests.length,
+            handleAddGuest,
+            !hasKeys,
+          )}
           {guests.length === 0 ? (
             <View style={[styles.emptySection, { borderColor: theme.border }]}>
               <Text style={{ color: theme.textSecondary, textAlign: 'center' }}>

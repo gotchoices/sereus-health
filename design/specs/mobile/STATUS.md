@@ -47,43 +47,66 @@ This checklist tracks spec review work for the **mobile** target. Treat it as th
 - [ ] **Offline behavior**: assistant unavailable offline; ensure canonical import still works offline.
 - [ ] **Test matrix**: empty DB flows, import idempotency, clear+import replace, assistant preview/approval, export CSV readability, export YAML/JSON re-import.
 
-## Sereus Cadre Integration
+## Sereus / Optimystic Integration
 
-### RN Compatibility
+### RN Compatibility (bundling)
 
-- [x] Verify `@sereus/cadre-core` loads in RN
-- [x] Verify `@optimystic/db-p2p` resolves correctly (uses `react-native` export condition → `rn.js`, no TCP)
-- [x] Shim remaining Node.js built-ins for libp2p transitive deps (`os`, `net`, `tls` — upstream `@libp2p/utils` and `@libp2p/websockets` lack proper `react-native` export conditions)
-- [x] Fix `@babel/runtime` ESM/CJS interop (`resolveRequest` forces CJS helpers)
+- [x] `@sereus/cadre-core` loads in RN (Metro resolves)
+- [x] `@optimystic/db-p2p` resolves (`react-native` export condition → `rn.js`, no TCP)
+- [x] Node.js built-in shims for libp2p transitive deps (`os`, `net`, `tls`)
+- [x] `@babel/runtime` ESM/CJS interop (`resolveRequest` forces CJS helpers)
+- [x] `CadreService` singleton created (`src/services/CadreService.ts`)
 
-### Phase 1: Core Integration
+### Step 1: CadreNode boots at app startup
 
-- [x] Install `@sereus/cadre-core`
-- [ ] Create `CadreService` singleton (init, start, stop, persist config)
+CadreNode is the storage backend — it must start before health data can be
+read or written. Auto-bootstrap: generate party ID, create authority key,
+register this device, create health strand.
 
-### Phase 2: Key Management
+- [ ] Move `cadreService.start()` to app startup (not lazy on Sereus Connections screen)
+- [ ] Fix runtime errors from `createLibp2pNode()` and `ControlDatabase.initialize()`
+- [ ] Confirm `control:connected` event fires
+- [ ] Auto-bootstrap: party ID → authority key → self-register in CadrePeer → create health strand
 
-- [ ] Implement "Add Key" flow (local vault / external)
-- [ ] Local vault: Keychain/Keystore storage
-- [ ] External: export as JWK file or QR
+### Step 2: Migrate health data to optimystic
 
-### Phase 3: Add Node
+Replace `@quereus/plugin-react-native-leveldb` with optimystic strand storage.
+Health schema applied to the strand's Quereus database.
 
-- [ ] Implement `authorizePeer()` → `createSeed()` → deliver via provider API
-- [ ] Phone dials drone after seed delivery
-- [ ] Implement "Server adds Phone" flow (scan QR, dial server)
+- [ ] Add `@optimystic/db-p2p-storage-rn` + `react-native-mmkv` dependencies
+- [ ] Health data reads/writes go through strand database (not leveldb)
+- [ ] Remove `rn-leveldb` dependency
+- [ ] Verify data persists across cold restarts (MMKVRawStorage)
 
-### Phase 4: Invite Guest (Strand-level)
+### Step 3: Persist node identity
 
-- [ ] Integrate with `FormationInvite` / `StrandSolicitationService`
-- [ ] UI for creating/sharing invitations
-- [ ] UI for accepting incoming strand invitations
+- [ ] Save Ed25519 private key to secure storage (Keychain/Keystore) after first start
+- [ ] Reload via `config.privateKey` on subsequent starts → stable Peer ID
+- [ ] Upstream: `createLibp2pNode` may need a patch to accept `privateKey`
 
-### Phase 5: Wire UI
+### Step 4: Sereus Connections screen
 
-- [ ] Replace `getSereusConnections()` mock with real queries
-- [ ] Query `CadrePeer` table for My Nodes
-- [ ] Implement DHT status probe
-- [ ] Wire remove/revoke actions
+Party ID, this device, and bootstrap authority key already exist from
+auto-bootstrap. Screen displays real data from control database.
+
+- [ ] Party ID: show full width (`numberOfLines={1}` with tail ellipsis), tap to copy
+- [ ] This device: first node, status Online, Peer ID tap to copy
+- [ ] My Keys: bootstrap key displayed
+- [ ] Add Key flow (local vault / external)
+
+### Step 5: Node enrollment
+
+- [ ] **Phone adds Drone**: `createSeed()` → provider API → `deliverSeed()`
+- [ ] **Server adds Phone**: scan QR → `dialInvite()`
+- [ ] Enrolled nodes appear from `CadrePeer` query
+
+### Step 6: Strand guests
+
+- [ ] `createOpenInvitation(sAppId)` → share via QR/link
+- [ ] Accept incoming → `formStrand()`
+
+### Step 7: Status probing
+
+- [ ] Probe Fret (DHT) on screen entry → Online / Unknown / Unreachable
 
 
