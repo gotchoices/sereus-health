@@ -7,12 +7,13 @@ For architecture, enrollment flows, and API details, see `sereus/docs/cadre-arch
 ## Storage Architecture
 
 Health data is stored in an **optimystic strand database** managed by CadreNode.
-The app auto-bootstraps a single-node cadre on first run (party ID, identity
-keypair, authority key, health strand). No manual setup required — the user
-logs data immediately.
+On first run the app auto-generates a party ID and starts a local health
+strand via `addStrand()`. No authority key or networking setup is required
+for local storage — the user logs data immediately.
 
-Adding remote nodes (replication, backup) and strand guests (sharing with a
-doctor) are opt-in via the Sereus Connections screen.
+Authority keys, CadrePeer registration, and control-DB strand entries are
+created automatically when the user first adds a remote node. After that,
+health data replicates to the new node automatically.
 
 The previous `rn-leveldb` storage backend is deprecated; migration to
 optimystic (`IRawStorage` / `MMKVRawStorage`) is in progress.

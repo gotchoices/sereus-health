@@ -31,14 +31,16 @@ Party ID with tap-to-copy. Show as much as fits on a single line.
 - **(+)** to invite a guest (disabled until a key exists)
 - Each guest: icon, name, status, Member ID, trash (revoke)
 
-## First Run
+## First Visit
 
-The cadre auto-bootstraps at app startup (see `domain/cadre.md`). By the time the user reaches this screen:
+CadreNode starts at app startup (local strand is the storage backend).
+By the time the user reaches this screen:
 
-1. Party ID exists.
-2. This device appears as the first (and only) node.
-3. A bootstrap authority key exists.
-4. **(+)** for remote nodes and guests is enabled.
+1. Party ID exists (auto-generated at first startup).
+2. This device appears as the first node.
+3. My Keys is empty — authority key not needed for local storage.
+4. **(+)** for remote nodes and guests disabled until a key exists.
+5. First "Add Node" auto-creates authority key and registers in control DB.
 
 ## Add Node
 
