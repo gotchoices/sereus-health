@@ -51,13 +51,14 @@ This checklist tracks spec review work for the **mobile** target. Treat it as th
 
 ### RN Compatibility
 
-- [ ] Verify `@sereus/cadre-core` loads in RN
-- [ ] Verify `@optimystic/db-p2p` works (may need polyfills)
-- [ ] Shim Node.js imports (`fs/promises`, `path`) in `control-database.ts`
+- [x] Verify `@sereus/cadre-core` loads in RN
+- [x] Verify `@optimystic/db-p2p` resolves correctly (uses `react-native` export condition → `rn.js`, no TCP)
+- [x] Shim remaining Node.js built-ins for libp2p transitive deps (`os`, `net`, `tls` — upstream `@libp2p/utils` and `@libp2p/websockets` lack proper `react-native` export conditions)
+- [x] Fix `@babel/runtime` ESM/CJS interop (`resolveRequest` forces CJS helpers)
 
 ### Phase 1: Core Integration
 
-- [ ] Install `@sereus/cadre-core`
+- [x] Install `@sereus/cadre-core`
 - [ ] Create `CadreService` singleton (init, start, stop, persist config)
 
 ### Phase 2: Key Management
