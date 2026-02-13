@@ -2548,7 +2548,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@noble/hashes@npm:2.0.1, @noble/hashes@npm:^2.0.1":
+"@noble/hashes@npm:2.0.1":
   version: 2.0.1
   resolution: "@noble/hashes@npm:2.0.1"
   checksum: 10c0/e81769ce21c3b1c80141a3b99bd001f17edea09879aa936692ae39525477386d696101cd573928a304806efb2b9fa751e1dd83241c67d0c84d30091e85c79bdb
@@ -2639,7 +2639,8 @@ __metadata:
     "@libp2p/ping": "npm:^3.0.10"
     "@libp2p/tcp": "npm:^11.0.10"
     "@libp2p/websockets": "npm:^10.1.3"
-    "@multiformats/multiaddr": "npm:^13.0.1"
+    "@multiformats/multiaddr": "npm:^12.1.14"
+    "@noble/hashes": "npm:^2.0.1"
     "@optimystic/db-core": "workspace:^"
     async-mutex: "npm:^0.5.0"
     debug: "npm:^4.4.3"
@@ -8625,6 +8626,7 @@ __metadata:
   dependencies:
     "@libp2p/logger": "npm:^6.2.2"
     "@multiformats/multiaddr": "npm:^13.0.1"
+    "@noble/hashes": "npm:^1.3.0"
     digitree: "npm:^1.4.6"
     multiformats: "npm:^13.4.2"
     uint8arrays: "npm:^5.1.0"

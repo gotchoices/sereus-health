@@ -21,9 +21,13 @@ import {
   type StrandInstance,
 } from '@sereus/cadre-core';
 import { MemoryRawStorage } from '@optimystic/db-p2p';
+import { webSockets } from '@libp2p/websockets';
 import type { Database } from '@quereus/quereus';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SCHEMA_SQL from '../../../../design/specs/domain/schema.qsql';
+import { createLogger } from '../util/logger';
+
+const logger = createLogger('CadreService');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -117,6 +121,7 @@ class CadreServiceImpl {
 
     try {
       this._partyId = await this.getOrCreateValue(PARTY_ID_KEY);
+      logger.info('Party ID:', this._partyId);
 
       const config: CadreNodeConfig = {
         controlNetwork: {
@@ -131,17 +136,25 @@ class CadreServiceImpl {
           provider: (_strandId: string) => new MemoryRawStorage(),
         },
         network: {
+          // RN requires explicit transports (no TCP).  WebSockets satisfies
+          // the constructor; actual peer communication is deferred until the
+          // user adds remote nodes (Step 3).
+          transports: [webSockets()],
           listenAddrs: [],
         },
       };
 
+      logger.info('Creating CadreNode...');
       this.node = new CadreNode(config);
+      logger.info('Starting CadreNode...');
       await this.node.start();
+      logger.info('CadreNode started. Peer ID:', this.node.peerId?.toString());
 
       // Create the health strand.  addStrand() does NOT write to the control
       // database — it starts a strand locally with its own libp2p node and
       // StrandDatabase.  No authority key required.
       const strandId = await this.getOrCreateValue(STRAND_ID_KEY);
+      logger.info('Adding health strand:', strandId);
 
       this.healthStrand = await this.node.addStrand({
         strandRow: {
@@ -156,8 +169,10 @@ class CadreServiceImpl {
           signature: '', // Placeholder — signing enforced when strand is registered in control DB
         },
       });
+      logger.info('Health strand ready. Database available:', !!this.healthStrand?.database);
     } catch (err) {
       this._startError = err instanceof Error ? err.message : String(err);
+      logger.error('doStart failed:', this._startError);
       throw err;
     }
   }
