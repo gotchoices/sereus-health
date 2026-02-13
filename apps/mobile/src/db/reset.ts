@@ -1,62 +1,57 @@
-import { LevelDB } from 'rn-leveldb';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createLogger } from '../util/logger';
+import { USE_OPTIMYSTIC } from './config';
 import { closeDatabase } from './index';
 import { resetInitializationState } from './init';
 
 const logger = createLogger('DB Reset');
 
-// Must match the `databaseName` passed when registering the LevelDB plugin.
-const DATABASE_NAME = 'quereus';
-const MAIN_TABLES = [
-  'types',
-  'categories',
-  'items',
-  'item_quantifiers',
-  'bundles',
-  'bundle_members',
-  'log_entries',
-  'log_entry_items',
-  'log_entry_quantifier_values',
-] as const;
-
+/**
+ * Dev-only: reset the database.
+ *
+ * Optimystic: stops CadreService, clears persisted identifiers.
+ * LevelDB:    closes DB, destroys LevelDB store files.
+ *
+ * On next launch the app re-bootstraps with empty data.
+ */
 export async function resetDatabaseForDev(): Promise<void> {
   if (!__DEV__) {
     throw new Error('resetDatabaseForDev is dev-only');
   }
 
-  logger.info('Resetting Quereus DB (dev-only)...');
+  logger.info('Resetting database (dev-only)...');
 
-  // Ensure any open handles are closed before destroying stores.
   await closeDatabase();
   resetInitializationState();
 
-  const dbNames: string[] = [
-    formatCatalogDbName(DATABASE_NAME),
-    ...MAIN_TABLES.map((t) => formatDbName(DATABASE_NAME, 'main', t)),
-  ];
+  if (USE_OPTIMYSTIC) {
+    // Clear persisted cadre identifiers so a fresh cadre bootstraps on restart.
+    await AsyncStorage.multiRemove(['@sereus/partyId', '@sereus/healthStrandId']);
+    // Phase 2+ (MMKVRawStorage): clear block storage here.
+  } else {
+    // LevelDB: destroy all store files.
+    const { LevelDB } = require('rn-leveldb');
+    const DATABASE_NAME = 'quereus';
+    const MAIN_TABLES = [
+      'types', 'categories', 'items', 'item_quantifiers',
+      'bundles', 'bundle_members',
+      'log_entries', 'log_entry_items', 'log_entry_quantifier_values',
+    ];
 
-  for (const name of dbNames) {
-    try {
-      LevelDB.destroyDB(name, true);
-      logger.info(`Destroyed store: ${name}`);
-    } catch (e) {
-      logger.debug(`Destroy store skipped/failed for ${name}:`, e);
+    const dbNames = [
+      `${DATABASE_NAME}.__catalog__`.toLowerCase(),
+      ...MAIN_TABLES.map(t => `${DATABASE_NAME}.main.${t}`.toLowerCase()),
+    ];
+
+    for (const name of dbNames) {
+      try {
+        LevelDB.destroyDB(name, true);
+        logger.info(`Destroyed store: ${name}`);
+      } catch (e) {
+        logger.debug(`Destroy store skipped/failed for ${name}:`, e);
+      }
     }
   }
 
-  logger.info('Reset complete');
+  logger.info('Reset complete — restart the app to re-bootstrap.');
 }
-
-function formatCatalogDbName(basePath: string): string {
-  // Matches @quereus/plugin-react-native-leveldb provider naming:
-  // `${databaseName}.__catalog__`
-  return `${basePath}.__catalog__`.toLowerCase();
-}
-
-function formatDbName(basePath: string, schemaName: string, tableName: string): string {
-  // Matches @quereus/plugin-react-native-leveldb provider naming:
-  // `${databaseName}.${schemaName}.${tableName}`
-  return `${basePath}.${schemaName}.${tableName}`.toLowerCase();
-}
-
-

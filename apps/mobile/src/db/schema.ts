@@ -1,13 +1,26 @@
 /**
- * Quereus schema + minimal seeds.
+ * Health schema application + production seeds.
  *
- * NOTE: uses the StoreModule by setting `pragma default_vtab_module = 'store'` before applying schema.
+ * applySchema() is used by the leveldb backend (see db/index.ts).
+ * The optimystic backend applies schema via StrandDatabase (see CadreService).
+ * applyProductionSeeds() is used by both backends (see db/init.ts).
  */
 import type { Database } from '@quereus/quereus';
-import { createLogger } from '../util/logger';
 import SCHEMA_SQL from '../../../../design/specs/domain/schema.qsql';
+import { createLogger } from '../util/logger';
 
 const logger = createLogger('DB Schema');
+
+/**
+ * Apply the health schema to a leveldb-backed Database.
+ * Sets the default virtual table module to 'store' so all tables
+ * are backed by the registered LevelDB plugin.
+ */
+export async function applySchema(db: Database): Promise<void> {
+  logger.info('Applying health schema (leveldb)...');
+  await db.exec("pragma default_vtab_module = 'store'");
+  await db.exec(SCHEMA_SQL);
+}
 
 export const PRODUCTION_SEEDS = {
   types: [
@@ -36,22 +49,12 @@ export const PRODUCTION_SEEDS = {
     },
   ],
   items: [
-    // One starter item so the welcome entry renders with at least one item.
     { id: 'item-welcome', category_id: 'cat-health', name: 'Getting Started', description: null as string | null },
   ],
   log_entry_items: [
     { entry_id: 'entry-welcome', item_id: 'item-welcome', source_bundle_id: null as string | null },
   ],
 };
-
-export async function applySchema(db: Database): Promise<void> {
-  logger.info('Declaring schema...');
-  await db.exec("pragma default_vtab_module = 'store'");
-  await db.exec(SCHEMA_SQL);
-  logger.info('Applying schema...');
-  await db.exec('apply schema main');
-  logger.info('Schema applied');
-}
 
 export async function applyProductionSeeds(db: Database): Promise<void> {
   logger.info('Applying production seed data...');
@@ -95,5 +98,3 @@ export async function applyProductionSeeds(db: Database): Promise<void> {
     ]);
   }
 }
-
-

@@ -1,10 +1,12 @@
 /**
  * DB initialization singleton.
  *
- * Ensures schema + seeds are applied once before first query.
+ * Schema is applied by getDatabase() (either via StrandDatabase for optimystic
+ * or via applySchema() for leveldb).  This module ensures seeds are applied
+ * once before first query.
  */
 import { getDatabase } from './index';
-import { applyProductionSeeds, applySchema } from './schema';
+import { applyProductionSeeds } from './schema';
 import { createLogger } from '../util/logger';
 
 const logger = createLogger('DB Init');
@@ -28,29 +30,18 @@ export async function ensureDatabaseInitialized(): Promise<void> {
       logger.info('Initializing DB...');
       const db = await getDatabase();
 
-      // Check if schema exists
-      let schemaExists = false;
+      // Schema is already applied by StrandDatabase.
+      // Check if seeds are needed (empty types table = first run).
+      let typeCount = 0;
       try {
-        const stmt = await db.prepare("SELECT name FROM schema() WHERE type = 'table' AND name = 'types'");
-        const row = await stmt.get();
-        await stmt.finalize();
-        schemaExists = row !== undefined;
+        for await (const row of db.eval('SELECT COUNT(*) as count FROM types')) {
+          typeCount = (row.count as number) || 0;
+        }
       } catch {
-        schemaExists = false;
+        // Table might not be queryable yet — treat as empty
+        typeCount = 0;
       }
 
-      logger.debug(`Schema exists: ${schemaExists ? 'yes' : 'no'}`);
-
-      if (!schemaExists) {
-        logger.info('First-time setup: applying schema...');
-        await applySchema(db);
-      }
-
-      // Seed check
-      const countStmt = await db.prepare('SELECT COUNT(*) as count FROM types');
-      const countRow = await countStmt.get();
-      await countStmt.finalize();
-      const typeCount = (countRow?.count as number) || 0;
       logger.debug(`Seed guard: types.count=${String(typeCount)}`);
 
       const didSeed = typeCount === 0;
@@ -59,24 +50,23 @@ export async function ensureDatabaseInitialized(): Promise<void> {
         await applyProductionSeeds(db);
       }
 
-      // Dev-only: sample data should be idempotent. For now, only apply it on first-time seed to avoid duplicates.
+      // Dev-only sample data
       if (__DEV__ && applySampleData && didSeed) {
         logger.info('Applying sample data (dev, first-run only)...');
         await applySampleData(db);
       }
 
-      // Optional verification (keep low-noise; helps spot schema/seed issues during dev)
+      // Dev verification
       if (__DEV__) {
         try {
-          const tStmt = await db.prepare('SELECT COUNT(*) as count FROM types');
-          const tRow = await tStmt.get();
-          await tStmt.finalize();
-
-          const eStmt = await db.prepare('SELECT COUNT(*) as count FROM log_entries');
-          const eRow = await eStmt.get();
-          await eStmt.finalize();
-
-          logger.debug(`DB verify: types=${String(tRow?.count ?? '?')} log_entries=${String(eRow?.count ?? '?')}`);
+          let tCount = '?', eCount = '?';
+          for await (const row of db.eval('SELECT COUNT(*) as count FROM types')) {
+            tCount = String(row.count ?? '?');
+          }
+          for await (const row of db.eval('SELECT COUNT(*) as count FROM log_entries')) {
+            eCount = String(row.count ?? '?');
+          }
+          logger.debug(`DB verify: types=${tCount} log_entries=${eCount}`);
         } catch (e) {
           logger.debug('DB verify failed:', e);
         }
@@ -100,5 +90,3 @@ export function resetInitializationState(): void {
   initPromise = null;
   isInitialized = false;
 }
-
-

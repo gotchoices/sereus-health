@@ -1,31 +1,59 @@
 /**
  * CadreService — singleton wrapper around @sereus/cadre-core CadreNode.
  *
- * Lifecycle: start() → stop().
+ * Boots at first data access.  Creates a local health strand via addStrand()
+ * so health data is stored in optimystic from the start.  Adding remote nodes
+ * later automatically distributes the data.
  *
- * Phase 1 (current): local-only CadreNode with empty bootstrap.
- * Control database initializes but has no peers.  Screen shows empty state
- * until keys and nodes are added (phases 2–3).
+ * Authority keys, CadrePeer registration, and control-DB strand entries are
+ * deferred until the user adds a second node (see STATUS.md Step 3).
  *
  * References:
- *   sereus/packages/cadre-core/README.md  — CadreNode API
- *   sereus/docs/cadre-architecture.md     — CadreControl schema
+ *   sereus/packages/cadre-core/README.md
+ *   sereus/docs/cadre-architecture.md
  */
 
-import { CadreNode, type CadreNodeConfig, type CadreNodeEvents, type ControlDatabase } from '@sereus/cadre-core';
+import {
+  CadreNode,
+  type CadreNodeConfig,
+  type CadreNodeEvents,
+  type ControlDatabase,
+  type StrandInstance,
+} from '@sereus/cadre-core';
 import { MemoryRawStorage } from '@optimystic/db-p2p';
+import type { Database } from '@quereus/quereus';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SCHEMA_SQL from '../../../../design/specs/domain/schema.qsql';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 const SAPP_ID = 'org.sereus.health';
+const SAPP_VERSION = '1.0';
 const PARTY_ID_KEY = '@sereus/partyId';
-
-// Bootstrap/relay via DNSADDR; operators update DNS without app deploy.
-// Empty for Phase 1 (local-only).  Populate for Phase 2+ networking.
+const STRAND_ID_KEY = '@sereus/healthStrandId';
 const BOOTSTRAP_NODES: string[] = [];
+
+// ---------------------------------------------------------------------------
+// Health schema
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract the inner DDL from schema.qsql.
+ * schema.qsql wraps everything in `declare schema main { ... }`.
+ * StrandDatabase wraps it in `declare schema App { ... }; apply schema App;`.
+ * We strip the outer wrapper so StrandDatabase can re-wrap.
+ */
+function extractInnerDDL(schemaSql: string): string {
+  return schemaSql
+    .replace(/^\s*--[^\n]*\n/gm, '')        // strip comment lines
+    .replace(/^declare\s+schema\s+\w+\s*\{/m, '') // strip opening
+    .replace(/\}\s*$/, '')                    // strip closing brace
+    .trim();
+}
+
+const HEALTH_SCHEMA_DDL = extractInnerDDL(SCHEMA_SQL);
 
 // ---------------------------------------------------------------------------
 // Types
@@ -39,8 +67,10 @@ type EventHandler<T> = (payload: T) => void;
 
 class CadreServiceImpl {
   private node: CadreNode | null = null;
+  private healthStrand: StrandInstance | null = null;
   private _partyId: string | null = null;
   private _startError: string | null = null;
+  private _startPromise: Promise<void> | null = null;
 
   /** Whether the CadreNode is running. */
   get isRunning(): boolean {
@@ -66,13 +96,27 @@ class CadreServiceImpl {
   // Lifecycle
   // -----------------------------------------------------------------------
 
-  /** Start the CadreNode.  Idempotent — does nothing if already running. */
-  async start(): Promise<void> {
-    if (this.node?.isRunning) return;
+  /**
+   * Ensure the CadreNode is started and the health strand is ready.
+   * Idempotent — concurrent callers share the same promise.
+   */
+  async ensureStarted(): Promise<void> {
+    if (this.healthStrand) return;
+    if (this._startPromise) return this._startPromise;
+    this._startPromise = this.doStart();
+    try {
+      await this._startPromise;
+    } catch {
+      this._startPromise = null;
+      throw new Error(this._startError ?? 'CadreService failed to start');
+    }
+  }
+
+  private async doStart(): Promise<void> {
     this._startError = null;
 
     try {
-      this._partyId = await this.getOrCreatePartyId();
+      this._partyId = await this.getOrCreateValue(PARTY_ID_KEY);
 
       const config: CadreNodeConfig = {
         controlNetwork: {
@@ -82,19 +126,36 @@ class CadreServiceImpl {
         profile: 'transaction',
         strandFilter: { mode: 'sAppId', sAppId: SAPP_ID },
         // Phase 1: in-memory storage.
-        // Phase 2+: swap to MMKVRawStorage from @optimystic/db-p2p-storage-rn
-        // for persistent block storage across restarts.
+        // Step 1 complete → swap to MMKVRawStorage for persistence.
         storage: {
           provider: (_strandId: string) => new MemoryRawStorage(),
         },
         network: {
-          listenAddrs: [],       // RN nodes cannot listen
-          // Transports: db-p2p/rn defaults to webSockets (no TCP).
+          listenAddrs: [],
         },
       };
 
       this.node = new CadreNode(config);
       await this.node.start();
+
+      // Create the health strand.  addStrand() does NOT write to the control
+      // database — it starts a strand locally with its own libp2p node and
+      // StrandDatabase.  No authority key required.
+      const strandId = await this.getOrCreateValue(STRAND_ID_KEY);
+
+      this.healthStrand = await this.node.addStrand({
+        strandRow: {
+          Id: strandId,
+          MemberPrivateKey: null,
+          Type: 'o', // open strand
+        },
+        sAppConfig: {
+          id: SAPP_ID,
+          version: SAPP_VERSION,
+          schema: HEALTH_SCHEMA_DDL,
+          signature: '', // Placeholder — signing enforced when strand is registered in control DB
+        },
+      });
     } catch (err) {
       this._startError = err instanceof Error ? err.message : String(err);
       throw err;
@@ -104,8 +165,10 @@ class CadreServiceImpl {
   /** Stop the CadreNode gracefully.  Idempotent. */
   async stop(): Promise<void> {
     if (!this.node) return;
+    this.healthStrand = null;
     await this.node.stop();
     this.node = null;
+    this._startPromise = null;
   }
 
   // -----------------------------------------------------------------------
@@ -113,16 +176,24 @@ class CadreServiceImpl {
   // -----------------------------------------------------------------------
 
   /**
-   * Return the underlying ControlDatabase for direct SQL queries,
-   * or null if the node is not running.
-   *
-   * Usage:
-   *   const db = cadreService.controlDatabase;
-   *   const qdb = db?.getDatabase();
-   *   const result = qdb?.exec('SELECT Key FROM AuthorityKey');
+   * Return the health strand's Quereus Database for SQL queries.
+   * Call ensureStarted() first.
    */
+  getHealthDatabase(): Database {
+    if (!this.healthStrand?.database) {
+      throw new Error('Health strand not initialized. Call ensureStarted() first.');
+    }
+    return this.healthStrand.database.getDatabase();
+  }
+
+  /** Return the control database (for Sereus Connections screen). */
   get controlDatabase(): ControlDatabase | null {
     return this.node?.getControlDatabase() ?? null;
+  }
+
+  /** Return the CadreNode (for advanced use, e.g., enrollment). */
+  get cadreNode(): CadreNode | null {
+    return this.node;
   }
 
   /** Return multiaddrs of this node (empty if not started). */
@@ -149,15 +220,14 @@ class CadreServiceImpl {
   }
 
   // -----------------------------------------------------------------------
-  // Identity persistence
+  // Persistence helpers
   // -----------------------------------------------------------------------
 
-  private async getOrCreatePartyId(): Promise<string> {
-    const stored = await AsyncStorage.getItem(PARTY_ID_KEY);
+  private async getOrCreateValue(key: string): Promise<string> {
+    const stored = await AsyncStorage.getItem(key);
     if (stored) return stored;
-
     const id = generateId();
-    await AsyncStorage.setItem(PARTY_ID_KEY, id);
+    await AsyncStorage.setItem(key, id);
     return id;
   }
 }
@@ -169,11 +239,10 @@ class CadreServiceImpl {
 /** Lightweight UUID v4. */
 function generateId(): string {
   const bytes = new Uint8Array(16);
-  // RN global crypto.getRandomValues is shimmed by react-native-get-random-values
-  // which the app already uses via uuid transitive deps.  Fall back to Math.random
-  // if not available (dev/test only).
-  if (typeof globalThis.crypto?.getRandomValues === 'function') {
-    globalThis.crypto.getRandomValues(bytes);
+  const g = globalThis as Record<string, unknown>;
+  const c = (g.crypto ?? {}) as { getRandomValues?: (buf: Uint8Array) => void };
+  if (typeof c.getRandomValues === 'function') {
+    c.getRandomValues(bytes);
   } else {
     for (let i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256);
   }
