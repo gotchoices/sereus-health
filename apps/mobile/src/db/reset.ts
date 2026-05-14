@@ -3,16 +3,22 @@ import { createLogger } from '../util/logger';
 import { USE_OPTIMYSTIC } from './config';
 import { closeDatabase } from './index';
 import { resetInitializationState } from './init';
+import { OPTIMYSTIC_DB_PREFIX } from '../services/CadreService';
 
 const logger = createLogger('DB Reset');
 
 /**
  * Dev-only: reset the database.
  *
- * Optimystic: stops CadreService, clears persisted identifiers.
- * LevelDB:    closes DB, destroys LevelDB store files.
+ * Optimystic mode: stops CadreService (which closes its LevelDB handles),
+ *                  clears persisted identifiers, then destroys the
+ *                  per-strand `optimystic-<strandId>` LevelDB directories
+ *                  (including `optimystic-control` for the node identity
+ *                  + control-network state).
+ * Quereus-LevelDB mode: closes DB, destroys per-table LevelDB store files.
  *
- * On next launch the app re-bootstraps with empty data.
+ * On next launch the app re-bootstraps with empty data and a fresh
+ * libp2p peer ID.
  */
 export async function resetDatabaseForDev(): Promise<void> {
   if (!__DEV__) {
@@ -25,23 +31,30 @@ export async function resetDatabaseForDev(): Promise<void> {
   resetInitializationState();
 
   if (USE_OPTIMYSTIC) {
-    // Read the current strand ID before clearing, so we can delete its MMKV data.
+    // Read identifiers before clearing so we know which LevelDB directories
+    // to nuke.
     const strandId = await AsyncStorage.getItem('@sereus/healthStrandId');
-    // Clear persisted cadre identifiers so a fresh cadre bootstraps on restart.
     await AsyncStorage.multiRemove(['@sereus/partyId', '@sereus/healthStrandId']);
-    // Clear the MMKV storage instance for the strand.
-    if (strandId) {
+
+    // Destroy the optimystic LevelDB directories.  `control` always exists
+    // (node identity + control repo); the strand directory only exists
+    // once the strand has been added.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { LevelDB } = require('rn-leveldb');
+    const dbNames = [`${OPTIMYSTIC_DB_PREFIX}control`];
+    if (strandId) dbNames.push(`${OPTIMYSTIC_DB_PREFIX}${strandId}`);
+
+    for (const name of dbNames) {
       try {
-        const { MMKV } = require('react-native-mmkv');
-        const mmkv = new MMKV({ id: `optimystic-${strandId}` });
-        mmkv.clearAll();
-        logger.info(`Cleared MMKV store: optimystic-${strandId}`);
+        LevelDB.destroyDB(name, true);
+        logger.info(`Destroyed optimystic store: ${name}`);
       } catch (e) {
-        logger.debug('MMKV clear failed:', e);
+        logger.debug(`Destroy optimystic store skipped/failed for ${name}:`, e);
       }
     }
   } else {
-    // LevelDB: destroy all store files.
+    // Quereus-via-LevelDB: destroy every per-table store file.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { LevelDB } = require('rn-leveldb');
     const DATABASE_NAME = 'quereus';
     const MAIN_TABLES = [

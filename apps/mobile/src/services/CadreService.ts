@@ -21,12 +21,18 @@ import {
   type StrandInstance,
 } from '@sereus/cadre-core';
 import { webSockets } from '@libp2p/websockets';
-import { MMKVRawStorage } from '@optimystic/db-p2p-storage-rn';
-import { MMKV } from 'react-native-mmkv';
+import {
+  LevelDBRawStorage,
+  openOptimysticRNDb,
+  loadOrCreateRNPeerKey,
+} from '@optimystic/db-p2p-storage-rn';
+import { LevelDB, LevelDBWriteBatch } from 'rn-leveldb';
 import type { Database } from '@quereus/quereus';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SCHEMA_SQL from '../../../../design/specs/domain/schema.qsql';
 import { createLogger } from '../util/logger';
+
+type OptimysticDb = ReturnType<typeof openOptimysticRNDb>;
 
 const logger = createLogger('CadreService');
 
@@ -39,6 +45,19 @@ const SAPP_VERSION = '1.0';
 const PARTY_ID_KEY = '@sereus/partyId';
 const STRAND_ID_KEY = '@sereus/healthStrandId';
 const BOOTSTRAP_NODES: string[] = [];
+
+/**
+ * LevelDB directory naming for optimystic stores.
+ *
+ * Each strand (plus the control network, strandId='control') gets its own
+ * native LevelDB directory.  `reset.ts` mirrors this prefix when destroying
+ * stores; keep them in sync.
+ */
+export const OPTIMYSTIC_DB_PREFIX = 'optimystic-';
+
+function optimysticDbName(strandId: string): string {
+  return `${OPTIMYSTIC_DB_PREFIX}${strandId}`;
+}
 
 // ---------------------------------------------------------------------------
 // Health schema
@@ -76,6 +95,13 @@ class CadreServiceImpl {
   private _partyId: string | null = null;
   private _startError: string | null = null;
   private _startPromise: Promise<void> | null = null;
+  /**
+   * LevelDB handles open for the lifetime of this CadreService instance.
+   * Keyed by strandId (including 'control').  The provider callback memoizes
+   * through this map so each strand opens its native handle exactly once.
+   * Closed in `stop()`.
+   */
+  private readonly openDbs = new Map<string, OptimysticDb>();
 
   /** Whether the CadreNode is running. */
   get isRunning(): boolean {
@@ -124,7 +150,15 @@ class CadreServiceImpl {
       this._partyId = await this.getOrCreateValue(PARTY_ID_KEY);
       logger.info('Party ID:', this._partyId);
 
+      // Open the control-network LevelDB up-front so we can both load the
+      // persistent peer identity and hand the same handle back to CadreNode's
+      // storage provider when it asks for strandId='control'.
+      const controlDb = this.getOrOpenDb('control');
+      const privateKey = await loadOrCreateRNPeerKey(controlDb);
+      logger.info('Loaded peer identity from control store');
+
       const config: CadreNodeConfig = {
+        privateKey,
         controlNetwork: {
           partyId: this._partyId,
           bootstrapNodes: BOOTSTRAP_NODES,
@@ -132,10 +166,8 @@ class CadreServiceImpl {
         profile: 'transaction',
         strandFilter: { mode: 'sAppId', sAppId: SAPP_ID },
         storage: {
-          provider: (strandId: string) => new MMKVRawStorage({
-            mmkv: new MMKV({ id: `optimystic-${strandId}` }),
-            prefix: 'opt:',
-          }),
+          provider: (strandId: string) =>
+            new LevelDBRawStorage(this.getOrOpenDb(strandId)),
         },
         network: {
           // RN requires explicit transports (no TCP).  WebSockets satisfies
@@ -155,10 +187,23 @@ class CadreServiceImpl {
       // Create the health strand.  addStrand() does NOT write to the control
       // database — it starts a strand locally with its own libp2p node and
       // StrandDatabase.  No authority key required.
+      //
+      // Mode = 'bootstrap': solo node, no remote peers yet.  Schema apply and
+      // DML route through the OPTIMYSTIC LOCAL transactor (backed by the same
+      // LevelDB we created via createLibp2pNode), so a cold start finishes in
+      // seconds instead of timing out on consensus round-trips that can never
+      // complete with zero peers.  This is exactly what the
+      // `wire-strand-storage-into-bootstrap-transactor` ticket in sereus was
+      // built for — sereus-health is its named host-app verification target.
+      //
+      // STATUS.md Step 3 (adding the first remote node) will need to restart
+      // the strand in `'networked'` mode; the StrandMode is fixed for the
+      // lifetime of a StrandDatabase instance.
       const strandId = await this.getOrCreateValue(STRAND_ID_KEY);
       logger.info('Adding health strand:', strandId);
 
       this.healthStrand = await this.node.addStrand({
+        mode: 'bootstrap',
         strandRow: {
           Id: strandId,
           MemberPrivateKey: null,
@@ -181,11 +226,50 @@ class CadreServiceImpl {
 
   /** Stop the CadreNode gracefully.  Idempotent. */
   async stop(): Promise<void> {
-    if (!this.node) return;
     this.healthStrand = null;
-    await this.node.stop();
-    this.node = null;
+    if (this.node) {
+      await this.node.stop();
+      this.node = null;
+    }
+    // Close every LevelDB handle so rn-leveldb's per-name lock is released.
+    // Without this, `LevelDB.destroyDB(name)` from `resetDatabaseForDev`
+    // would throw "DB is open" on the very next call.
+    for (const [strandId, db] of this.openDbs) {
+      try {
+        await db.close();
+      } catch (e) {
+        logger.debug(`close LevelDB ${strandId} failed:`, e);
+      }
+    }
+    this.openDbs.clear();
     this._startPromise = null;
+  }
+
+  // -----------------------------------------------------------------------
+  // LevelDB handle cache
+  // -----------------------------------------------------------------------
+
+  /**
+   * Open (or return the cached handle for) the LevelDB backing a given
+   * strand's optimystic raw storage.  `'control'` is the special strandId
+   * the CadreNode uses for its control-network repo and node identity.
+   *
+   * `rn-leveldb` permits exactly one open handle per database name, so the
+   * cache is mandatory — without it, the second call (e.g. control then the
+   * first strand) would throw.
+   */
+  private getOrOpenDb(strandId: string): OptimysticDb {
+    let db = this.openDbs.get(strandId);
+    if (!db) {
+      db = openOptimysticRNDb({
+        openFn: (name, createIfMissing, errorIfExists) =>
+          new LevelDB(name, createIfMissing, errorIfExists),
+        WriteBatch: LevelDBWriteBatch,
+        name: optimysticDbName(strandId),
+      });
+      this.openDbs.set(strandId, db);
+    }
+    return db;
   }
 
   // -----------------------------------------------------------------------

@@ -77,7 +77,7 @@ List the apps to be built:
 
 **Backend:**
 
-- **Local database access**: [Quereus](https://github.com/gotchoicies/sereus.git)
+- **Local database access**: [Quereus](https://github.com/gotchoices/sereus.git)
 - **No central server**: Each participating node is part of a Sereus strand
 
 ## Notes

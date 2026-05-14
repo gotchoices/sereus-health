@@ -69,12 +69,12 @@ registration, and control-DB strand entries are deferred until Step 3
 
 - [ ] `cadreService.start()` at app startup — fix runtime errors from `createLibp2pNode()`, `ControlDatabase.initialize()`
 - [ ] Auto-generate party ID (UUID, persisted in AsyncStorage)
-- [ ] `addStrand()` with health sApp config (schema, sAppId) — creates strand libp2p node + StrandDatabase
+- [x] `addStrand()` with health sApp config (schema, sAppId) — creates strand libp2p node + StrandDatabase.  Strand is added with `mode: 'bootstrap'` so schema apply + DML route through the optimystic LOCAL transactor (no peers required).  Step 3 will need to restart the strand in `'networked'` mode when the first remote node is added (`StrandMode` is fixed per StrandDatabase instance).
 - [ ] Health data reads/writes go through `StrandDatabase.getDatabase()` (Quereus + optimystic plugin)
-- [ ] Add `@optimystic/db-p2p-storage-rn` + `react-native-mmkv` — persistent storage via `MMKVRawStorage`
-- [ ] Remove `rn-leveldb` / `@quereus/plugin-react-native-leveldb` dependency
-- [ ] Verify data persists across cold restarts
-- [ ] Persist node identity (Ed25519 private key → secure storage → reload via `config.privateKey`)
+- [x] Add `@optimystic/db-p2p-storage-rn` (v0.14, LevelDB-backed) — persistent storage via `LevelDBRawStorage` on top of the same `rn-leveldb` native module Quereus already uses
+- [ ] Keep `rn-leveldb` (shared native module across both backends; `@quereus/plugin-react-native-leveldb` is now only used by Mode B in `db/config.ts`)
+- [ ] Verify data persists across cold restarts (the host-app verification step called out in sereus ticket `wire-strand-storage-into-bootstrap-transactor`; look for `persistentStorage=true` in the strand-db init log to confirm wiring before re-running)
+- [x] Persist node identity (Ed25519 private key → `optimystic-control` LevelDB via `loadOrCreateRNPeerKey` → reload via `config.privateKey`).  Secure-storage upgrade still pending (LevelDB on RN is sandboxed but not Keychain-grade).
 
 ### Step 2: Sereus Connections screen
 
@@ -89,7 +89,12 @@ authority key yet).  Add-node and invite-guest buttons disabled.
 ### Step 3: Add public-IP drone node
 
 First time the user adds a remote node, auto-create the authority key and
-register everything in the control database.
+register everything in the control database.  This is also when the health
+strand must be torn down and re-added in `mode: 'networked'` so the
+optimystic plugin starts routing through the network transactor instead of
+the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
+`'bootstrap'`; add a mode argument (or implicit transition based on
+"first peer added") when wiring this step.
 
 **First-time networking setup (triggered by "Add Node"):**
 
