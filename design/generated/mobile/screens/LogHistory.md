@@ -14,6 +14,7 @@ dependsOn:
   - design/specs/mobile/global/ui.md
   - design/specs/domain/taxonomy.md
   - design/specs/domain/logging.md
+  - design/specs/domain/rules.md
   - design/specs/domain/import-export.md
 ---
 
@@ -21,143 +22,112 @@ dependsOn:
 
 ## Purpose
 
-Primary home screen: show a chronological list of log entries and provide fast access to:
-
-- Add a new entry
-- Clone an entry
-- Open graphs
-- Filter/search within history
-- Export logs
+Primary home screen: a chronological view of log entries, with fast access to add,
+clone, graph, filter/search, and export. On a fresh (empty) install this screen is
+also the **onboarding surface** — it presents the "get started" path.
 
 ## Route
 
-- **Route**: `LogHistory` (Home tab root)
-- **Title**: "History"
+- **Route**: `LogHistory` (Home tab root) · **Title**: "History"
 
 ## Layout
 
 ### Header
-
-- **Left**: App logo + "History" title
-- **Right actions** (left to right):
-  - Graph icon → navigate to Graphs
-  - Search/filter toggle icon
-  - (+) Add new entry (primary action, accent color)
+- **Left**: app logo + "History"
+- **Right actions** (l→r): Graph icon → `Graphs`; Search/filter toggle; **(+) Add** (primary, accent)
 
 ### Filter bar (toggleable)
+- Search input, placeholder "Filter entries…", clear (×) when non-empty.
+- Follows `general.md` filter rules: hiding retains the value but stops filtering; re-opening re-applies.
 
-- Text input with search icon, placeholder "Filter entries..."
-- Clear button (×) when text present
-- Follows `general.md` filter rules: hidden retains value but does not filter
+### Entry list (scrollable, newest first)
 
-### Entry list (scrollable)
+Best practice (within the "newest first" spec): **group entries under day headers**
+(sticky) by the entry's *originating-local date* — see timestamp rule below. Pull-to-refresh reloads.
 
-Reverse chronological (newest first).
+**Entry card (compact, 3 lines):**
+- **Line 1**: Type badge (Activity/Condition/Outcome, semantic color) · timestamp (see rule) · clone icon (far right, ≥44pt hitSlop)
+- **Line 2**: item names, comma-separated; truncate after 3 → "+N more"
+- **Line 3 (optional)**: comment snippet, single line, italic
 
-### Entry card (compact 3-line layout)
+Dense spacing: card padding 12 · line spacing 4 · card margin-bottom 8.
 
-- **Line 1 (header row)**:
-  - Type badge (colored pill: Activity/Condition/Outcome)
-  - Timestamp (local display, right of badge)
-  - Clone icon (far right, comfortable touch target via hitSlop)
-- **Line 2**: Item/bundle names comma-separated; truncate after 3 with "+N more"
-- **Line 3 (optional)**: Comment snippet, single line, italic
+### Timestamp display — originating zone
 
-**Spacing (dense list)**:
+Per `design/specs/domain/rules.md` (Time), render each entry in the **zone it was
+logged in** (from `eventUtcOffsetMinutes`; local = UTC + offset) — **not** the viewer's
+current device zone — so a lunch logged in Paris always reads as midday even when
+viewed elsewhere. When an entry's offset differs from the device's current offset,
+show a subtle zone hint (e.g. "UTC+2") so the user can tell where they were
+(story 02-daily, Alt Path B). Day-header grouping uses the originating-local date.
 
-- Card padding: 12px
-- Line spacing: 4px
-- Card margin-bottom: 8px
-- Clone touch target: ≥44pt
+> ⚠ **Spec reconciliation needed (human specs):** `screens/log-history.md` and
+> `global/general.md` currently say "timestamp (local display)" / "display in the
+> device's local timezone". Domain `rules.md` was updated to **originating-zone**.
+> The two mobile specs should be updated to match (pending user approval).
 
-### Empty state (required)
+### Empty state = first-run onboarding (required)
 
-When there are no log entries, show:
+Empty DB is now the **default first run** (`db/init.ts`, `general.md`). Present a friendly
+welcome and a clear get-started path, with **importing a starter catalog as the primary CTA**:
 
-- "No entries yet"
-- **Get started** CTAs:
-  - **Import minimal starter categories (built-in)** → triggers built-in catalog import (`general.md`)
-  - **Browse more catalogs (online)** → opens `health.sereus.org` in system browser (`general.md`)
-  - **Create your first entry** → navigate to EditEntry (mode=new)
+- **Import a starter catalog** (primary) → pick a bundled canonical catalog — **Minimal**
+  (types + categories) or **Small/Medium/Large** (adds ~250/500/1000 foods), per `general.md` —
+  then preview before commit per `import-export.md`.
+- **Browse more catalogs online** → opens `https://sereus.org/health/` (system browser) for additional catalogs.
+- **Create your first entry** → `EditEntry` (mode=new).
+
+(Same get-started affordances mirror `ConfigureCatalog`'s "no types" empty state.)
 
 ### Bottom tab bar
-
-Per `navigation.md`, 4 tabs (left → right):
-
-| Tab       | Icon (Ionicons)                       | Active state      |
-| --------- | ------------------------------------- | ----------------- |
-| Home      | `home` / `home-outline`               | filled when active|
-| Catalog   | `list` / `list-outline`               | filled when active|
-| Assistant | `sparkles` / `sparkles-outline`       | filled when active|
-| Settings  | `settings` / `settings-outline`       | filled when active|
-
-Tab bar is pinned at bottom; content scrolls above it.
+Per `navigation.md`, pinned: Home (`home`), Catalog (`list`), Assistant (`sparkles`), Settings (`settings`) — outline/filled by active state; content scrolls above it.
 
 ## Navigation
 
-- **Add (+)** → `EditEntry` (mode=new)
-- **Clone icon** → `EditEntry` (mode=clone, entryId)
-- **Tap card** → `EditEntry` (mode=edit, entryId)
-- **Graph icon** → `Graphs`
-- **Tab bar** → switch tabs (Home, Catalog, Assistant, Settings)
-
-Back behavior: at Home tab root, Android back exits app.
+- **(+)** → `EditEntry` (new) · **Clone** → `EditEntry` (clone, entryId) · **Tap card** → `EditEntry` (edit, entryId)
+- **Graph** → `Graphs` · **Tabs** → switch. At Home root, Android back exits.
 
 ## Data shaping
 
-LogHistory needs a summary per entry:
+Per-entry summary (from `db/logEntries.ts` `getAllLogEntries`):
 
 - `id: string`
-- `timestampUtc: string` (ISO 8601, display in local)
-- `type: string`
-- `items: string[]` (names)
-- `bundles: string[]` (names)
-- `comment?: string`
+- `timestamp: string` — ISO-8601 UTC instant (stored as `datetime`; the boundary converts)
+- `eventUtcOffsetMinutes?: number | null` — originating-zone offset for display
+- `type: string` · `items: string[]` · `bundles?: string[]` (source-bundle names) · `comment?: string`
 
 ## Screen state
+`entries` · `filterText` · `filterVisible` · `loading` · `error?`
 
-- `entries: LogEntry[]`
-- `filterText: string`
-- `filterVisible: boolean`
-- `loading: boolean`
-- `error?: string`
-
-## Export (data portability)
-
-- Expose **Export logs** action (header menu or dedicated button).
-- Export supports filtered subset (if filter active) or all entries.
-- Format: CSV per `import-export.md`.
+## Export / import (data portability)
+- **Export logs** action (header/menu): filtered subset (if filtering) or all; **CSV** per `import-export.md`
+  (header `timestampUtc,type,category,item,quantifier,value,unit,comment`).
+- If **Import logs** is exposed here: canonical **YAML/JSON only** (no direct CSV import), preview-before-commit.
 
 ## Mock variants
-
-- **happy**: 10–15 diverse entries, mix of types/items/bundles/quantifiers/comments
-- **empty**: Zero entries; shows empty state with CTAs
-- **error**: Data loading failure; shows error message with retry
+- **happy**: 10–15 diverse entries across types/items/bundles/quantifiers/comments; include ≥1 entry with a differing `eventUtcOffsetMinutes` to exercise the zone hint.
+- **empty**: zero entries → onboarding empty state with CTAs.
+- **error**: load failure → message + retry.
 
 ## i18n keys
-
 ```
 logHistory.title: "History"
 logHistory.addNew: "Add new entry"
 logHistory.openGraphs: "Open graphs"
-logHistory.filterPlaceholder: "Filter entries..."
+logHistory.filterPlaceholder: "Filter entries…"
 logHistory.clearFilter: "Clear filter"
 logHistory.clone: "Clone entry"
-logHistory.emptyTitle: "No entries yet"
-logHistory.emptyMessage: "Get started by importing a catalog or creating your first entry."
-logHistory.emptyImportBuiltin: "Import minimal starter categories"
+logHistory.emptyTitle: "Welcome to Sereus Health"
+logHistory.emptyMessage: "Log what you do and how you feel to find what helps. Start by importing a starter catalog."
+logHistory.emptyImportStarter: "Import a starter catalog"
 logHistory.emptyBrowseOnline: "Browse more catalogs online"
 logHistory.emptyCreateFirst: "Create your first entry"
 logHistory.errorLoading: "Failed to load entries"
 logHistory.retry: "Retry"
 logHistory.itemsMore: "+{count} more"
-navigation.home: "Home"
-navigation.catalog: "Catalog"
-navigation.assistant: "Assistant"
-navigation.settings: "Settings"
+logHistory.zoneHint: "UTC{offset}"
 ```
 
 ---
-
-**Status**: Fresh consolidation
-**Last Updated**: 2026-01-16
+**Status**: Regenerated (refresh — empty-first-run, originating-zone timestamps, real online catalogs, day grouping)
+**Last Updated**: 2026-07-05

@@ -13,13 +13,16 @@ Cross-cutting behaviors that apply across multiple screens and features.
 
 When the catalog is empty, the app should offer:
 
-- **Import minimal starter categories (built-in)**: imports a tiny, bundled canonical catalog containing Types + Categories only (no items). Source file to bundle: `design/specs/domain/catalog/categories.yaml`.
-- **Browse more catalogs (online)**: opens `health.sereus.org` in the system browser so the user can download richer catalog files and import them.
+- **Import a starter catalog (built-in)**: pick from a small set of bundled canonical catalogs, from a bare frame to a stocked pantry:
+  - **Minimal** — Types + Categories only (no items). Source: `design/specs/domain/catalog/categories.yaml`.
+  - **Small / Medium / Large** — the above plus ~250 / ~500 / ~1000 common food items. Sources: `web/catalogs/starter-{small,medium,large}.yaml`.
+- **Browse more catalogs (online)**: opens `sereus.org/health` in the system browser so the user can download additional catalog files and import them.
 
 ### Time and timestamps (UX rules)
 
-- **Store** timestamps in UTC.
-- **Display/edit** timestamps in the device’s local timezone/locale; convert back to UTC for storage.
+- **Store** each entry’s timestamp as a UTC instant, plus the local offset in effect where/when it was logged.
+- **Display** entries in their originating timezone (the zone they were logged in), not the viewer’s current device zone, so times don’t shift when you travel.
+- **Create/edit** in the device’s current local timezone; convert back to UTC (with the current offset) for storage.
 
 ### Shared UI conventions
 

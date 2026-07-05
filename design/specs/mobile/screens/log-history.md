@@ -24,7 +24,7 @@ Each entry card uses a compact 3-line layout:
 
 - **Line 1 (header row)**:
   - left: Type badge (Activity / Condition / Outcome; semantic color)
-  - center-left: timestamp (local display)
+  - center-left: timestamp (shown in the entry’s originating timezone; see `design/specs/mobile/global/general.md`)
   - right: Clone icon/button
 - **Line 2 (items)**:
   - comma-separated item list

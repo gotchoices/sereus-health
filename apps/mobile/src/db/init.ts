@@ -11,6 +11,12 @@ import { createLogger } from '../util/logger';
 
 const logger = createLogger('DB Init');
 
+// First-run posture (design/specs/domain/rules.md + specs/mobile/global/general.md):
+// start with an EMPTY database and guide the user to import a starter catalog via
+// the LogHistory / ConfigureCatalog empty states.  Flip to true only to restore the
+// old demo auto-seed (dev/demo convenience).
+const AUTO_SEED_FIRST_RUN = false;
+
 let initPromise: Promise<void> | null = null;
 let isInitialized = false;
 
@@ -44,16 +50,17 @@ export async function ensureDatabaseInitialized(): Promise<void> {
 
       logger.debug(`Seed guard: types.count=${String(typeCount)}`);
 
-      const didSeed = typeCount === 0;
-      if (typeCount === 0) {
+      const isFirstRun = typeCount === 0;
+      if (isFirstRun && AUTO_SEED_FIRST_RUN) {
         logger.info('Applying production seeds...');
         await applyProductionSeeds(db);
-      }
-
-      // Dev-only sample data
-      if (__DEV__ && applySampleData && didSeed) {
-        logger.info('Applying sample data (dev, first-run only)...');
-        await applySampleData(db);
+        // Dev-only sample data (only alongside seeds)
+        if (__DEV__ && applySampleData) {
+          logger.info('Applying sample data (dev, first-run only)...');
+          await applySampleData(db);
+        }
+      } else if (isFirstRun) {
+        logger.info('First run — empty database; import a starter catalog to begin.');
       }
 
       // Dev verification
