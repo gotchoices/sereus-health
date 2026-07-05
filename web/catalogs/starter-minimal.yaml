@@ -1,0 +1,35 @@
+# Sereus Health canonical starter catalog — import via the app or share freely.
+# Format: design/specs/domain/import-export.md
+version: 1
+name: Minimal
+description: Types and categories only — a blank frame to build your own.
+catalog:
+  types:
+    - name: Activity
+    - name: Condition
+    - name: Outcome
+  categories:
+    - typeName: Activity
+      name: Eating
+    - typeName: Activity
+      name: Exercise
+    - typeName: Activity
+      name: Sleep
+    - typeName: Activity
+      name: Medication
+    - typeName: Condition
+      name: Symptoms
+    - typeName: Condition
+      name: Mood
+    - typeName: Condition
+      name: Stress
+    - typeName: Condition
+      name: Pain
+    - typeName: Outcome
+      name: Energy
+    - typeName: Outcome
+      name: Weight
+    - typeName: Outcome
+      name: Blood Pressure
+    - typeName: Outcome
+      name: Blood Sugar
