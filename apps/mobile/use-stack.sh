@@ -74,14 +74,14 @@ PACKAGES = collections.OrderedDict([
     ('@optimystic/db-p2p-storage-rn',        ('../../../optimystic/packages/db-p2p-storage-rn',        '^0.14.1', True,  True)),
     ('@optimystic/quereus-plugin-crypto',    ('../../../optimystic/packages/quereus-plugin-crypto',    '^0.14.1', True,  True)),
     ('@optimystic/quereus-plugin-optimystic',('../../../optimystic/packages/quereus-plugin-optimystic','^0.14.1', True,  True)),
-    ('@quereus/quereus',                     ('../../../quereus/packages/quereus',                     '^4.3.0',  True,  True)),
-    ('@quereus/isolation',                   ('../../../quereus/packages/quereus-isolation',           '^4.3.0',  True,  True)),
-    ('@quereus/store',                       ('../../../quereus/packages/quereus-store',               '^4.3.0',  True,  True)),
-    ('@quereus/plugin-leveldb',              ('../../../quereus/packages/quereus-plugin-leveldb',      '^4.3.0',  False, True)),
+    ('@quereus/quereus',                     ('../../../quereus/packages/quereus',                     '^3.3.0',  True,  True)),
+    ('@quereus/isolation',                   ('../../../quereus/packages/quereus-isolation',           '^3.3.0',  True,  True)),
+    ('@quereus/store',                       ('../../../quereus/packages/quereus-store',               '^3.3.0',  True,  True)),
+    ('@quereus/plugin-leveldb',              ('../../../quereus/packages/quereus-plugin-leveldb',      '^3.3.0',  False, True)),
     ('@serfab/strand-proto',                 ('../../../sereus/packages/strand-proto',                 '^0.8.1',  False, True)),
     ('p2p-fret',                             ('../../../fret/packages/fret',                            '^0.6.0',  True,  True)),
     # dep-only ser packages (never in resolutions)
-    ('@quereus/plugin-react-native-leveldb', ('../../../quereus/packages/quereus-plugin-react-native-leveldb', '^4.3.0', True, False)),
+    ('@quereus/plugin-react-native-leveldb', ('../../../quereus/packages/quereus-plugin-react-native-leveldb', '^3.3.0', True, False)),
     ('@serfab/cadre-core',                   ('../../../sereus/packages/cadre-core',                   '^0.8.1',  True,  False)),
 ])
 NAMES = set(PACKAGES)
@@ -127,13 +127,17 @@ for name, (path, rng, in_deps, in_res) in PACKAGES.items():
         print(f"__WARN__ expected dependency {name} not found; adding it.")
     deps[name] = ('portal:' + path) if MODE == 'local' else rng
 
-# --- rebuild resolutions: ser-local block (local only) + preserved rest ---
+# --- rebuild resolutions: ser-local block + preserved rest ---
+# The ser packages are pinned in `resolutions` in BOTH modes so a single version
+# wins tree-wide.  In local mode that's the portal target; in npm mode it's the
+# semver range — which also COERCES transitive deps that declare a stale range
+# (e.g. optimystic still asks for @quereus/quereus@^0.16.2) onto our chosen
+# version.  This is the npm equivalent of portal ignoring declared ranges.
 preserved = collections.OrderedDict((k, v) for k, v in res.items() if k not in NAMES)
 ser_block = collections.OrderedDict()
-if MODE == 'local':
-    for name, (path, rng, in_deps, in_res) in PACKAGES.items():
-        if in_res:
-            ser_block[name] = 'portal:' + path
+for name, (path, rng, in_deps, in_res) in PACKAGES.items():
+    if in_res:
+        ser_block[name] = ('portal:' + path) if MODE == 'local' else rng
 
 new_res = collections.OrderedDict()
 for k, v in ser_block.items():
@@ -178,8 +182,9 @@ if echo "$REPORT" | grep -q '^__CHANGED__'; then
       echo "Next: verify wiring with  bash stack-check"
       echo "      (run ../../../pull-stack.sh first if it reports stale builds)"
     else
-      echo "Next (npm mode): note quereus 3.x -> 4.x is a MAJOR bump; expect breakage"
-      echo "      to shake out in src/db/* and quereus plugins.  For iOS also run:"
+      echo "Next (npm mode): pinned to the coherent published set (quereus 3.3.0,"
+      echo "      optimystic 0.14.x).  quereus 4.x is intentionally avoided — the rest"
+      echo "      of the stack has not adopted it yet.  For iOS also run:"
       echo "      cd ios && pod install"
     fi
     exit $IRC
@@ -190,8 +195,8 @@ if echo "$REPORT" | grep -q '^__CHANGED__'; then
       echo "  2. bash stack-check      # confirm portal wiring + built targets"
     else
       echo "  2. cd ios && pod install # (iOS native deps)"
-      echo "     Heads-up: quereus 3.x -> 4.x is a MAJOR bump; expect to fix"
-      echo "     breakage in src/db/* and the quereus plugins."
+      echo "     Note: pinned to quereus 3.3.0 (the coherent set); quereus 4.x is"
+      echo "     avoided until optimystic + src/db adopt it."
     fi
   fi
 fi

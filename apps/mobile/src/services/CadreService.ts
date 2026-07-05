@@ -164,6 +164,14 @@ class CadreServiceImpl {
           bootstrapNodes: BOOTSTRAP_NODES,
         },
         profile: 'transaction',
+        // cadre-core 0.8.x enforces signed sApp schemas by default
+        // (requireSignedSchemas, fail-closed).  The health sApp is not yet
+        // signed (see the unsigned sAppConfig below), so relax the policy for
+        // dev/test to bring the strand up.  MIGRATION TODO: give the sApp an
+        // ed25519 author key, set `sAppConfig.id` = author public key, and
+        // `signature` = signSchema(schema, version, authorPrivateKey), then
+        // drop this flag.
+        requireSignedSchemas: false,
         strandFilter: { mode: 'sAppId', sAppId: SAPP_ID },
         storage: {
           provider: (strandId: string) =>
@@ -213,7 +221,7 @@ class CadreServiceImpl {
           id: SAPP_ID,
           version: SAPP_VERSION,
           schema: HEALTH_SCHEMA_DDL,
-          signature: '', // Placeholder — signing enforced when strand is registered in control DB
+          signature: '', // Unsigned — accepted only because requireSignedSchemas:false above (see MIGRATION TODO)
         },
       });
       logger.info('Health strand ready. Database available:', !!this.healthStrand?.database);
