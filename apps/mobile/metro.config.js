@@ -6,6 +6,15 @@ const defaultConfig = getDefaultConfig(__dirname);
 // Workspace root (monorepo)
 const workspaceRoot = path.resolve(__dirname, '../../..');
 
+// Stack mode is derived from package.json — the same file `use-stack.sh` edits.
+// In `local` mode the ser packages are portal:'d to local clones and we alias
+// them to source below; in `npm` mode they come from node_modules like any other
+// dependency and these aliases/watch-folders must NOT be applied.
+const appPkg = require('./package.json');
+const localStack = String(
+  (appPkg.dependencies && appPkg.dependencies['@serfab/cadre-core']) || '',
+).startsWith('portal:');
+
 // Node.js built-in stubs for libp2p transitive imports.
 // Metro resolves all imports statically; these are never called at runtime.
 // Remove each stub once the upstream package ships a proper "react-native"
@@ -39,12 +48,14 @@ const config = {
     path.resolve(__dirname, '../..'),
     // Watch the workspace root so Metro can follow monorepo symlinks (e.g. portal deps).
     workspaceRoot,
-    // Watch optimystic packages for direct resolution
-    path.resolve(workspaceRoot, 'optimystic/packages'),
-    // Watch sereus packages
-    path.resolve(workspaceRoot, 'sereus/packages'),
-    // Watch fret packages
-    path.resolve(workspaceRoot, 'fret/packages'),
+    // Local-stack only: watch the ser package sources for direct resolution.
+    ...(localStack
+      ? [
+          path.resolve(workspaceRoot, 'optimystic/packages'),
+          path.resolve(workspaceRoot, 'sereus/packages'),
+          path.resolve(workspaceRoot, 'fret/packages'),
+        ]
+      : []),
   ],
   transformer: {
     babelTransformerPath: require.resolve('./metro.transformer.js'),
@@ -68,30 +79,36 @@ const config = {
       path.resolve(__dirname, '../../node_modules'),
       // Monorepo root (yarn workspaces hoists here)
       path.resolve(workspaceRoot, 'node_modules'),
-      // Sereus workspace (for libp2p, etc.)
-      path.resolve(workspaceRoot, 'sereus/node_modules'),
-      // Optimystic workspace
-      path.resolve(workspaceRoot, 'optimystic/node_modules'),
-      // Quereus workspace
-      path.resolve(workspaceRoot, 'quereus/node_modules'),
-      // Fret workspace
-      path.resolve(workspaceRoot, 'fret/node_modules'),
+      // Local-stack only: the ser workspaces' own node_modules (libp2p, etc.).
+      ...(localStack
+        ? [
+            path.resolve(workspaceRoot, 'sereus/node_modules'),
+            path.resolve(workspaceRoot, 'optimystic/node_modules'),
+            path.resolve(workspaceRoot, 'quereus/node_modules'),
+            path.resolve(workspaceRoot, 'fret/node_modules'),
+          ]
+        : []),
     ],
-    // Map workspace packages to their actual locations (portal-like resolution)
+    // Map workspace packages to their actual locations (portal-like resolution).
+    // Local-stack only — in npm mode these resolve from node_modules normally.
     extraNodeModules: {
-      // Optimystic packages (source)
-      '@optimystic/quereus-plugin-crypto': path.resolve(workspaceRoot, 'optimystic/packages/quereus-plugin-crypto'),
-      '@optimystic/quereus-plugin-optimystic': path.resolve(workspaceRoot, 'optimystic/packages/quereus-plugin-optimystic'),
-      '@optimystic/db-core': path.resolve(workspaceRoot, 'optimystic/packages/db-core'),
-      '@optimystic/db-p2p': path.resolve(workspaceRoot, 'optimystic/packages/db-p2p'),
-      'p2p-fret': path.resolve(workspaceRoot, 'fret/packages/fret'),
-      // Sereus packages (source)
-      '@serfab/cadre-core': path.resolve(workspaceRoot, 'sereus/packages/cadre-core'),
-      '@serfab/strand-proto': path.resolve(workspaceRoot, 'sereus/packages/strand-proto'),
-      // Quereus packages (source)
-      '@quereus/quereus': path.resolve(workspaceRoot, 'quereus/packages/quereus'),
-      '@quereus/isolation': path.resolve(workspaceRoot, 'quereus/packages/quereus-isolation'),
-      '@quereus/store': path.resolve(workspaceRoot, 'quereus/packages/quereus-store'),
+      ...(localStack
+        ? {
+            // Optimystic packages (source)
+            '@optimystic/quereus-plugin-crypto': path.resolve(workspaceRoot, 'optimystic/packages/quereus-plugin-crypto'),
+            '@optimystic/quereus-plugin-optimystic': path.resolve(workspaceRoot, 'optimystic/packages/quereus-plugin-optimystic'),
+            '@optimystic/db-core': path.resolve(workspaceRoot, 'optimystic/packages/db-core'),
+            '@optimystic/db-p2p': path.resolve(workspaceRoot, 'optimystic/packages/db-p2p'),
+            'p2p-fret': path.resolve(workspaceRoot, 'fret/packages/fret'),
+            // Sereus packages (source)
+            '@serfab/cadre-core': path.resolve(workspaceRoot, 'sereus/packages/cadre-core'),
+            '@serfab/strand-proto': path.resolve(workspaceRoot, 'sereus/packages/strand-proto'),
+            // Quereus packages (source)
+            '@quereus/quereus': path.resolve(workspaceRoot, 'quereus/packages/quereus'),
+            '@quereus/isolation': path.resolve(workspaceRoot, 'quereus/packages/quereus-isolation'),
+            '@quereus/store': path.resolve(workspaceRoot, 'quereus/packages/quereus-store'),
+          }
+        : {}),
       // Node.js built-in stubs (for libp2p transitive deps)
       ...nodeBuiltinStubs,
     },
