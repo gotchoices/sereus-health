@@ -20,6 +20,13 @@ Context: Bob has already been [getting used to the app](02-daily.md).  He now wa
 12. He sets the quantifier for each and completes his entry.
 13. Now it is a part of his history.
 
+## Alternative Path A: Retiring an item no longer used
+1. Bob stopped eating hot dogs and wants them out of his pick lists.
+2. He finds "hot dogs" in the catalog and chooses **Retire**.
+3. The app explains it will be hidden from future logging but kept so his history stays intact, and he confirms.
+4. Hot dogs no longer appear when logging, but his past entries that included them are unchanged.
+
 ## Acceptance Criteria
 - [ ] The user can define any number of items.
 - [ ] The user can define bundles which consist of other items.
+- [ ] The user can retire a catalog item or bundle; it disappears from future selection while historical entries that reference it remain intact.

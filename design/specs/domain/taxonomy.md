@@ -26,6 +26,7 @@ Top-level grouping for everything else (e.g., Activity, Condition, Outcome).
 | name | string | no | Unique display name |
 | color | string | yes | Optional hex color for UI badges |
 | displayOrder | number | yes | Optional ordering hint (lower first) |
+| retiredAt | timestamp (ISO-8601 UTC) | yes | When retired/hidden from future selection; null = active |
 
 #### Relationships
 
@@ -50,6 +51,7 @@ Flat list of categories under a Type (MVP: no nesting).
 | id | UUID | no | Stable identifier |
 | typeId | UUID | no | Parent Type |
 | name | string | no | Display name (unique within the Type) |
+| retiredAt | timestamp (ISO-8601 UTC) | yes | When retired/hidden from future selection; null = active |
 
 #### Relationships
 
@@ -74,6 +76,7 @@ Loggable unit (food, exercise, symptom, etc).
 | categoryId | UUID | no | Parent Category |
 | name | string | no | Display name (unique within the Category) |
 | description | string | yes | Optional note/description |
+| retiredAt | timestamp (ISO-8601 UTC) | yes | When retired/hidden from future selection; null = active |
 
 #### Relationships
 
@@ -102,6 +105,7 @@ Defines optional numeric measurements for an Item (e.g., Intensity 1–10, Durat
 | units | string | yes | Display hint (e.g. “minutes”, “miles”, “1–10”) |
 | minValue | number | yes | Optional minimum |
 | maxValue | number | yes | Optional maximum |
+| retiredAt | timestamp (ISO-8601 UTC) | yes | When retired/hidden from future selection; null = active |
 
 #### Relationships
 

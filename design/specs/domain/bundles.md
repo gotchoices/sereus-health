@@ -18,6 +18,7 @@ Bundles are a user-defined convenience feature. A bundle is specific to exactly 
 | typeId | UUID | no | Type affinity for all members |
 | name | string | no | Display name (unique within the Type) |
 | description | string | yes | Optional note |
+| retiredAt | timestamp (ISO-8601 UTC) | yes | When retired/hidden from future selection; null = active. Preserved so historical references stay intact. |
 
 #### Relationships
 

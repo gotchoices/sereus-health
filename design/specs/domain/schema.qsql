@@ -2,21 +2,28 @@
 -- This file is the authoritative schema definition for all cohort nodes.
 -- Hash of this file enforces schema consistency across the network.
 --
--- Version: 1.0
+-- Version: 1.1
 -- Format: Quereus Declarative Schema
+--
+-- Temporal columns (timestamp, retired_at) are stored as ISO-8601 UTC TEXT.
+-- A future coordinated change may migrate these to the native DATETIME type;
+-- that requires the app to write naive-UTC strings (no 'Z') and parse reads as
+-- UTC, so it is intentionally deferred.
 
 declare schema main {
   table types (
     id text primary key,
     name text unique,
     color text null,
-    display_order integer default 0
+    display_order integer default 0,
+    retired_at text null
   );
 
   table categories (
     id text primary key,
     type_id text,
     name text,
+    retired_at text null,
     constraint unique_category_per_type unique (type_id, name),
     constraint fk_categories_type foreign key (type_id) references types(id)
   );
@@ -26,6 +33,7 @@ declare schema main {
     category_id text,
     name text,
     description text null,
+    retired_at text null,
     constraint unique_item_per_category unique (category_id, name),
     constraint fk_items_category foreign key (category_id) references categories(id)
   );
@@ -37,6 +45,7 @@ declare schema main {
     min_value real null,
     max_value real null,
     units text null,
+    retired_at text null,
     constraint unique_quantifier_per_item unique (item_id, name),
     constraint fk_quantifiers_item foreign key (item_id) references items(id)
   );
@@ -45,6 +54,7 @@ declare schema main {
     id text primary key,
     type_id text,
     name text,
+    retired_at text null,
     constraint unique_bundle_per_type unique (type_id, name),
     constraint fk_bundles_type foreign key (type_id) references types(id)
   );
@@ -107,4 +117,3 @@ declare schema main {
   index idx_log_entry_items_source_bundle on log_entry_items(source_bundle_id);
   index idx_log_entry_quantifier_values_entry on log_entry_quantifier_values(entry_id);
 }
-

@@ -13,6 +13,7 @@ description: Cross-cutting invariants and constraints for Sereus Health data mod
 - **Flat categories (MVP)**: No category nesting.
 - **Single-type log entries**: A log entry contains items/bundles of exactly one Type.
 - **Bundle expansion**: Bundles are expanded to items at log-time; entries store items, with optional "source bundle" for display/grouping.
+- **Retire vs delete**: Catalog elements (Type, Category, Item, QuantifierDefinition, Bundle) carry an optional `retiredAt` timestamp. Retiring sets it, hiding the element from future selection while preserving all historical references. Hard delete is reserved for elements not referenced by history.
 - **Quantifiers**: Defined per item; recorded values are optional (only stored when provided).
 - **Name uniqueness is case-insensitive**
   - Type names are unique globally.
@@ -34,4 +35,4 @@ When a user edits a taxonomy element that is already referenced by historical lo
 - **Description** can be edited freely.
 - If **name** is edited, ask scope: “Apply to all existing entries” vs “Future only”.
   - If “Future only”, create a new definition for future use; existing entries remain attached to the old definition.
-- If **deletion** is requested and the element is in use, prefer “retire/hide from future use” over hard delete, and communicate the impact clearly.
+- If **deletion** is requested and the element is in use, prefer “retire/hide from future use” (sets `retiredAt`) over hard delete, and communicate the impact clearly.
