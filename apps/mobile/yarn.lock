@@ -3231,18 +3231,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sereus/cadre-core@portal:../../../sereus/packages/cadre-core::locator=mobile%40workspace%3A.":
+"@serfab/cadre-core@portal:../../../sereus/packages/cadre-core::locator=mobile%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@sereus/cadre-core@portal:../../../sereus/packages/cadre-core::locator=mobile%40workspace%3A."
+  resolution: "@serfab/cadre-core@portal:../../../sereus/packages/cadre-core::locator=mobile%40workspace%3A."
   dependencies:
     "@libp2p/crypto": "npm:^5.1.13"
     "@libp2p/interface": "npm:^3.1.0"
     "@libp2p/peer-id": "npm:^6.0.4"
-    "@optimystic/db-core": "npm:^0.13.0"
-    "@optimystic/db-p2p": "npm:^0.13.0"
-    "@optimystic/quereus-plugin-crypto": "npm:^0.13.0"
-    "@optimystic/quereus-plugin-optimystic": "npm:^0.13.0"
-    "@quereus/quereus": "npm:^2.8.0"
+    "@optimystic/db-core": "npm:^0.13.4"
+    "@optimystic/db-p2p": "npm:^0.13.4"
+    "@optimystic/quereus-plugin-crypto": "npm:^0.13.4"
+    "@optimystic/quereus-plugin-optimystic": "npm:^0.13.4"
+    "@quereus/quereus": "npm:^3.1.1"
     "@serfab/strand-proto": "workspace:^"
     debug: "npm:^4.4.3"
     libp2p: "npm:^3.1.3"
@@ -8151,7 +8151,7 @@ __metadata:
     "@react-native/metro-config": "npm:0.82.1"
     "@react-native/new-app-screen": "npm:0.82.1"
     "@react-native/typescript-config": "npm:0.82.1"
-    "@sereus/cadre-core": "portal:../../../sereus/packages/cadre-core"
+    "@serfab/cadre-core": "portal:../../../sereus/packages/cadre-core"
     "@types/jest": "npm:^29.5.13"
     "@types/js-yaml": "npm:^4.0.9"
     "@types/react": "npm:^19.1.1"

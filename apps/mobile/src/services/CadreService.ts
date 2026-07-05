@@ -1,5 +1,5 @@
 /**
- * CadreService — singleton wrapper around @sereus/cadre-core CadreNode.
+ * CadreService — singleton wrapper around @serfab/cadre-core CadreNode.
  *
  * Boots at first data access.  Creates a local health strand via addStrand()
  * so health data is stored in optimystic from the start.  Adding remote nodes
@@ -19,7 +19,7 @@ import {
   type CadreNodeEvents,
   type ControlDatabase,
   type StrandInstance,
-} from '@sereus/cadre-core';
+} from '@serfab/cadre-core';
 import { webSockets } from '@libp2p/websockets';
 import {
   LevelDBRawStorage,

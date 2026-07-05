@@ -86,8 +86,8 @@ const config = {
       '@optimystic/db-p2p': path.resolve(workspaceRoot, 'optimystic/packages/db-p2p'),
       'p2p-fret': path.resolve(workspaceRoot, 'fret/packages/fret'),
       // Sereus packages (source)
-      '@sereus/cadre-core': path.resolve(workspaceRoot, 'sereus/packages/cadre-core'),
-      '@sereus/strand-proto': path.resolve(workspaceRoot, 'sereus/packages/strand-proto'),
+      '@serfab/cadre-core': path.resolve(workspaceRoot, 'sereus/packages/cadre-core'),
+      '@serfab/strand-proto': path.resolve(workspaceRoot, 'sereus/packages/strand-proto'),
       // Quereus packages (source)
       '@quereus/quereus': path.resolve(workspaceRoot, 'quereus/packages/quereus'),
       '@quereus/isolation': path.resolve(workspaceRoot, 'quereus/packages/quereus-isolation'),

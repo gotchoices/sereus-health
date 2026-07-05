@@ -51,7 +51,7 @@ This checklist tracks spec review work for the **mobile** target. Treat it as th
 
 ### RN Compatibility (bundling)
 
-- [x] `@sereus/cadre-core` loads in RN (Metro resolves)
+- [x] `@serfab/cadre-core` loads in RN (Metro resolves)
 - [x] `@optimystic/db-p2p` resolves (`react-native` export condition → `rn.js`, no TCP)
 - [x] Node.js built-in shims for libp2p transitive deps (`os`, `net`, `tls`)
 - [x] `@babel/runtime` ESM/CJS interop (`resolveRequest` forces CJS helpers)

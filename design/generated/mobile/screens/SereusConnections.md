@@ -34,10 +34,10 @@ Four content sections in a `ScrollView`:
 
 ### CadreService singleton (`src/services/CadreService.ts`)
 
-Wraps `CadreNode` from `@sereus/cadre-core`.  Lifecycle: `initialize()` → `start()` → `stop()`.
+Wraps `CadreNode` from `@serfab/cadre-core`.  Lifecycle: `initialize()` → `start()` → `stop()`.
 
 ```typescript
-import { CadreNode, type CadreNodeConfig } from '@sereus/cadre-core';
+import { CadreNode, type CadreNodeConfig } from '@serfab/cadre-core';
 
 const SAPP_ID = 'org.sereus.health';
 

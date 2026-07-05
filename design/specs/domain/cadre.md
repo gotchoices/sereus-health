@@ -1,6 +1,6 @@
 # Cadre Management
 
-Apps rely on [@sereus/cadre-core](https://github.com/gotchoices/sereus.git) for cadre and strand management.
+Apps rely on [@serfab/cadre-core](https://github.com/gotchoices/sereus.git) for cadre and strand management.
 
 For architecture, enrollment flows, and API details, see `sereus/docs/cadre-architecture.md`.
 
