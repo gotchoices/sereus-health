@@ -41,7 +41,7 @@ const logger = createLogger('CadreService');
 // ---------------------------------------------------------------------------
 
 const SAPP_ID = 'org.sereus.health';
-const SAPP_VERSION = '1.0';
+const SAPP_VERSION = '1.1';
 const PARTY_ID_KEY = '@sereus/partyId';
 const STRAND_ID_KEY = '@sereus/healthStrandId';
 const BOOTSTRAP_NODES: string[] = [];
