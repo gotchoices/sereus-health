@@ -1,9 +1,12 @@
 import { getDatabase } from './index';
 import { newUuid } from '../util/id';
+import { toDbDatetime, fromDbDatetime, captureUtcOffsetMinutes } from '../util/datetime';
 
 export interface LogEntry {
   id: string;
   timestamp: string;
+  /** Local UTC offset (minutes; local = UTC + offset) in effect when logged; null if not captured. */
+  eventUtcOffsetMinutes?: number | null;
   typeId: string;
   typeName: string;
   comment: string | null;
@@ -46,11 +49,12 @@ export async function createLogEntry(input: CreateLogEntryInput): Promise<string
 
   await db.exec('BEGIN');
   try {
-    await db.exec('INSERT INTO log_entries (id, timestamp, type_id, comment) VALUES (?, ?, ?, ?)', [
+    await db.exec('INSERT INTO log_entries (id, timestamp, type_id, comment, event_utc_offset_minutes) VALUES (?, ?, ?, ?, ?)', [
       entryId,
-      input.timestamp,
+      toDbDatetime(input.timestamp),
       input.typeId,
       input.comment,
+      captureUtcOffsetMinutes(input.timestamp),
     ]);
 
     for (const item of input.items) {
@@ -81,10 +85,11 @@ export async function updateLogEntry(entryId: string, input: CreateLogEntryInput
 
   await db.exec('BEGIN');
   try {
-    await db.exec('UPDATE log_entries SET timestamp = ?, type_id = ?, comment = ? WHERE id = ?', [
-      input.timestamp,
+    await db.exec('UPDATE log_entries SET timestamp = ?, type_id = ?, comment = ?, event_utc_offset_minutes = ? WHERE id = ?', [
+      toDbDatetime(input.timestamp),
       input.typeId,
       input.comment,
+      captureUtcOffsetMinutes(input.timestamp),
       entryId,
     ]);
 
@@ -127,7 +132,8 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
       e.timestamp,
       e.type_id as typeId,
       t.name as typeName,
-      e.comment
+      e.comment,
+      e.event_utc_offset_minutes as eventUtcOffsetMinutes
     FROM log_entries e
     JOIN types t ON t.id = e.type_id
     ORDER BY e.timestamp DESC
@@ -202,7 +208,8 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
 
     out.push({
       id: entryId,
-      timestamp: er.timestamp as string,
+      timestamp: fromDbDatetime(er.timestamp as string),
+      eventUtcOffsetMinutes: (er.eventUtcOffsetMinutes as number) ?? null,
       typeId: er.typeId as string,
       typeName: er.typeName as string,
       comment: (er.comment as string) ?? null,
@@ -222,7 +229,8 @@ export async function getLogEntryById(entryId: string): Promise<LogEntry | null>
         e.timestamp,
         e.type_id as typeId,
         t.name as typeName,
-        e.comment
+        e.comment,
+        e.event_utc_offset_minutes as eventUtcOffsetMinutes
       FROM log_entries e
       JOIN types t ON t.id = e.type_id
       WHERE e.id = ?
@@ -292,7 +300,8 @@ export async function getLogEntryById(entryId: string): Promise<LogEntry | null>
 
   return {
     id: entryRow.id as string,
-    timestamp: entryRow.timestamp as string,
+    timestamp: fromDbDatetime(entryRow.timestamp as string),
+    eventUtcOffsetMinutes: (entryRow.eventUtcOffsetMinutes as number) ?? null,
     typeId: entryRow.typeId as string,
     typeName: entryRow.typeName as string,
     comment: (entryRow.comment as string) ?? null,

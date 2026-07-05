@@ -8,6 +8,7 @@
 import type { Database } from '@quereus/quereus';
 import SCHEMA_SQL from '../../../../design/specs/domain/schema.qsql';
 import { createLogger } from '../util/logger';
+import { toDbDatetime } from '../util/datetime';
 
 const logger = createLogger('DB Schema');
 
@@ -75,7 +76,7 @@ export async function applyProductionSeeds(db: Database): Promise<void> {
   for (const e of PRODUCTION_SEEDS.log_entries) {
     await db.exec('INSERT INTO log_entries (id, timestamp, type_id, comment) VALUES (?, ?, ?, ?)', [
       e.id,
-      e.timestamp,
+      toDbDatetime(e.timestamp),
       e.type_id,
       e.comment,
     ]);

@@ -9,7 +9,7 @@ description: Cross-cutting invariants and constraints for Sereus Health data mod
 - **Identifiers / keys**
   - User-visible entities (Type, Category, Item, Bundle, QuantifierDefinition, LogEntry) have stable **UUID** IDs.
   - Join tables may use **composite keys** (see `logging.md`).
-- **Time**: All stored timestamps are **UTC**; UI displays in device locale.
+- **Time**: A log entry's timestamp is stored as a **UTC instant** (the sort/correlation key). Each entry also stores `eventUtcOffsetMinutes` — the local UTC offset in effect where/when it was logged. History is displayed in the entry's **originating zone** (local = UTC + offset), **not** the viewer's current device zone, so an event's local time never shifts as the user travels.
 - **Flat categories (MVP)**: No category nesting.
 - **Single-type log entries**: A log entry contains items/bundles of exactly one Type.
 - **Bundle expansion**: Bundles are expanded to items at log-time; entries store items, with optional "source bundle" for display/grouping.

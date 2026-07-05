@@ -5,10 +5,14 @@
 -- Version: 1.1
 -- Format: Quereus Declarative Schema
 --
--- Temporal columns (timestamp, retired_at) are stored as ISO-8601 UTC TEXT.
--- A future coordinated change may migrate these to the native DATETIME type;
--- that requires the app to write naive-UTC strings (no 'Z') and parse reads as
--- UTC, so it is intentionally deferred.
+-- Time model (see rules.md / logging.md):
+--   - log_entries.timestamp is a UTC INSTANT in the native DATETIME type, stored
+--     zoneless (no 'Z') because Temporal.PlainDateTime rejects the 'Z' designator.
+--     The app converts at the DB boundary (util/datetime.ts); domain/UI use ISO-Z.
+--   - log_entries.event_utc_offset_minutes records the local offset in effect
+--     where/when the entry was logged (local = UTC + offset), so history renders
+--     in the ORIGINATING zone rather than the viewer's current zone.
+--   - retired_at stays ISO-8601 UTC TEXT for now (may migrate to DATETIME later).
 
 declare schema main {
   table types (
@@ -76,9 +80,10 @@ declare schema main {
 
   table log_entries (
     id text primary key,
-    timestamp text,
+    timestamp datetime,
     type_id text,
     comment text null,
+    event_utc_offset_minutes integer null,
     constraint fk_log_entries_type foreign key (type_id) references types(id)
   );
 

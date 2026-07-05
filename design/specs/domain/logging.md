@@ -27,7 +27,8 @@ One entry at a point in time, containing 0–N items and optional notes.
 |------|------|----------|-------------|
 | id | UUID | no | Stable identifier |
 | typeId | UUID | no | Entry’s Type (single-type rule) |
-| timestampUtc | ISO8601 | no | Stored in UTC; user-editable |
+| timestampUtc | DATETIME (UTC instant) | no | Absolute instant of the event; user-editable. The sort/correlation key. |
+| eventUtcOffsetMinutes | integer | yes | Local UTC offset in effect where/when the entry was logged (local = UTC + offset). Used to display history in the originating zone. |
 | comment | string | yes | Optional free-form note |
 
 #### Relationships
@@ -40,6 +41,7 @@ One entry at a point in time, containing 0–N items and optional notes.
 
 - **Single-type rule**: all LoggedItems in the entry must be for the same Type as `typeId`.
 - **Items optional**: an entry may have 0 items (comment-only “note” entry).
+- **Originating-zone display**: `timestampUtc` is the absolute instant (sort/correlate by it); `eventUtcOffsetMinutes` reconstructs the local wall-clock at the place/time of logging, so an event's local time never shifts as the user travels. See `rules.md` (Time).
 
 ---
 

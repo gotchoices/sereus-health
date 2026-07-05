@@ -27,8 +27,15 @@ Alternative Path A: Logging Conditions (things not in the user's direct control)
 3.5. He sees a spot to enter a comment and so notes the reason for the stress.
 3.6. He commits his entry and sees that it is now part of the log history.
 
+Alternative Path B: Reviewing history while traveling
+4.1. Weeks later, Bob is in Paris and opens his log history.
+4.2. The lunch he logged back home still shows at midday — the local time it happened where he was — not shifted into the middle of the night.
+4.3. Entries he logs while in Paris likewise record the local time he experiences there.
+4.4. Alongside an older entry he can see the timezone it was logged in, so he can tell where he was at the time. (UI reminder.)
+
 ## Acceptance Criteria
 - [ ] The user can define new categories (in addition to Activity, Condition, Outcome)
 - [ ] The user can log Conditions and Outcomes
 - [ ] The user can define new Conditions and Outcomes
 - [ ] The user can add any number of quantifiers to items.  For example: How much did I eat, how ill did I feel, how much pain did I feel, how much water did I drink, How many pullups did I do, etc.
+- [ ] Log history displays each entry in the timezone where it was logged, so times do not shift when the user travels.
