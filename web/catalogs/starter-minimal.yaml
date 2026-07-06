@@ -14,22 +14,18 @@ catalog:
     - typeName: Activity
       name: Exercise
     - typeName: Activity
-      name: Sleep
+      name: Routine
     - typeName: Activity
       name: Medication
     - typeName: Condition
+      name: Environment
+    - typeName: Condition
+      name: Weather
+    - typeName: Condition
+      name: Exposure
+    - typeName: Outcome
+      name: Wellbeing
+    - typeName: Outcome
       name: Symptoms
-    - typeName: Condition
-      name: Mood
-    - typeName: Condition
-      name: Stress
-    - typeName: Condition
-      name: Pain
     - typeName: Outcome
-      name: Energy
-    - typeName: Outcome
-      name: Weight
-    - typeName: Outcome
-      name: Blood Pressure
-    - typeName: Outcome
-      name: Blood Sugar
+      name: Vitals

@@ -2,7 +2,7 @@
 # Format: design/specs/domain/import-export.md
 version: 1
 name: Medium
-description: Common categories plus ~500 foods.
+description: Everyday categories, routines & outcomes, plus ~150 common foods.
 catalog:
   types:
     - name: Activity
@@ -14,1357 +14,518 @@ catalog:
     - typeName: Activity
       name: Exercise
     - typeName: Activity
-      name: Sleep
+      name: Routine
     - typeName: Activity
       name: Medication
     - typeName: Condition
+      name: Environment
+    - typeName: Condition
+      name: Weather
+    - typeName: Condition
+      name: Exposure
+    - typeName: Outcome
+      name: Wellbeing
+    - typeName: Outcome
       name: Symptoms
-    - typeName: Condition
-      name: Mood
-    - typeName: Condition
-      name: Stress
-    - typeName: Condition
-      name: Pain
     - typeName: Outcome
-      name: Energy
-    - typeName: Outcome
-      name: Weight
-    - typeName: Outcome
-      name: Blood Pressure
-    - typeName: Outcome
-      name: Blood Sugar
+      name: Vitals
   items:
-    - categoryName: Eating
-      name: Egg
-    - categoryName: Eating
-      name: Beans
-      description: Potassium (408 mg/100g)
-    - categoryName: Eating
-      name: Honey
-    - categoryName: Eating
-      name: Pears
-    - categoryName: Eating
-      name: Limes
-      description: Vitamin C (29 mg/100g)
+    - categoryName: Routine
+      name: Bedtime
+      quantifiers:
+        - name: Hour
+          minValue: 0
+          maxValue: 24
+          units: hour
+    - categoryName: Routine
+      name: Rise time
+      quantifiers:
+        - name: Hour
+          minValue: 0
+          maxValue: 24
+          units: hour
+    - categoryName: Routine
+      name: Meditation
+      quantifiers:
+        - name: Duration
+          minValue: 0
+          maxValue: 120
+          units: min
+    - categoryName: Routine
+      name: Bowel movement
+      quantifiers:
+        - name: Bristol type
+          minValue: 1
+          maxValue: 7
+          units: type
+    - categoryName: Exercise
+      name: Walk
+      quantifiers:
+        - name: Duration
+          minValue: 0
+          maxValue: 300
+          units: min
+    - categoryName: Exercise
+      name: Run
+      quantifiers:
+        - name: Duration
+          minValue: 0
+          maxValue: 300
+          units: min
+    - categoryName: Exercise
+      name: Strength training
+      quantifiers:
+        - name: Duration
+          minValue: 0
+          maxValue: 300
+          units: min
+    - categoryName: Exercise
+      name: Yoga
+      quantifiers:
+        - name: Duration
+          minValue: 0
+          maxValue: 300
+          units: min
+    - categoryName: Exercise
+      name: Cycling
+      quantifiers:
+        - name: Duration
+          minValue: 0
+          maxValue: 300
+          units: min
+    - categoryName: Medication
+      name: Multivitamin
+    - categoryName: Medication
+      name: Pain reliever
+      quantifiers:
+        - name: Dose
+          minValue: 0
+          maxValue: 2000
+          units: mg
+    - categoryName: Environment
+      name: Air quality
+      quantifiers:
+        - name: AQI
+          minValue: 0
+          maxValue: 500
+          units: AQI
+    - categoryName: Environment
+      name: Pollen
+      quantifiers:
+        - name: Level
+          minValue: 0
+          maxValue: 10
+          units: scale
+    - categoryName: Weather
+      name: Temperature
+      quantifiers:
+        - name: Degrees
+          minValue: -40
+          maxValue: 130
+          units: °
+    - categoryName: Weather
+      name: Humidity
+      quantifiers:
+        - name: Percent
+          minValue: 0
+          maxValue: 100
+          units: '%'
+    - categoryName: Exposure
+      name: Around illness
+    - categoryName: Exposure
+      name: Crowded setting
+    - categoryName: Wellbeing
+      name: Energy
+      quantifiers:
+        - name: Level
+          minValue: 0
+          maxValue: 10
+          units: scale
+    - categoryName: Wellbeing
+      name: Mood
+      quantifiers:
+        - name: Level
+          minValue: 0
+          maxValue: 10
+          units: scale
+    - categoryName: Wellbeing
+      name: Stress
+      quantifiers:
+        - name: Level
+          minValue: 0
+          maxValue: 10
+          units: scale
+    - categoryName: Wellbeing
+      name: Sleep quality
+      quantifiers:
+        - name: Level
+          minValue: 0
+          maxValue: 10
+          units: scale
+    - categoryName: Wellbeing
+      name: Pain
+      quantifiers:
+        - name: Level
+          minValue: 0
+          maxValue: 10
+          units: scale
+    - categoryName: Wellbeing
+      name: Digestion
+      quantifiers:
+        - name: Level
+          minValue: 0
+          maxValue: 10
+          units: scale
+    - categoryName: Symptoms
+      name: Headache
+      quantifiers:
+        - name: Severity
+          minValue: 0
+          maxValue: 10
+          units: scale
+    - categoryName: Symptoms
+      name: Nausea
+      quantifiers:
+        - name: Severity
+          minValue: 0
+          maxValue: 10
+          units: scale
+    - categoryName: Symptoms
+      name: Bloating
+      quantifiers:
+        - name: Severity
+          minValue: 0
+          maxValue: 10
+          units: scale
+    - categoryName: Symptoms
+      name: Congestion
+      quantifiers:
+        - name: Severity
+          minValue: 0
+          maxValue: 10
+          units: scale
+    - categoryName: Vitals
+      name: Weight
+      quantifiers:
+        - name: Weight
+          minValue: 0
+          maxValue: 700
+          units: lb
+    - categoryName: Vitals
+      name: Blood Pressure
+      quantifiers:
+        - name: Systolic
+          minValue: 0
+          maxValue: 250
+          units: mmHg
+        - name: Diastolic
+          minValue: 0
+          maxValue: 150
+          units: mmHg
+    - categoryName: Vitals
+      name: Blood Sugar
+      quantifiers:
+        - name: Glucose
+          minValue: 0
+          maxValue: 600
+          units: mg/dL
     - categoryName: Eating
       name: Water
     - categoryName: Eating
-      name: Lemons
-      description: Vitamin C (53 mg/100g)
+      name: Coffee
     - categoryName: Eating
-      name: Garlic
-      description: Vitamin C (31 mg/100g)
+      name: Tea
     - categoryName: Eating
-      name: Butter
-      description: High fat (81.1 g/100g)
-    - categoryName: Eating
-      name: Apples
-    - categoryName: Eating
-      name: Onions
-    - categoryName: Eating
-      name: Lentils
-      description: High protein (24.6 g/100g)
-    - categoryName: Eating
-      name: Bananas
-    - categoryName: Eating
-      name: Spinach
-      description: Vitamin C (28 mg/100g)
-    - categoryName: Eating
-      name: Carrots
-    - categoryName: Eating
-      name: Cabbage
-      description: Vitamin C (37 mg/100g)
-    - categoryName: Eating
-      name: Eggplant
-    - categoryName: Eating
-      name: Broccoli
-      description: Vitamin C (89 mg/100g)
-    - categoryName: Eating
-      name: Cucumber
-    - categoryName: Eating
-      name: Wild rice
-      description: High fiber (6.2 g/100g)
-    - categoryName: Eating
-      name: Lime juice
-      description: Vitamin C (30 mg/100g)
-    - categoryName: Eating
-      name: Lemon peel
-      description: High fiber (10.6 g/100g)
-    - categoryName: Eating
-      name: Watermelon
-    - categoryName: Eating
-      name: Cornstarch
-    - categoryName: Eating
-      name: Breadfruit
-      description: Vitamin C (29 mg/100g)
-    - categoryName: Eating
-      name: Fish broth
-    - categoryName: Eating
-      name: Watercress
-      description: Vitamin C (43 mg/100g)
-    - categoryName: Eating
-      name: Lemon juice
-      description: Vitamin C (39 mg/100g)
-    - categoryName: Eating
-      name: Wheat flour
-      description: High fiber (10.7 g/100g)
-    - categoryName: Eating
-      name: Tofu yogurt
-    - categoryName: Eating
-      name: Potato flour
-      description: High fiber (5.9 g/100g)
+      name: Milk
     - categoryName: Eating
       name: Orange juice
-      description: Vitamin C (50 mg/100g)
     - categoryName: Eating
-      name: Grape leaves
-      description: High fiber (11.0 g/100g)
+      name: Egg
     - categoryName: Eating
-      name: Rice crackers
+      name: Bread
     - categoryName: Eating
-      name: Broccoli raab
-      description: Vitamin C (20 mg/100g)
+      name: Butter
     - categoryName: Eating
-      name: Fish, roe
-      description: High protein (22.3 g/100g)
-    - categoryName: Eating
-      name: Milk, dry
-      description: High protein (36.2 g/100g)
-    - categoryName: Eating
-      name: Bread, egg
-      description: Iron (3.0 mg/100g)
-    - categoryName: Eating
-      name: Pasta, dry
-      description: Iron (3.3 mg/100g)
-    - categoryName: Eating
-      name: Beef, loin
-      description: High protein (23.1 g/100g)
-    - categoryName: Eating
-      name: Buckwheat flour
-      description: High fiber (10.0 g/100g)
-    - categoryName: Eating
-      name: Pork, loin
-      description: High protein (21.6 g/100g)
-    - categoryName: Eating
-      name: Peas, green
-      description: High fiber (5.7 g/100g)
-    - categoryName: Eating
-      name: Cream, sour
-    - categoryName: Eating
-      name: Corn, sweet
-    - categoryName: Eating
-      name: Rice, brown
-    - categoryName: Eating
-      name: Salt, table
-      description: High sodium (38700 mg/100g)
-    - categoryName: Eating
-      name: Nuts, pecans
-      description: High fiber (9.6 g/100g)
-    - categoryName: Eating
-      name: Cheese, goat
-      description: High protein (21.6 g/100g)
-    - categoryName: Eating
-      name: Noodles, egg
-      description: Iron (4.0 mg/100g)
-    - categoryName: Eating
-      name: Yogurt, Greek
-    - categoryName: Eating
-      name: Tomatoes, red
-    - categoryName: Eating
-      name: Sugars, brown
-    - categoryName: Eating
-      name: Turkey
-      description: High protein (22.1 g/100g)
-    - categoryName: Eating
-      name: Chicken, liver
-      description: High protein (16.9 g/100g)
-    - categoryName: Eating
-      name: Pepper, banana
-      description: Vitamin C (83 mg/100g)
-    - categoryName: Eating
-      name: Peppers, sweet
-      description: Vitamin C (80 mg/100g)
-    - categoryName: Eating
-      name: Scrapple, pork
-    - categoryName: Eating
-      name: Peaches, yellow
-    - categoryName: Eating
-      name: Barley, pearled
-      description: High fiber (15.6 g/100g)
-    - categoryName: Eating
-      name: Soymilk, nonfat
-    - categoryName: Eating
-      name: Egg rolls, pork
-      description: Vitamin C (29 mg/100g)
-    - categoryName: Eating
-      name: Soybeans
-      description: High protein (18.2 g/100g)
-    - categoryName: Eating
-      name: Potato salad with egg
-    - categoryName: Eating
-      name: Corn flour, masa
-      description: High fiber (6.4 g/100g)
-    - categoryName: Eating
-      name: Headcheese, pork
-      description: High sodium (941 mg/100g)
-    - categoryName: Eating
-      name: Mushrooms, white
-    - categoryName: Eating
-      name: Lettuce, iceberg
-    - categoryName: Eating
-      name: Rye flour, medium
-      description: High fiber (11.8 g/100g)
-    - categoryName: Eating
-      name: Rice flour, white
-    - categoryName: Eating
-      name: Sour cream, light
-    - categoryName: Eating
-      name: Pear nectar
-    - categoryName: Eating
-      name: Turkey ham, sliced
-      description: High protein (19.6 g/100g)
-    - categoryName: Eating
-      name: Cream puff, eclair
-    - categoryName: Eating
-      name: Cornmeal, degermed
-      description: Iron (4.4 mg/100g)
-    - categoryName: Eating
-      name: Rice cake, cracker
-      description: Potassium (428 mg/100g)
-    - categoryName: Eating
-      name: Peanuts, all types
-      description: High protein (25.8 g/100g)
-    - categoryName: Eating
-      name: Popcorn, microwave
-      description: High fiber (10.1 g/100g)
-    - categoryName: Eating
-      name: Tomato juice
-      description: Vitamin C (70 mg/100g)
-    - categoryName: Eating
-      name: Soy flour, full-fat
-      description: High protein (37.8 g/100g)
-    - categoryName: Eating
-      name: Oil, corn
-      description: High fat (100.0 g/100g)
-    - categoryName: Eating
-      name: Rice noodles
-    - categoryName: Eating
-      name: Sweet potato
-    - categoryName: Eating
-      name: Carrot juice
-    - categoryName: Eating
-      name: Garlic bread
-      description: Iron (3.0 mg/100g)
-    - categoryName: Eating
-      name: Ice creams, vanilla
-    - categoryName: Eating
-      name: Peach nectar
-    - categoryName: Eating
-      name: Fruit butters, apple
-    - categoryName: Eating
-      name: Pie, peach
-    - categoryName: Eating
-      name: Chicken breast, deli
-      description: High protein (17.4 g/100g)
-    - categoryName: Eating
-      name: Doughnuts, cake-type
-      description: High fat (24.9 g/100g)
-    - categoryName: Eating
-      name: Turkey breast, sliced
-      description: High sodium (898 mg/100g)
-    - categoryName: Eating
-      name: Sauce, fish
-      description: High sodium (7851 mg/100g)
-    - categoryName: Eating
-      name: Peanut butter, smooth
-      description: High protein (25.9 g/100g)
-    - categoryName: Eating
-      name: Butter oil, anhydrous
-      description: High fat (99.5 g/100g)
-    - categoryName: Eating
-      name: Fat, turkey
-      description: High fat (99.8 g/100g)
-    - categoryName: Eating
-      name: Syrups, corn
-    - categoryName: Eating
-      name: Ice cream cones, sugar
-      description: Iron (4.4 mg/100g)
-    - categoryName: Eating
-      name: Roast beef, deli style
-      description: High protein (18.6 g/100g)
-    - categoryName: Eating
-      name: Peanut flour, defatted
-      description: High protein (52.2 g/100g)
-    - categoryName: Eating
-      name: Yogurt parfait, lowfat
-    - categoryName: Eating
-      name: Chili with beans
-      description: Iron (3.4 mg/100g)
-    - categoryName: Eating
-      name: Bacon, turkey
-      description: Vitamin C (24 mg/100g)
-    - categoryName: Eating
-      name: Cereals, oats
-      description: High fiber (10.1 g/100g)
-    - categoryName: Eating
-      name: Grapefruit juice, white
-      description: Vitamin C (38 mg/100g)
-    - categoryName: Eating
-      name: Bologna, beef
-      description: High fat (26.1 g/100g)
-    - categoryName: Eating
-      name: Orange Pineapple Juice Blend
-      description: Vitamin C (41 mg/100g)
-    - categoryName: Eating
-      name: Buckwheat groats
-    - categoryName: Eating
-      name: Ice cream, bar or stick
-      description: High fat (24.1 g/100g)
-    - categoryName: Eating
-      name: Pepperoni, beef and pork
-      description: High protein (19.2 g/100g)
-    - categoryName: Eating
-      name: Spices, pepper
-      description: High fiber (25.3 g/100g)
-    - categoryName: Eating
-      name: Strudel, apple
-    - categoryName: Eating
-      name: Crackers, milk
-      description: Iron (3.6 mg/100g)
-    - categoryName: Eating
-      name: Potatoes, flesh and skin
-      description: Potassium (425 mg/100g)
-    - categoryName: Eating
-      name: Pineapple, all varieties
-      description: Vitamin C (48 mg/100g)
-    - categoryName: Eating
-      name: Grapefruit, pink and red
-      description: Vitamin C (31 mg/100g)
-    - categoryName: Eating
-      name: Cream substitute, liquid
-    - categoryName: Eating
-      name: Tapioca, pearl
-    - categoryName: Eating
-      name: Beverages, tea
-    - categoryName: Eating
-      name: Mung beans, mature seeds
-    - categoryName: Eating
-      name: Sherbet, orange
-    - categoryName: Eating
-      name: Potato chips, reduced fat
-      description: High fiber (6.1 g/100g)
-    - categoryName: Eating
-      name: Snacks, popcorn
-      description: High fiber (14.2 g/100g)
-    - categoryName: Eating
-      name: Sausage, turkey
-      description: High protein (16.7 g/100g)
-    - categoryName: Eating
-      name: Melons, honeydew
-    - categoryName: Eating
-      name: Macaroni and Cheese
-    - categoryName: Eating
-      name: Sweet potato leaves
-    - categoryName: Eating
-      name: Mortadella, beef
-      description: High protein (16.4 g/100g)
-    - categoryName: Eating
-      name: Marmalade, orange
-    - categoryName: Eating
-      name: Jellies, no sugar
-    - categoryName: Eating
-      name: Light ice cream, Creamsicle
-    - categoryName: Eating
-      name: Frankfurter, beef
-      description: Vitamin C (24 mg/100g)
-    - categoryName: Eating
-      name: Lemonade, white
-    - categoryName: Eating
-      name: Pickles, cucumber
-      description: High sodium (808 mg/100g)
-    - categoryName: Eating
-      name: Light Ice Cream, soft serve
-    - categoryName: Eating
-      name: Peanut spread, reduced sugar
-      description: High protein (24.8 g/100g)
-    - categoryName: Eating
-      name: Croissants, cheese
-      description: High fat (20.9 g/100g)
-    - categoryName: Eating
-      name: Candies, peanut bar
-      description: High protein (15.5 g/100g)
-    - categoryName: Eating
-      name: Cookies, shortbread
-    - categoryName: Eating
-      name: Lima beans, large
-      description: High fiber (7.0 g/100g)
-    - categoryName: Eating
-      name: Balsam-pear, pods
-      description: Vitamin C (33 mg/100g)
-    - categoryName: Eating
-      name: Crustaceans, shrimp
-    - categoryName: Eating
-      name: Ice cream bar, stick or nugget
-      description: High fat (25.3 g/100g)
-    - categoryName: Eating
-      name: Braunschweiger, pork
-      description: Iron (11.2 mg/100g)
-    - categoryName: Eating
-      name: Breakfast bars, oats
-      description: Iron (3.2 mg/100g)
-    - categoryName: Eating
-      name: Toppings, strawberry
-    - categoryName: Eating
-      name: Soybean, curd cheese
-      description: Iron (5.6 mg/100g)
-    - categoryName: Eating
-      name: Danish pastry, cheese
-      description: High fat (21.9 g/100g)
-    - categoryName: Eating
-      name: Cheese spread, cream cheese base
-      description: High fat (28.6 g/100g)
-    - categoryName: Eating
-      name: Chicken patty
-    - categoryName: Eating
-      name: Chewing gum, sugarless
-    - categoryName: Eating
-      name: Creamy dressing, reduced calorie
-      description: High sodium (833 mg/100g)
-    - categoryName: Eating
-      name: Gravy, beef
-      description: High sodium (633 mg/100g)
-    - categoryName: Eating
-      name: Applesauce, sweetened
-    - categoryName: Eating
-      name: Salisbury steak with gravy
-    - categoryName: Eating
-      name: Parmesan cheese topping, fat free
-      description: High protein (40.0 g/100g)
-    - categoryName: Eating
-      name: Sweet Potatoes
-      description: High fiber (5.7 g/100g)
-    - categoryName: Eating
-      name: Cookie, butter or sugar
-      description: High fat (23.5 g/100g)
-    - categoryName: Eating
-      name: Dressing, honey mustard
-      description: High sodium (1004 mg/100g)
-    - categoryName: Eating
-      name: Ice cream cone, chocolate covered
-      description: High fat (21.9 g/100g)
-    - categoryName: Eating
-      name: Oranges, all commercial varieties
-      description: Vitamin C (53 mg/100g)
-    - categoryName: Eating
-      name: Chili con carne with beans
-    - categoryName: Eating
-      name: Cake
-    - categoryName: Eating
-      name: Tomato products, sauce
-    - categoryName: Eating
-      name: Taro
-      description: Potassium (591 mg/100g)
-    - categoryName: Eating
-      name: Lard
-      description: High fat (100.0 g/100g)
-    - categoryName: Eating
-      name: Figs
-    - categoryName: Eating
-      name: Okra
-      description: Vitamin C (23 mg/100g)
-    - categoryName: Eating
-      name: Kale
-      description: Vitamin C (93 mg/100g)
-    - categoryName: Eating
-      name: Lemon juice from concentrate
-    - categoryName: Eating
-      name: Basil
-      description: Iron (3.2 mg/100g)
-    - categoryName: Eating
-      name: Syrup
-    - categoryName: Eating
-      name: Grapes, red or green (European type
-    - categoryName: Eating
-      name: Waterchestnuts, chinese
-    - categoryName: Eating
-      name: Leeks
-    - categoryName: Eating
-      name: Beets
-    - categoryName: Eating
-      name: Plums
-    - categoryName: Eating
-      name: Frozen yogurts, vanilla
-    - categoryName: Eating
-      name: Cheese product, pasteurized process
-      description: High protein (16.1 g/100g)
-    - categoryName: Eating
-      name: Celery
-    - categoryName: Eating
-      name: Mangos
-      description: Vitamin C (36 mg/100g)
-    - categoryName: Eating
-      name: Potato puffs, unprepared
-    - categoryName: Eating
-      name: Salami, turkey
-      description: High protein (19.2 g/100g)
-    - categoryName: Eating
-      name: Chives
-      description: Vitamin C (58 mg/100g)
-    - categoryName: Eating
-      name: Broadbeans, mature seeds
-      description: High fiber (5.4 g/100g)
-    - categoryName: Eating
-      name: Catsup
-      description: High sodium (907 mg/100g)
-    - categoryName: Eating
-      name: Pork sausage, link/patty
-      description: High protein (20.9 g/100g)
-    - categoryName: Eating
-      name: Apple juice, unsweetened
-      description: Vitamin C (30 mg/100g)
-    - categoryName: Eating
-      name: Grape juice, unsweetened
-      description: Vitamin C (25 mg/100g)
-    - categoryName: Eating
-      name: Egg substitute, fat free
-    - categoryName: Eating
-      name: Yambean
-      description: Vitamin C (20 mg/100g)
-    - categoryName: Eating
-      name: Nopales
-    - categoryName: Eating
-      name: Arugula
-    - categoryName: Eating
-      name: Parsley
-      description: Vitamin C (133 mg/100g)
-    - categoryName: Eating
-      name: Turnips
-      description: Vitamin C (21 mg/100g)
-    - categoryName: Eating
-      name: Rhubarb
-    - categoryName: Eating
-      name: Imitation cheese, american or cheddar
-      description: High protein (25.0 g/100g)
-    - categoryName: Eating
-      name: Focaccia, Italian flatbread
-      description: Iron (3.2 mg/100g)
-    - categoryName: Eating
-      name: Pumpkin
-    - categoryName: Eating
-      name: Cassava
-      description: Vitamin C (21 mg/100g)
-    - categoryName: Eating
-      name: Chili, no beans
-    - categoryName: Eating
-      name: School Lunch, chicken patty
-      description: High protein (17.6 g/100g)
-    - categoryName: Eating
-      name: Bratwurst, pork
-      description: High fat (29.2 g/100g)
-    - categoryName: Eating
-      name: Litchis
-      description: Vitamin C (72 mg/100g)
-    - categoryName: Eating
-      name: Papayas
-      description: Vitamin C (61 mg/100g)
-    - categoryName: Eating
-      name: Kumquats
-      description: High fiber (6.5 g/100g)
-    - categoryName: Eating
-      name: Oat bran
-      description: High protein (17.3 g/100g)
-    - categoryName: Eating
-      name: Celeriac
-    - categoryName: Eating
-      name: Collards
-      description: Vitamin C (35 mg/100g)
-    - categoryName: Eating
-      name: Kohlrabi
-      description: Vitamin C (62 mg/100g)
-    - categoryName: Eating
-      name: Refried beans, traditional
-    - categoryName: Eating
-      name: Juice, apple and grape blend
-      description: Vitamin C (28 mg/100g)
-    - categoryName: Eating
-      name: Radishes
-    - categoryName: Eating
-      name: Molasses
-      description: Calcium (205 mg/100g)
-    - categoryName: Eating
-      name: Tomato and vegetable juice, low sodium
-      description: Vitamin C (28 mg/100g)
-    - categoryName: Eating
-      name: Apricots
-    - categoryName: Eating
-      name: Cowpeas, common (blackeyes
-      description: High fiber (6.5 g/100g)
-    - categoryName: Eating
-      name: Salad dressing, honey mustard
-      description: High fat (40.8 g/100g)
-    - categoryName: Eating
-      name: Chickpeas (garbanzo beans, bengal gram)
-      description: High protein (20.5 g/100g)
-    - categoryName: Eating
-      name: Frog legs
-      description: High protein (16.4 g/100g)
-    - categoryName: Eating
-      name: Tamarinds
-      description: High fiber (5.1 g/100g)
-    - categoryName: Eating
-      name: Rutabagas
-      description: Vitamin C (25 mg/100g)
-    - categoryName: Eating
-      name: Carambola
-      description: Vitamin C (34 mg/100g)
-    - categoryName: Eating
-      name: Radicchio
-    - categoryName: Eating
-      name: Asparagus
-    - categoryName: Eating
-      name: Waffle, buttermilk
-      description: Calcium (299 mg/100g)
-    - categoryName: Eating
-      name: Tomatillos
-    - categoryName: Eating
-      name: Veggie burgers or soyburgers, unprepared
-      description: High protein (15.7 g/100g)
-    - categoryName: Eating
-      name: Nectarines
-    - categoryName: Eating
-      name: Pineapple juice, unsweetened
-      description: Vitamin C (44 mg/100g)
-    - categoryName: Eating
-      name: Vermicelli
-    - categoryName: Eating
-      name: Clif Z bar
-      description: High fiber (8.3 g/100g)
-    - categoryName: Eating
-      name: Tangerines
-      description: Vitamin C (27 mg/100g)
-    - categoryName: Eating
-      name: Pickle and pimiento loaf, pork
-      description: High sodium (1040 mg/100g)
-    - categoryName: Eating
-      name: Pate, chicken liver
-      description: Iron (9.2 mg/100g)
-    - categoryName: Eating
-      name: Carbonated beverage, cream soda
-    - categoryName: Eating
-      name: Pie fillings, apple
-    - categoryName: Eating
-      name: Cranberries
-    - categoryName: Eating
-      name: Fruit syrup
-    - categoryName: Eating
-      name: Raspberries
-      description: High fiber (6.5 g/100g)
-    - categoryName: Eating
-      name: Ginger root
-      description: Potassium (415 mg/100g)
-    - categoryName: Eating
-      name: Luncheon meat, pork
-      description: Vitamin C (43 mg/100g)
-    - categoryName: Eating
-      name: Blueberries
-    - categoryName: Eating
-      name: Turkey from whole, light meat
-      description: High protein (26.5 g/100g)
-    - categoryName: Eating
-      name: Taro leaves
-      description: Vitamin C (52 mg/100g)
-    - categoryName: Eating
-      name: Beet greens
-      description: Vitamin C (30 mg/100g)
-    - categoryName: Eating
-      name: Cauliflower
-      description: Vitamin C (48 mg/100g)
-    - categoryName: Eating
-      name: Pomegranates
-    - categoryName: Eating
-      name: Seeds, sesame butter
-      description: High protein (17.0 g/100g)
-    - categoryName: Eating
-      name: Burdock root
-    - categoryName: Eating
-      name: Blackberries
-      description: High fiber (5.3 g/100g)
-    - categoryName: Eating
-      name: Phyllo dough
-      description: Iron (3.2 mg/100g)
-    - categoryName: Eating
-      name: Strawberries
-      description: Vitamin C (59 mg/100g)
-    - categoryName: Eating
-      name: Breakfast bar
-      description: Iron (4.9 mg/100g)
-    - categoryName: Eating
-      name: Leavening agents, cream of tartar
-      description: Potassium (16500 mg/100g)
-    - categoryName: Eating
-      name: Blood sausage
-      description: Iron (6.4 mg/100g)
-    - categoryName: Eating
-      name: Candied fruit
-    - categoryName: Eating
-      name: Dip, bean
-    - categoryName: Eating
-      name: Mustard greens
-      description: Vitamin C (70 mg/100g)
-    - categoryName: Eating
-      name: Dulce de Leche
-      description: Calcium (251 mg/100g)
-    - categoryName: Eating
-      name: Ravioli, cheese-filled
-    - categoryName: Eating
-      name: Veal, leg
-      description: High protein (21.0 g/100g)
-    - categoryName: Eating
-      name: Hearts of palm
-      description: Potassium (1806 mg/100g)
-    - categoryName: Eating
-      name: Tangerine juice
-      description: Vitamin C (31 mg/100g)
-    - categoryName: Eating
-      name: Turnover, cheese-filled
-      description: Calcium (276 mg/100g)
-    - categoryName: Eating
-      name: Coriander leaves
-      description: Vitamin C (27 mg/100g)
-    - categoryName: Eating
-      name: Bulgur, dry
-      description: High fiber (12.5 g/100g)
-    - categoryName: Eating
-      name: Dove
-      description: High protein (23.9 g/100g)
-    - categoryName: Eating
-      name: Margarine-like, vegetable oil spread
-      description: High fat (59.8 g/100g)
-    - categoryName: Eating
-      name: Dandelion greens
-      description: Vitamin C (35 mg/100g)
-    - categoryName: Eating
-      name: Ham, sliced
-      description: High protein (16.7 g/100g)
-    - categoryName: Eating
-      name: Tofu
-      description: High protein (18.8 g/100g)
-    - categoryName: Eating
-      name: Rolls, hard
-      description: Iron (3.3 mg/100g)
-    - categoryName: Eating
-      name: Ham salad spread
-      description: High sodium (1075 mg/100g)
-    - categoryName: Eating
-      name: Macaroni or noodles with cheese, microwa
-      description: Calcium (328 mg/100g)
-    - categoryName: Eating
-      name: Brussels sprouts
-      description: Vitamin C (85 mg/100g)
-    - categoryName: Eating
-      name: Chard, swiss
-      description: Vitamin C (30 mg/100g)
-    - categoryName: Eating
-      name: Lamb, ground
-      description: High protein (16.6 g/100g)
-    - categoryName: Eating
-      name: Pasta mix, classic beef
-      description: High sodium (1537 mg/100g)
-    - categoryName: Eating
-      name: Taquitos, beef and cheese
-    - categoryName: Eating
-      name: Rice mix, cheese flavor
-      description: Iron (4.7 mg/100g)
-    - categoryName: Eating
-      name: Cheese puffs and twists, corn based
-      description: Vitamin C (21 mg/100g)
-    - categoryName: Eating
-      name: Fennel, bulb
-      description: Potassium (414 mg/100g)
-    - categoryName: Eating
-      name: Fat free ice cream, flavors other than c
-      description: High fiber (7.4 g/100g)
-    - categoryName: Eating
-      name: Vegetarian fillets
-      description: High protein (23.0 g/100g)
-    - categoryName: Eating
-      name: Seaweed, kelp
-    - categoryName: Eating
-      name: Capers
-      description: High sodium (2348 mg/100g)
-    - categoryName: Eating
-      name: Kefir, lowfat
-    - categoryName: Eating
-      name: Jams and preserves
-    - categoryName: Eating
-      name: Cress, garden
-      description: Vitamin C (69 mg/100g)
-    - categoryName: Eating
-      name: Turtle, green
-      description: High protein (19.8 g/100g)
-    - categoryName: Eating
-      name: Millet
-    - categoryName: Eating
-      name: Bagels, plain
-      description: Iron (3.6 mg/100g)
-    - categoryName: Eating
-      name: Quinoa
-    - categoryName: Eating
-      name: Raisins, dark
-      description: Potassium (744 mg/100g)
-    - categoryName: Eating
-      name: Vinegar, cider
-    - categoryName: Eating
-      name: Guavas, common
-      description: High fiber (5.4 g/100g)
-    - categoryName: Eating
-      name: Snack, Pretzel
-    - categoryName: Eating
-      name: Squash, summer
-    - categoryName: Eating
-      name: Pimento
-      description: Vitamin C (85 mg/100g)
-    - categoryName: Eating
-      name: Fruit juice smoothie, strawberry banana
-    - categoryName: Eating
-      name: Chayote, fruit
-    - categoryName: Eating
-      name: Pretzels, soft
-      description: Iron (3.9 mg/100g)
-    - categoryName: Eating
-      name: Mollusks, clam
-    - categoryName: Eating
-      name: Yeast extract spread
-      description: High protein (23.9 g/100g)
-    - categoryName: Eating
-      name: Cherries, sweet
-    - categoryName: Eating
-      name: Kielbasa
-      description: High fat (29.7 g/100g)
-    - categoryName: Eating
-      name: Butter replacement, powder
-      description: High sodium (1200 mg/100g)
-    - categoryName: Eating
-      name: Couscous
-    - categoryName: Eating
-      name: Tart, breakfast
-      description: Iron (3.4 mg/100g)
-    - categoryName: Eating
-      name: Jams, preserves
-    - categoryName: Eating
-      name: Game meat, deer
-      description: High protein (21.8 g/100g)
-    - categoryName: Eating
-      name: Biscuits, plain or buttermilk
-      description: High sodium (1002 mg/100g)
-    - categoryName: Eating
-      name: Sweetener, syrup
-    - categoryName: Eating
-      name: Muffins, English
-      description: Iron (4.0 mg/100g)
-    - categoryName: Eating
-      name: Kiwifruit, green
-      description: Vitamin C (75 mg/100g)
-    - categoryName: Eating
-      name: Margarine, spread
-      description: High fat (38.0 g/100g)
-    - categoryName: Eating
-      name: Plantains, yellow
-      description: Potassium (487 mg/100g)
-    - categoryName: Eating
-      name: Wheat bran, crude
-      description: High protein (15.6 g/100g)
-    - categoryName: Eating
-      name: Granola bar, soft
-      description: High fat (31.2 g/100g)
-    - categoryName: Eating
-      name: Croutons, seasoned
-      description: High fiber (5.0 g/100g)
-    - categoryName: Eating
-      name: Vitamin D as ingredient
-    - categoryName: Eating
-      name: Dates, deglet noor
-      description: High fiber (8.0 g/100g)
-    - categoryName: Eating
-      name: Prune juice
-    - categoryName: Eating
-      name: Guava sauce
-      description: Vitamin C (146 mg/100g)
-    - categoryName: Eating
-      name: Guava nectar
-      description: Vitamin C (21 mg/100g)
-    - categoryName: Eating
-      name: Meatballs, meatless
-      description: High protein (21.0 g/100g)
-    - categoryName: Eating
-      name: Thuringer, cervelat
-      description: High protein (17.4 g/100g)
-    - categoryName: Eating
-      name: Mango nectar
-    - categoryName: Eating
-      name: Miso
-      description: High fiber (5.4 g/100g)
-    - categoryName: Eating
-      name: Frozen novelties, ice cream type
-      description: Calcium (252 mg/100g)
-    - categoryName: Eating
-      name: Papad
-      description: High protein (25.6 g/100g)
-    - categoryName: Eating
-      name: Persimmons, japanese
-    - categoryName: Eating
-      name: Natto
-      description: High protein (19.4 g/100g)
-    - categoryName: Eating
-      name: Papaya nectar
-    - categoryName: Eating
-      name: Pickle relish, sweet
-      description: High sodium (811 mg/100g)
-    - categoryName: Eating
-      name: Turnip greens
-    - categoryName: Eating
-      name: Sweeteners, tabletop
-    - categoryName: Eating
-      name: Bacon bits, meatless
-      description: High protein (32.0 g/100g)
-    - categoryName: Eating
-      name: Canadian bacon
-      description: High protein (28.3 g/100g)
-    - categoryName: Eating
-      name: Apricot nectar
-      description: Vitamin C (30 mg/100g)
-    - categoryName: Eating
-      name: Wasabi
-      description: High fiber (6.1 g/100g)
-    - categoryName: Eating
-      name: Dumpling, potato- or cheese-filled
-    - categoryName: Eating
-      name: Passion-fruit, purple
-      description: High fiber (10.4 g/100g)
-    - categoryName: Eating
-      name: Shortening, vegetable
-      description: High fat (100.0 g/100g)
-    - categoryName: Eating
-      name: Pie Crust, Cookie-type
-      description: Iron (4.3 mg/100g)
-    - categoryName: Eating
-      name: Cinnamon buns, frosted
-      description: High fat (26.6 g/100g)
-    - categoryName: Eating
-      name: Knackwurst, knockwurst
-      description: High fat (27.7 g/100g)
-    - categoryName: Eating
-      name: Guanabana nectar
-    - categoryName: Eating
-      name: Mayonnaise, reduced fat
-      description: High fat (40.0 g/100g)
-    - categoryName: Eating
-      name: Toaster Pastries, fruit
-      description: Iron (4.3 mg/100g)
-    - categoryName: Eating
-      name: Zwieback
-    - categoryName: Eating
-      name: Blackberry juice
-    - categoryName: Eating
-      name: Alfalfa seeds, sprouted
-    - categoryName: Eating
-      name: Olives, ripe
-      description: Iron (3.3 mg/100g)
-    - categoryName: Eating
-      name: Animal fat, bacon grease
-      description: High fat (99.5 g/100g)
-    - categoryName: Eating
-      name: Salad Dressing, coleslaw
-      description: High fat (20.0 g/100g)
-    - categoryName: Eating
-      name: Tortellini, as purchased
-    - categoryName: Eating
-      name: Yam, drained
-      description: Potassium (670 mg/100g)
-    - categoryName: Eating
-      name: Luncheon slices, meatless
-      description: High protein (17.8 g/100g)
-    - categoryName: Eating
-      name: Baking chocolate, mexican
-    - categoryName: Eating
-      name: Vegetarian meatloaf or patties
-      description: High protein (21.0 g/100g)
-    - categoryName: Eating
-      name: Hominy, white
-    - categoryName: Eating
-      name: Pomegranate juice, bottled
-    - categoryName: Eating
-      name: Ostrich, ground
-      description: High protein (26.1 g/100g)
-    - categoryName: Eating
-      name: Passion-fruit juice, purple
-      description: Vitamin C (30 mg/100g)
-    - categoryName: Eating
-      name: Waffles, lowfat
-      description: Iron (6.4 mg/100g)
-    - categoryName: Eating
-      name: Potsticker or wonton, pork and vegetable
-    - categoryName: Eating
-      name: Soy sauce made from soy and wheat
-      description: Potassium (435 mg/100g)
-    - categoryName: Eating
-      name: Cranberry juice, unsweetened
-    - categoryName: Eating
-      name: Salsify, drained
-    - categoryName: Eating
-      name: Escarole, drained
-    - categoryName: Eating
-      name: Waxgourd, drained
-    - categoryName: Eating
-      name: Parsnips, drained
-    - categoryName: Eating
-      name: Chocolate-flavored hazelnut spread
-      description: High fiber (5.4 g/100g)
-    - categoryName: Eating
-      name: Duck, domesticated
-      description: High protein (19.0 g/100g)
-    - categoryName: Eating
-      name: Yellow rice with seasoning, dry packet m
-      description: Potassium (801 mg/100g)
-    - categoryName: Eating
-      name: Goose, domesticated
-      description: High protein (25.2 g/100g)
-    - categoryName: Eating
-      name: Artichokes, drained
-      description: High fiber (5.7 g/100g)
-    - categoryName: Eating
-      name: Lotus root, drained
-      description: Vitamin C (27 mg/100g)
-    - categoryName: Eating
-      name: Quail, total edible
-      description: High protein (25.1 g/100g)
-    - categoryName: Eating
-      name: Rice and vermicelli mix, rice pilaf flav
-      description: High sodium (1303 mg/100g)
-    - categoryName: Eating
-      name: Macaroni, vegetable
-    - categoryName: Eating
-      name: Tortillas, ready-to-bake or -fry
-      description: High fiber (9.8 g/100g)
-    - categoryName: Eating
-      name: Cranberry juice blend, 100% juice
-      description: Vitamin C (32 mg/100g)
-    - categoryName: Eating
-      name: Pancakes, gluten-free
-    - categoryName: Eating
-      name: Whey, acid
-      description: Calcium (2054 mg/100g)
-    - categoryName: Eating
-      name: Pheasant, total edible
-      description: High protein (32.4 g/100g)
-    - categoryName: Eating
-      name: Avocados, all commercial varieties
-      description: High fiber (6.7 g/100g)
-    - categoryName: Eating
-      name: Lambsquarters, drained
-      description: Vitamin C (37 mg/100g)
-    - categoryName: Eating
-      name: Whipped topping, low fat
-    - categoryName: Eating
-      name: Pumpkin flowers, drained
-    - categoryName: Eating
-      name: Pokeberry shoots, drained
-      description: Vitamin C (82 mg/100g)
-    - categoryName: Eating
-      name: Cranberry sauce, sweetened
-    - categoryName: Eating
-      name: Fluid replacement, electrolyte solution
-    - categoryName: Eating
-      name: Dessert topping, semi solid
-      description: High fat (25.3 g/100g)
-    - categoryName: Eating
-      name: Currants, zante
-      description: Potassium (777 mg/100g)
-    - categoryName: Eating
-      name: Maraschino cherries, drained
-    - categoryName: Eating
-      name: Mango, sweetened
-      description: Vitamin C (42 mg/100g)
-    - categoryName: Eating
-      name: Puddings, vanilla
-      description: High sodium (1400 mg/100g)
-    - categoryName: Eating
-      name: Cocoa, dry powder
-      description: High protein (19.6 g/100g)
-    - categoryName: Eating
-      name: Vegetables, mixed
-    - categoryName: Eating
-      name: Bamboo shoots, drained solids
-    - categoryName: Eating
-      name: Macaroni and cheese dinner with dry sauce mix
-      description: High sodium (680 mg/100g)
-    - categoryName: Eating
-      name: Pancakes plain, ready-to-heat
-      description: Iron (5.7 mg/100g)
-    - categoryName: Eating
-      name: Sauerkraut, solids and liquids
-      description: High sodium (661 mg/100g)
-    - categoryName: Eating
-      name: Gelatins, dry powder
-      description: High protein (85.6 g/100g)
-    - categoryName: Eating
-      name: Shortening industrial, soybean and cotto
-      description: High fat (100.0 g/100g)
-    - categoryName: Eating
-      name: Pie crust, standard-type
-      description: High fat (28.6 g/100g)
-    - categoryName: Eating
-      name: Puff pastry, ready-to-bake
-      description: High fat (38.5 g/100g)
-    - categoryName: Eating
-      name: Strawberry-flavor beverage mix, powder
-    - categoryName: Eating
-      name: Beverage, instant breakfast powder
-      description: High protein (35.8 g/100g)
-    - categoryName: Eating
-      name: Egg, yolk
-      description: High protein (15.9 g/100g)
-    - categoryName: Eating
-      name: Fish, eel
-      description: High protein (18.4 g/100g)
-    - categoryName: Eating
-      name: Egg, duck
-      description: Iron (3.9 mg/100g)
-    - categoryName: Eating
-      name: Fish, pike
-      description: High protein (19.3 g/100g)
-    - categoryName: Eating
-      name: Fish, carp
-      description: High protein (17.8 g/100g)
-    - categoryName: Eating
-      name: Fish, scup
-      description: High protein (18.9 g/100g)
-    - categoryName: Eating
-      name: Milk, goat
-    - categoryName: Eating
-      name: Fish, tuna
-      description: High protein (24.4 g/100g)
-    - categoryName: Eating
-      name: Bread, rye
-      description: High fiber (5.8 g/100g)
-    - categoryName: Eating
-      name: Egg, quail
-      description: Iron (3.6 mg/100g)
-    - categoryName: Eating
-      name: Egg, goose
-      description: Iron (3.6 mg/100g)
-    - categoryName: Eating
-      name: Egg, white
-    - categoryName: Eating
-      name: Beef, cured
-      description: High protein (21.8 g/100g)
-    - categoryName: Eating
-      name: Fish, shark
-      description: High protein (21.0 g/100g)
-    - categoryName: Eating
-      name: Fish, trout
-      description: High protein (19.9 g/100g)
-    - categoryName: Eating
-      name: Milk, human
-    - categoryName: Eating
-      name: Beef, flank
-      description: High protein (21.7 g/100g)
-    - categoryName: Eating
-      name: Fish, perch
-      description: High protein (19.4 g/100g)
-    - categoryName: Eating
-      name: Bread, pita
-    - categoryName: Eating
-      name: Bread, roll
-      description: Iron (3.9 mg/100g)
-    - categoryName: Eating
-      name: Beef, chuck
-      description: High protein (22.3 g/100g)
-    - categoryName: Eating
-      name: Rice, white
-      description: Iron (4.3 mg/100g)
-    - categoryName: Eating
-      name: Beef, round
-      description: High protein (23.6 g/100g)
-    - categoryName: Eating
-      name: Milk, fluid
-      description: Calcium (204 mg/100g)
-    - categoryName: Eating
-      name: Beans, snap
-    - categoryName: Eating
-      name: Pork, cured
-      description: High fat (37.1 g/100g)
-    - categoryName: Eating
-      name: Milk, lowfat
-    - categoryName: Eating
-      name: Bread, wheat
-      description: High fiber (5.3 g/100g)
-    - categoryName: Eating
-      name: Beans, pinto
-      description: High protein (21.4 g/100g)
-    - categoryName: Eating
-      name: Pears, asian
-    - categoryName: Eating
-      name: Milk, nonfat
-    - categoryName: Eating
-      name: Cabbage, red
-      description: Vitamin C (57 mg/100g)
-    - categoryName: Eating
-      name: Beans, black
-      description: High protein (21.6 g/100g)
-    - categoryName: Eating
-      name: Cheese, blue
-      description: High protein (21.4 g/100g)
-    - categoryName: Eating
-      name: Fish, caviar
-      description: High protein (24.6 g/100g)
-    - categoryName: Eating
-      name: Cheese, brie
-      description: High protein (20.8 g/100g)
-    - categoryName: Eating
-      name: Beef, ground
-      description: High protein (15.8 g/100g)
-    - categoryName: Eating
-      name: Fish, mullet
-      description: High protein (19.4 g/100g)
-    - categoryName: Eating
-      name: Fish, salmon
-      description: High protein (22.2 g/100g)
+      name: Rice
     - categoryName: Eating
       name: Pasta
     - categoryName: Eating
-      name: Cream, fluid
-      description: High fat (36.1 g/100g)
+      name: Chicken breast
     - categoryName: Eating
-      name: Cheese, feta
-      description: Calcium (493 mg/100g)
+      name: Ground beef
     - categoryName: Eating
-      name: Cheese, gouda
-      description: High protein (24.9 g/100g)
+      name: Banana
     - categoryName: Eating
-      name: Fish, haddock
-      description: High protein (16.3 g/100g)
+      name: Apple
     - categoryName: Eating
-      name: Bread, cheese
-      description: High fat (20.8 g/100g)
+      name: Orange
     - categoryName: Eating
-      name: Cheese, swiss
-      description: High protein (27.0 g/100g)
+      name: Potato
     - categoryName: Eating
-      name: Cheese, cream
+      name: Onion
     - categoryName: Eating
-      name: Fish, croaker
-      description: High protein (17.8 g/100g)
+      name: Garlic
     - categoryName: Eating
-      name: Yogurt, plain
+      name: Tomato
     - categoryName: Eating
-      name: Cheese, brick
-      description: High protein (23.2 g/100g)
+      name: Lettuce
     - categoryName: Eating
-      name: Cheese, colby
-      description: High protein (23.8 g/100g)
+      name: Cheese
     - categoryName: Eating
-      name: Cheese, Swiss
-      description: High protein (28.4 g/100g)
+      name: Yogurt
     - categoryName: Eating
-      name: Butter, light
-      description: High fat (55.1 g/100g)
+      name: Oatmeal
     - categoryName: Eating
-      name: Fish, catfish
-      description: High protein (15.2 g/100g)
+      name: Cereal
     - categoryName: Eating
-      name: Nuts, almonds
-      description: High protein (21.1 g/100g)
+      name: Bagel
     - categoryName: Eating
-      name: Bread, potato
-      description: High fiber (6.3 g/100g)
+      name: Toast
     - categoryName: Eating
-      name: Fish, snapper
-      description: High protein (20.5 g/100g)
+      name: Pancakes
     - categoryName: Eating
-      name: Bread, crumbs
-      description: Iron (4.8 mg/100g)
+      name: Bacon
     - categoryName: Eating
-      name: Fish, tilapia
-      description: High protein (20.1 g/100g)
+      name: Sausage
     - categoryName: Eating
-      name: Fish, pompano
-      description: High protein (18.5 g/100g)
+      name: Ham
     - categoryName: Eating
-      name: Fish, pollock
+      name: Turkey
     - categoryName: Eating
-      name: Bread, sticks
-      description: Iron (4.3 mg/100g)
+      name: Salmon
     - categoryName: Eating
-      name: Fish, whiting
-      description: High protein (18.3 g/100g)
+      name: Tuna
     - categoryName: Eating
-      name: Nuts, walnuts
-      description: High protein (15.2 g/100g)
+      name: Shrimp
     - categoryName: Eating
-      name: Fish, halibut
-      description: High protein (18.6 g/100g)
+      name: Broccoli
     - categoryName: Eating
-      name: Fish, herring
-      description: High protein (24.6 g/100g)
+      name: Carrot
     - categoryName: Eating
-      name: Fish, sea bass
-      description: High protein (18.4 g/100g)
+      name: Spinach
     - categoryName: Eating
-      name: Butter, salted
-      description: High fat (81.1 g/100g)
+      name: Green beans
     - categoryName: Eating
-      name: Bread, protein
-      description: Iron (4.2 mg/100g)
+      name: Corn
     - categoryName: Eating
-      name: Pork, enhanced
-      description: High protein (20.4 g/100g)
+      name: Peas
     - categoryName: Eating
-      name: Fish, flatfish
+      name: Cucumber
     - categoryName: Eating
-      name: Cabbage, savoy
-      description: Vitamin C (31 mg/100g)
+      name: Bell pepper
     - categoryName: Eating
-      name: Cream, whipped
-      description: High fat (22.2 g/100g)
+      name: Mushroom
     - categoryName: Eating
-      name: Fish, mackerel
-      description: High protein (20.1 g/100g)
+      name: Avocado
     - categoryName: Eating
-      name: Fish, sturgeon
-      description: High protein (31.2 g/100g)
+      name: Strawberry
     - categoryName: Eating
-      name: Pork, shoulder
-      description: High protein (17.4 g/100g)
+      name: Blueberry
     - categoryName: Eating
-      name: Water, bottled
+      name: Grapes
     - categoryName: Eating
-      name: Bread, oatmeal
+      name: Watermelon
     - categoryName: Eating
-      name: Bread, Italian
-      description: Iron (3.5 mg/100g)
+      name: Pineapple
     - categoryName: Eating
-      name: Cheese, cottage
+      name: Peanut butter
     - categoryName: Eating
-      name: Fish, swordfish
-      description: High protein (19.7 g/100g)
+      name: Almonds
     - categoryName: Eating
-      name: Cheese, fontina
-      description: High protein (25.6 g/100g)
+      name: Walnuts
     - categoryName: Eating
-      name: Cheese, gruyere
-      description: High protein (29.8 g/100g)
+      name: Honey
     - categoryName: Eating
-      name: Fish, whitefish
-      description: High protein (19.1 g/100g)
+      name: Sugar
     - categoryName: Eating
-      name: Cheese, cheddar
-      description: High protein (32.1 g/100g)
+      name: Salt
     - categoryName: Eating
-      name: Cabbage, kimchi
+      name: Olive oil
     - categoryName: Eating
-      name: Tomatoes, green
-      description: Vitamin C (23 mg/100g)
+      name: Chocolate
     - categoryName: Eating
-      name: Cheese, ricotta
-      description: Calcium (272 mg/100g)
+      name: Ice cream
+    - categoryName: Eating
+      name: Cookie
+    - categoryName: Eating
+      name: Cake
+    - categoryName: Eating
+      name: Steak
+    - categoryName: Eating
+      name: Pork chop
+    - categoryName: Eating
+      name: Meatballs
+    - categoryName: Eating
+      name: Hot dog
+    - categoryName: Eating
+      name: Hamburger
+    - categoryName: Eating
+      name: Pizza
+    - categoryName: Eating
+      name: French fries
+    - categoryName: Eating
+      name: Mashed potatoes
+    - categoryName: Eating
+      name: Sweet potato
+    - categoryName: Eating
+      name: Baked beans
+    - categoryName: Eating
+      name: Black beans
+    - categoryName: Eating
+      name: Chickpeas
+    - categoryName: Eating
+      name: Lentils
+    - categoryName: Eating
+      name: Tofu
+    - categoryName: Eating
+      name: Quinoa
+    - categoryName: Eating
+      name: Brown rice
+    - categoryName: Eating
+      name: White rice
+    - categoryName: Eating
+      name: Noodles
+    - categoryName: Eating
+      name: Macaroni and cheese
+    - categoryName: Eating
+      name: Spaghetti
+    - categoryName: Eating
+      name: Soup
+    - categoryName: Eating
+      name: Chili
+    - categoryName: Eating
+      name: Sandwich
+    - categoryName: Eating
+      name: Wrap
+    - categoryName: Eating
+      name: Taco
+    - categoryName: Eating
+      name: Burrito
+    - categoryName: Eating
+      name: Sushi
+    - categoryName: Eating
+      name: Salad
+    - categoryName: Eating
+      name: Coleslaw
+    - categoryName: Eating
+      name: Cottage cheese
+    - categoryName: Eating
+      name: Cream cheese
+    - categoryName: Eating
+      name: Sour cream
+    - categoryName: Eating
+      name: Mozzarella
+    - categoryName: Eating
+      name: Cheddar
+    - categoryName: Eating
+      name: Parmesan
+    - categoryName: Eating
+      name: Feta
+    - categoryName: Eating
+      name: Greek yogurt
+    - categoryName: Eating
+      name: Almond milk
+    - categoryName: Eating
+      name: Soy milk
+    - categoryName: Eating
+      name: Oat milk
+    - categoryName: Eating
+      name: Smoothie
+    - categoryName: Eating
+      name: Protein shake
+    - categoryName: Eating
+      name: Energy bar
+    - categoryName: Eating
+      name: Granola
+    - categoryName: Eating
+      name: Granola bar
+    - categoryName: Eating
+      name: Trail mix
+    - categoryName: Eating
+      name: Popcorn
+    - categoryName: Eating
+      name: Pretzels
+    - categoryName: Eating
+      name: Crackers
+    - categoryName: Eating
+      name: Chips
+    - categoryName: Eating
+      name: Guacamole
+    - categoryName: Eating
+      name: Salsa
+    - categoryName: Eating
+      name: Hummus
+    - categoryName: Eating
+      name: Ketchup
+    - categoryName: Eating
+      name: Mustard
+    - categoryName: Eating
+      name: Mayonnaise
+    - categoryName: Eating
+      name: Ranch dressing
+    - categoryName: Eating
+      name: Soy sauce
+    - categoryName: Eating
+      name: Hot sauce
+    - categoryName: Eating
+      name: Jam
+    - categoryName: Eating
+      name: Maple syrup
+    - categoryName: Eating
+      name: Cinnamon
+    - categoryName: Eating
+      name: Ginger
+    - categoryName: Eating
+      name: Kale
+    - categoryName: Eating
+      name: Cauliflower
+    - categoryName: Eating
+      name: Cabbage
+    - categoryName: Eating
+      name: Brussels sprouts
+    - categoryName: Eating
+      name: Asparagus
+    - categoryName: Eating
+      name: Zucchini
+    - categoryName: Eating
+      name: Eggplant
+    - categoryName: Eating
+      name: Celery
+    - categoryName: Eating
+      name: Radish
+    - categoryName: Eating
+      name: Beet
+    - categoryName: Eating
+      name: Pumpkin
+    - categoryName: Eating
+      name: Squash
+    - categoryName: Eating
+      name: Green onion
+    - categoryName: Eating
+      name: Leek
+    - categoryName: Eating
+      name: Cilantro
+    - categoryName: Eating
+      name: Parsley
+    - categoryName: Eating
+      name: Basil
+    - categoryName: Eating
+      name: Lemon
+    - categoryName: Eating
+      name: Lime
+    - categoryName: Eating
+      name: Grapefruit
+    - categoryName: Eating
+      name: Peach
+    - categoryName: Eating
+      name: Pear
+    - categoryName: Eating
+      name: Plum
+    - categoryName: Eating
+      name: Cherry
+    - categoryName: Eating
+      name: Apricot
+    - categoryName: Eating
+      name: Mango
+    - categoryName: Eating
+      name: Kiwi

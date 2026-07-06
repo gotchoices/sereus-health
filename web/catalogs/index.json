@@ -7,39 +7,39 @@
       "description": "Types and categories only — a blank frame to build your own.",
       "file": "starter-minimal.yaml",
       "types": 3,
-      "categories": 12,
+      "categories": 10,
       "items": 0,
-      "bytes": 869
+      "bytes": 785
     },
     {
       "id": "small",
       "name": "Small",
-      "description": "Common categories plus ~250 everyday foods.",
+      "description": "Everyday categories, routines & outcomes, plus ~50 staple foods.",
       "file": "starter-small.yaml",
       "types": 3,
-      "categories": 12,
-      "items": 250,
-      "bytes": 21199
+      "categories": 10,
+      "items": 80,
+      "bytes": 7729
     },
     {
       "id": "medium",
       "name": "Medium",
-      "description": "Common categories plus ~500 foods.",
+      "description": "Everyday categories, routines & outcomes, plus ~150 common foods.",
       "file": "starter-medium.yaml",
       "types": 3,
-      "categories": 12,
-      "items": 500,
-      "bytes": 43328
+      "categories": 10,
+      "items": 180,
+      "bytes": 12507
     },
     {
       "id": "large",
       "name": "Large",
-      "description": "Common categories plus ~1000 foods.",
+      "description": "Everyday categories, routines & outcomes, plus the full common-food list.",
       "file": "starter-large.yaml",
       "types": 3,
-      "categories": 12,
-      "items": 998,
-      "bytes": 88701
+      "categories": 10,
+      "items": 329,
+      "bytes": 19671
     }
   ]
 }

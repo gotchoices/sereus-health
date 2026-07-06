@@ -1,38 +1,39 @@
 version: 1
 catalog:
-  # Minimal starter catalog:
-  # - Types + Categories only
+  # Structure (types + categories) shared by every starter catalog.
+  # Design principles:
+  #   - Type = causal ROLE, not topic:
+  #       Activity  = inputs you control (levers you pull)
+  #       Condition = inputs you DON'T control (external context)
+  #       Outcome   = results you measure (the things you're trying to move)
+  #   - A Category is a bucket that holds SEVERAL co-typed items (never 1).
   types:
     - name: Activity
     - name: Condition
     - name: Outcome
   categories:
-    # Activity
+    # Activity — things you do / try to do
     - typeName: Activity
       name: Eating
     - typeName: Activity
       name: Exercise
     - typeName: Activity
-      name: Sleep
+      name: Routine
     - typeName: Activity
       name: Medication
 
-    # Condition
+    # Condition — external context you don't directly control
     - typeName: Condition
-      name: Symptoms
+      name: Environment
     - typeName: Condition
-      name: Mood
+      name: Weather
     - typeName: Condition
-      name: Stress
-    - typeName: Condition
-      name: Pain
+      name: Exposure
 
-    # Outcome
+    # Outcome — results you measure (0 = absence of the thing)
     - typeName: Outcome
-      name: Energy
+      name: Wellbeing
     - typeName: Outcome
-      name: Weight
+      name: Symptoms
     - typeName: Outcome
-      name: Blood Pressure
-    - typeName: Outcome
-      name: Blood Sugar
+      name: Vitals

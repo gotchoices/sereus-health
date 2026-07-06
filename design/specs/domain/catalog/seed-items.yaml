@@ -1,0 +1,137 @@
+# Non-food seed items for the starter catalogs (Routine, Exercise, Medication,
+# Condition, Outcome). Foods are sourced separately (foods.csv) and placed under
+# "Eating". These items are included in every catalog EXCEPT "minimal" (blank frame).
+#
+# Quantifier convention for Outcomes: a single 0–10 scale where 0 = the ABSENCE
+# of the thing. Direction-of-"good" varies per item (Pain 0 = good; Energy 0 = bad);
+# a correlation just flips sign, which is a clear finding either way.
+version: 1
+items:
+  # ── Activity · Routine (daily-rhythm levers you try to perform) ──
+  - categoryName: Routine
+    name: Bedtime
+    quantifiers:
+      - { name: Hour, minValue: 0, maxValue: 24, units: hour }
+  - categoryName: Routine
+    name: Rise time
+    quantifiers:
+      - { name: Hour, minValue: 0, maxValue: 24, units: hour }
+  - categoryName: Routine
+    name: Meditation
+    quantifiers:
+      - { name: Duration, minValue: 0, maxValue: 120, units: min }
+  - categoryName: Routine
+    name: Bowel movement
+    quantifiers:
+      - { name: Bristol type, minValue: 1, maxValue: 7, units: type }
+
+  # ── Activity · Exercise ──
+  - categoryName: Exercise
+    name: Walk
+    quantifiers:
+      - { name: Duration, minValue: 0, maxValue: 300, units: min }
+  - categoryName: Exercise
+    name: Run
+    quantifiers:
+      - { name: Duration, minValue: 0, maxValue: 300, units: min }
+  - categoryName: Exercise
+    name: Strength training
+    quantifiers:
+      - { name: Duration, minValue: 0, maxValue: 300, units: min }
+  - categoryName: Exercise
+    name: Yoga
+    quantifiers:
+      - { name: Duration, minValue: 0, maxValue: 300, units: min }
+  - categoryName: Exercise
+    name: Cycling
+    quantifiers:
+      - { name: Duration, minValue: 0, maxValue: 300, units: min }
+
+  # ── Activity · Medication (examples; users add their own) ──
+  - categoryName: Medication
+    name: Multivitamin
+  - categoryName: Medication
+    name: Pain reliever
+    quantifiers:
+      - { name: Dose, minValue: 0, maxValue: 2000, units: mg }
+
+  # ── Condition · Environment / Weather / Exposure (external, uncontrolled) ──
+  - categoryName: Environment
+    name: Air quality
+    quantifiers:
+      - { name: AQI, minValue: 0, maxValue: 500, units: AQI }
+  - categoryName: Environment
+    name: Pollen
+    quantifiers:
+      - { name: Level, minValue: 0, maxValue: 10, units: scale }
+  - categoryName: Weather
+    name: Temperature
+    quantifiers:
+      - { name: Degrees, minValue: -40, maxValue: 130, units: "°" }
+  - categoryName: Weather
+    name: Humidity
+    quantifiers:
+      - { name: Percent, minValue: 0, maxValue: 100, units: "%" }
+  - categoryName: Exposure
+    name: Around illness
+  - categoryName: Exposure
+    name: Crowded setting
+
+  # ── Outcome · Wellbeing (0–10, 0 = absence) ──
+  - categoryName: Wellbeing
+    name: Energy
+    quantifiers:
+      - { name: Level, minValue: 0, maxValue: 10, units: scale }
+  - categoryName: Wellbeing
+    name: Mood
+    quantifiers:
+      - { name: Level, minValue: 0, maxValue: 10, units: scale }
+  - categoryName: Wellbeing
+    name: Stress
+    quantifiers:
+      - { name: Level, minValue: 0, maxValue: 10, units: scale }
+  - categoryName: Wellbeing
+    name: Sleep quality
+    quantifiers:
+      - { name: Level, minValue: 0, maxValue: 10, units: scale }
+  - categoryName: Wellbeing
+    name: Pain
+    quantifiers:
+      - { name: Level, minValue: 0, maxValue: 10, units: scale }
+  - categoryName: Wellbeing
+    name: Digestion
+    quantifiers:
+      - { name: Level, minValue: 0, maxValue: 10, units: scale }
+
+  # ── Outcome · Symptoms (0–10 severity, 0 = none) ──
+  - categoryName: Symptoms
+    name: Headache
+    quantifiers:
+      - { name: Severity, minValue: 0, maxValue: 10, units: scale }
+  - categoryName: Symptoms
+    name: Nausea
+    quantifiers:
+      - { name: Severity, minValue: 0, maxValue: 10, units: scale }
+  - categoryName: Symptoms
+    name: Bloating
+    quantifiers:
+      - { name: Severity, minValue: 0, maxValue: 10, units: scale }
+  - categoryName: Symptoms
+    name: Congestion
+    quantifiers:
+      - { name: Severity, minValue: 0, maxValue: 10, units: scale }
+
+  # ── Outcome · Vitals (objective measurements) ──
+  - categoryName: Vitals
+    name: Weight
+    quantifiers:
+      - { name: Weight, minValue: 0, maxValue: 700, units: lb }
+  - categoryName: Vitals
+    name: Blood Pressure
+    quantifiers:
+      - { name: Systolic, minValue: 0, maxValue: 250, units: mmHg }
+      - { name: Diastolic, minValue: 0, maxValue: 150, units: mmHg }
+  - categoryName: Vitals
+    name: Blood Sugar
+    quantifiers:
+      - { name: Glucose, minValue: 0, maxValue: 600, units: "mg/dL" }
