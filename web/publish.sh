@@ -35,6 +35,9 @@ EXCLUDES=(
   "--exclude" "server.sh"
   "--exclude" "build-catalogs.js"
   "--exclude" "README.md"
+  # The mobile APK is published separately (apps/mobile/publish) into this same
+  # directory. Exclude it so `--delete` here does not wipe it off the server.
+  "--exclude" "health.apk"
 )
 
 if command -v rsync >/dev/null 2>&1; then
