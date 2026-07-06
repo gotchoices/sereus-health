@@ -13,6 +13,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { createLogger } from '../util/logger';
+import { track } from '../util/activity';
 import {
   fetchCatalog,
   fetchCatalogIndex,
@@ -41,11 +42,12 @@ export default function GettingStarted({ onDone, onStartScratch }: Props) {
   const [loadingOnline, setLoadingOnline] = useState(false);
   const [onlineError, setOnlineError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [committing, setCommitting] = useState(false);
 
   const loadOnline = () => {
     setLoadingOnline(true);
     setOnlineError(null);
-    fetchCatalogIndex()
+    track(fetchCatalogIndex())
       .then((rows) => setCatalogs(rows))
       .catch((e) => setOnlineError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoadingOnline(false));
@@ -61,9 +63,9 @@ export default function GettingStarted({ onDone, onStartScratch }: Props) {
     if (busy) return;
     setBusy(true);
     try {
-      const cat = await load();
+      const cat = await track(load());
       if (!cat) return; // user cancelled
-      const preview = await previewCatalogImport(cat);
+      const preview = await track(previewCatalogImport(cat));
       const lines = [
         t('gettingStarted.previewCounts', {
           types: preview.typesAdd,
@@ -79,8 +81,12 @@ export default function GettingStarted({ onDone, onStartScratch }: Props) {
         {
           text: t('gettingStarted.import'),
           onPress: async () => {
+            setCommitting(true);
+            // Yield a frame so the "Importing…" overlay paints before the commit,
+            // which can hold the JS thread while it writes many rows.
+            await new Promise<void>((resolve) => setTimeout(() => resolve(), 0));
             try {
-              const r = await commitCatalogImport(cat);
+              const r = await track(commitCatalogImport(cat));
               logger.info('Catalog imported', r);
               Alert.alert(
                 t('gettingStarted.doneTitle'),
@@ -90,6 +96,8 @@ export default function GettingStarted({ onDone, onStartScratch }: Props) {
             } catch (e) {
               logger.error('Commit failed', e);
               Alert.alert(t('gettingStarted.importFailed'), String(e));
+            } finally {
+              setCommitting(false);
             }
           },
         },
@@ -170,6 +178,15 @@ export default function GettingStarted({ onDone, onStartScratch }: Props) {
           </>
         )}
       </ScrollView>
+
+      {busy || committing ? (
+        <View style={styles.overlay}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.overlayText}>
+            {committing ? t('gettingStarted.importing') : t('common.loading')}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -197,4 +214,13 @@ const styles = StyleSheet.create({
   errorBox: { alignItems: 'center', gap: spacing[2], marginTop: spacing[4] },
   errorDetail: { ...typography.small, textAlign: 'center' },
   retryBtn: { borderWidth: 1, borderRadius: 10, paddingVertical: spacing[2], paddingHorizontal: spacing[4], marginTop: spacing[1] },
+  overlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  overlayText: { ...typography.body, fontWeight: '600', color: '#fff' },
 });

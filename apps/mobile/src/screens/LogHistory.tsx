@@ -11,6 +11,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getLogHistory, type LogEntry } from '../data/logHistory';
 import { getTypeCount } from '../data/catalogImport';
+import { track } from '../util/activity';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 
@@ -37,7 +38,7 @@ export default function LogHistory(props: {
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    Promise.all([getLogHistory(), getTypeCount()])
+    track(Promise.all([getLogHistory(), getTypeCount()]))
       .then(([data, typeCount]) => {
         if (!alive) return;
         setEntries(data);

@@ -35,6 +35,7 @@ const en: Dict = {
   'gettingStarted.previewSkip': 'Already present: {items} items',
   'gettingStarted.previewWarnings': 'Warnings: {count}',
   'gettingStarted.import': 'Import',
+  'gettingStarted.importing': 'Importing…',
   'gettingStarted.doneTitle': 'Catalog imported',
   'gettingStarted.doneBody': 'Added {items} items in {categories} categories.',
   'gettingStarted.importFailed': 'Import failed',

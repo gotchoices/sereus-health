@@ -23,6 +23,7 @@ import { isAssistantConfigured } from './src/data/apiKeys';
 import GettingStarted from './src/screens/GettingStarted';
 import { getTypeCount } from './src/data/catalogImport';
 import { ensureDatabaseInitialized } from './src/db/init';
+import GlobalActivityIndicator from './src/components/GlobalActivityIndicator';
 import { ThemeProvider } from './src/theme/useTheme';
 
 type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
@@ -53,6 +54,7 @@ export default function App() {
         <VariantProvider>
           <SafeAreaView style={{ flex: 1 }}>
             <AppContent />
+            <GlobalActivityIndicator />
           </SafeAreaView>
         </VariantProvider>
       </ThemeProvider>
