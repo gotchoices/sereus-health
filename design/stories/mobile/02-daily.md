@@ -38,4 +38,5 @@ Alternative Path B: Reviewing history while traveling
 - [ ] The user can log Conditions and Outcomes
 - [ ] The user can define new Conditions and Outcomes
 - [ ] The user can add any number of quantifiers to items.  For example: How much did I eat, how ill did I feel, how much pain did I feel, how much water did I drink, How many pullups did I do, etc.
+- [ ] New items (and their category and quantifiers) can be created inline while logging — without leaving the entry.
 - [ ] Log history displays each entry in the timezone where it was logged, so times do not shift when the user travels.
