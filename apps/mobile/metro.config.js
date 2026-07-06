@@ -23,7 +23,14 @@ const localStack = String(
 //
 //   os       — @libp2p/utils  get-thin-waist-addresses.js
 //   net, tls — @libp2p/websockets  listener.js
+//   crypto   — @serfab/cadre-core  push-notifier-fcm.js (node:crypto.sign, FCM push).
+//              Mapped to a real shim (createHash via @noble); sign() throws if the
+//              unused FCM push path is ever invoked.
+//   http2    — @serfab/cadre-core  push-notifier-apns.js (APNS push, Node-only; unused on device).
+// (node:path / node:fs/promises are imported only by the `key-store-file` subpath,
+//  which the RN app never imports, so they don't need stubbing.)
 const emptyShim = path.resolve(__dirname, 'shims/empty.js');
+const nodeCryptoShim = path.resolve(__dirname, 'shims/node-crypto.js');
 const nodeBuiltinStubs = {
   os: emptyShim,
   'node:os': emptyShim,
@@ -31,6 +38,10 @@ const nodeBuiltinStubs = {
   'node:net': emptyShim,
   tls: emptyShim,
   'node:tls': emptyShim,
+  crypto: nodeCryptoShim,
+  'node:crypto': nodeCryptoShim,
+  http2: emptyShim,
+  'node:http2': emptyShim,
 };
 
 /**

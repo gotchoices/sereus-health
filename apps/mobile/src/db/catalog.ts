@@ -59,11 +59,110 @@ export async function getCategoriesForType(typeName: string): Promise<Array<{ id
   await typeStmt.finalize();
   if (!typeRow) return [];
 
-  const stmt = await db.prepare('SELECT id, name FROM categories WHERE type_id = ? ORDER BY name ASC');
+  // Retired categories are hidden from *future* selection (rules.md); management
+  // surfaces (getCategoriesWithCounts) still show them so they can be restored.
+  const stmt = await db.prepare('SELECT id, name FROM categories WHERE type_id = ? AND retired_at IS NULL ORDER BY name ASC');
   const rows: any[] = [];
   for await (const r of stmt.all([typeRow.id as string])) rows.push(r);
   await stmt.finalize();
   return rows.map((r) => ({ id: r.id as string, name: r.name as string }));
+}
+
+/** All Type names, in display order. Authoritative — independent of whether a
+ *  Type yet has items/bundles (a fresh minimal catalog has types+categories only). */
+export async function getTypes(): Promise<string[]> {
+  const db = await getDatabase();
+  const stmt = await db.prepare('SELECT name FROM types ORDER BY display_order, name');
+  const out: string[] = [];
+  for await (const r of stmt.all()) out.push(r.name as string);
+  await stmt.finalize();
+  return out;
+}
+
+// ── Category management ──────────────────────────────────────────────────────
+
+export interface CategoryRow {
+  id: string;
+  name: string;
+  itemCount: number;
+  retired: boolean;
+}
+
+/**
+ * All categories for a Type — including empty and retired ones — with item
+ * counts. This is the only surface that can see empty categories (the Items
+ * view groups by category implicitly, so a category with zero items is
+ * otherwise invisible). Uses a scalar subquery rather than GROUP BY to avoid
+ * Quereus's duplicate-`id`-in-scope error.
+ */
+export async function getCategoriesWithCounts(typeName: string): Promise<CategoryRow[]> {
+  const db = await getDatabase();
+  const typeStmt = await db.prepare('SELECT id FROM types WHERE name = ?');
+  const typeRow = await typeStmt.get([typeName]);
+  await typeStmt.finalize();
+  if (!typeRow) return [];
+
+  const stmt = await db.prepare(`
+    SELECT c.id AS id, c.name AS name, c.retired_at AS retiredAt,
+      (SELECT count(*) FROM items i WHERE i.category_id = c.id) AS itemCount
+    FROM categories c
+    WHERE c.type_id = ?
+    ORDER BY c.name ASC
+  `);
+  const rows: any[] = [];
+  for await (const r of stmt.all([typeRow.id as string])) rows.push(r);
+  await stmt.finalize();
+  return rows.map((r) => ({
+    id: r.id as string,
+    name: r.name as string,
+    itemCount: (r.itemCount as number) ?? 0,
+    retired: r.retiredAt != null,
+  }));
+}
+
+/** Create a category under a Type (idempotent by unique `(type_id, name)`). */
+export async function createCategory(typeName: string, name: string): Promise<string> {
+  const db = await getDatabase();
+  const typeId = await getOrCreateType(db, typeName);
+  return getOrCreateCategory(db, name, typeId);
+}
+
+/** Rename a category. Throws `duplicate-name` if the target name already exists in the Type. */
+export async function renameCategory(categoryId: string, newName: string): Promise<void> {
+  const db = await getDatabase();
+  const curStmt = await db.prepare('SELECT type_id FROM categories WHERE id = ?');
+  const cur = await curStmt.get([categoryId]);
+  await curStmt.finalize();
+  if (!cur) throw new Error('not-found');
+
+  const dupStmt = await db.prepare('SELECT id FROM categories WHERE type_id = ? AND lower(name) = lower(?) AND id != ?');
+  const dup = await dupStmt.get([cur.type_id as string, newName, categoryId]);
+  await dupStmt.finalize();
+  if (dup) throw new Error('duplicate-name');
+
+  await db.exec('UPDATE categories SET name = ? WHERE id = ?', [newName, categoryId]);
+}
+
+/** Retire (hide from future selection) or restore a category. */
+export async function setCategoryRetired(categoryId: string, retired: boolean): Promise<void> {
+  const db = await getDatabase();
+  await db.exec('UPDATE categories SET retired_at = ? WHERE id = ?', [
+    retired ? new Date().toISOString() : null,
+    categoryId,
+  ]);
+}
+
+/**
+ * Hard-delete a category. Only permitted when empty (no items reference it) —
+ * otherwise throws `not-empty` and the caller should retire instead (rules.md).
+ */
+export async function deleteCategory(categoryId: string): Promise<void> {
+  const db = await getDatabase();
+  const cntStmt = await db.prepare('SELECT count(*) AS n FROM items WHERE category_id = ?');
+  const cnt = await cntStmt.get([categoryId]);
+  await cntStmt.finalize();
+  if (((cnt?.n as number) ?? 0) > 0) throw new Error('not-empty');
+  await db.exec('DELETE FROM categories WHERE id = ?', [categoryId]);
 }
 
 export async function getItemDetail(itemId: string): Promise<{

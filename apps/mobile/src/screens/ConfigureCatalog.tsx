@@ -1,12 +1,24 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Linking, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { getConfigureCatalog, type CatalogBundle, type CatalogItem, type CatalogType } from '../data/configureCatalog';
+import {
+  getConfigureCatalog,
+  getCategories,
+  createCategory,
+  renameCategory,
+  setCategoryRetired,
+  deleteCategory,
+  type CatalogBundle,
+  type CatalogItem,
+  type CatalogType,
+  type CategoryRow,
+} from '../data/configureCatalog';
+import EditCategoryModal from '../components/EditCategoryModal';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 
 type Tab = 'home' | 'catalog' | 'assistant' | 'settings';
-type ViewMode = 'items' | 'bundles';
+type ViewMode = 'items' | 'categories' | 'bundles';
 
 function accentForType(type: string, theme: ReturnType<typeof useTheme>) {
   const t = String(type).toLowerCase();
@@ -39,10 +51,15 @@ export default function ConfigureCatalog(props: {
 
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [bundles, setBundles] = useState<CatalogBundle[]>([]);
+  const [categories, setCategories] = useState<CategoryRow[]>([]);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [catModal, setCatModal] = useState<{ mode: 'create' | 'edit'; category?: CategoryRow } | null>(null);
+  const bump = () => setReloadKey((n) => n + 1);
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
+    // Only the initial mount shows the full-screen loader (`loading` starts true);
+    // reloads (reloadKey bumps after category edits) refresh data silently.
     setError(null);
 
     getConfigureCatalog()
@@ -51,15 +68,11 @@ export default function ConfigureCatalog(props: {
         setItems(data.items ?? []);
         setBundles(data.bundles ?? []);
 
-        // Derive types from items/bundles (data-driven)
-        const typeSet = new Set<CatalogType>();
-        (data.items ?? []).forEach((it) => typeSet.add(it.type));
-        (data.bundles ?? []).forEach((b) => typeSet.add(b.type));
-        const typeList = Array.from(typeSet);
+        // Types are authoritative (a fresh minimal catalog has types+categories,
+        // no items) — so category management works even for item-less Types.
+        const typeList = data.types ?? [];
         setTypes(typeList);
-        if (typeList.length > 0 && !selectedType) {
-          setSelectedType(typeList[0]);
-        }
+        setSelectedType((prev) => prev ?? (typeList.length > 0 ? typeList[0] : null));
       })
       .catch(() => {
         if (!alive) return;
@@ -74,7 +87,27 @@ export default function ConfigureCatalog(props: {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [t]);
+  }, [t, reloadKey]);
+
+  // Categories are per-Type and include empty/retired ones, so they load
+  // separately from items/bundles (which the Items view groups implicitly).
+  useEffect(() => {
+    if (!selectedType) {
+      setCategories([]);
+      return;
+    }
+    let alive = true;
+    getCategories(selectedType)
+      .then((rows) => {
+        if (alive) setCategories(rows);
+      })
+      .catch(() => {
+        /* non-fatal: leave prior list */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [selectedType, reloadKey]);
 
   const typedItems = useMemo(
     () => (selectedType ? items.filter((it) => it.type === selectedType) : []),
@@ -97,9 +130,19 @@ export default function ConfigureCatalog(props: {
     return typedBundles.filter((b) => b.name.toLowerCase().includes(q));
   }, [filterText, filterVisible, typedBundles]);
 
+  const filteredCategories = useMemo(() => {
+    const q = (filterVisible ? filterText : '').trim().toLowerCase();
+    if (!q) return categories;
+    return categories.filter((c) => c.name.toLowerCase().includes(q));
+  }, [filterText, filterVisible, categories]);
+
   const onPressAdd = () => {
     if (!selectedType) {
       Alert.alert(t('common.notImplementedTitle'), t('common.notImplementedBody'));
+      return;
+    }
+    if (viewMode === 'categories') {
+      setCatModal({ mode: 'create' });
       return;
     }
     if (viewMode === 'items') {
@@ -109,6 +152,68 @@ export default function ConfigureCatalog(props: {
     }
     if (props.onAddBundle) return props.onAddBundle(selectedType);
     Alert.alert(t('common.notImplementedTitle'), t('common.notImplementedBody'));
+  };
+
+  // ── Category mutations ──────────────────────────────────────────────────────
+  const categoryNamesExcept = (excludeId?: string) =>
+    categories.filter((c) => c.id !== excludeId).map((c) => c.name.toLowerCase());
+
+  const handleSaveCategory = async (name: string) => {
+    if (!selectedType) return;
+    if (catModal?.mode === 'edit' && catModal.category) {
+      await renameCategory(catModal.category.id, name);
+    } else {
+      await createCategory(selectedType, name);
+    }
+    setCatModal(null);
+    bump();
+  };
+
+  const handleToggleRetire = () => {
+    const c = catModal?.category;
+    if (!c) return;
+    if (c.retired) {
+      setCategoryRetired(c.id, false)
+        .then(() => {
+          setCatModal(null);
+          bump();
+        })
+        .catch(() => {});
+      return;
+    }
+    Alert.alert(t('editCategory.retireConfirmTitle'), t('editCategory.retireConfirmBody', { name: c.name }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('editCategory.retire'),
+        style: 'destructive',
+        onPress: () =>
+          setCategoryRetired(c.id, true)
+            .then(() => {
+              setCatModal(null);
+              bump();
+            })
+            .catch(() => {}),
+      },
+    ]);
+  };
+
+  const handleDeleteCategory = () => {
+    const c = catModal?.category;
+    if (!c) return;
+    Alert.alert(t('editCategory.deleteConfirmTitle'), t('editCategory.deleteConfirmBody', { name: c.name }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.delete'),
+        style: 'destructive',
+        onPress: () =>
+          deleteCategory(c.id)
+            .then(() => {
+              setCatModal(null);
+              bump();
+            })
+            .catch(() => {}),
+      },
+    ]);
   };
 
   const handleBrowseOnline = () => {
@@ -179,6 +284,20 @@ export default function ConfigureCatalog(props: {
 
       <TouchableOpacity style={[styles.ctaButton, { backgroundColor: theme.accentPrimary }]} onPress={onPressAdd}>
         <Text style={styles.ctaButtonText}>{t('configureCatalog.createBundle')}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  // Empty state: categories empty for selected type
+  const renderCategoriesEmpty = () => (
+    <View style={styles.center}>
+      <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>{t('configureCatalog.emptyCategoriesTitle')}</Text>
+      <Text style={{ color: theme.textSecondary, textAlign: 'center', marginBottom: spacing[3] }}>
+        {t('configureCatalog.emptyCategoriesBody', { type: selectedType ?? '' })}
+      </Text>
+
+      <TouchableOpacity style={[styles.ctaButton, { backgroundColor: theme.accentPrimary }]} onPress={onPressAdd}>
+        <Text style={styles.ctaButtonText}>{t('configureCatalog.addCategory')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -266,6 +385,17 @@ export default function ConfigureCatalog(props: {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
+              onPress={() => setViewMode('categories')}
+              style={[
+                styles.viewTab,
+                { borderBottomColor: viewMode === 'categories' ? theme.accentPrimary : 'transparent' },
+              ]}
+            >
+              <Text style={{ color: viewMode === 'categories' ? theme.accentPrimary : theme.textSecondary, fontWeight: '600' }}>
+                {t('configureCatalog.categories')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               onPress={() => setViewMode('bundles')}
               style={[
                 styles.viewTab,
@@ -305,6 +435,45 @@ export default function ConfigureCatalog(props: {
                 )}
               />
             )
+          ) : viewMode === 'categories' ? (
+            filteredCategories.length === 0 ? (
+              renderCategoriesEmpty()
+            ) : (
+              <FlatList
+                data={filteredCategories}
+                keyExtractor={(c) => c.id}
+                contentContainerStyle={{ padding: spacing[3] }}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                    activeOpacity={0.85}
+                    onPress={() => setCatModal({ mode: 'edit', category: item })}
+                  >
+                    <Ionicons
+                      name="pricetag-outline"
+                      size={18}
+                      color={item.retired ? theme.textSecondary : activeAccent}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={{
+                          color: item.retired ? theme.textSecondary : theme.textPrimary,
+                          ...typography.body,
+                          fontWeight: '600',
+                        }}
+                      >
+                        {item.name}
+                      </Text>
+                      <Text style={{ color: theme.textSecondary, ...typography.small }}>
+                        {t('configureCatalog.categoryItemCount', { count: item.itemCount })}
+                        {item.retired ? ` · ${t('configureCatalog.categoryRetired')}` : ''}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+                  </TouchableOpacity>
+                )}
+              />
+            )
           ) : filteredBundles.length === 0 ? (
             renderBundlesEmpty()
           ) : (
@@ -335,6 +504,21 @@ export default function ConfigureCatalog(props: {
           )}
         </>
       )}
+
+      {/* Category create/edit modal */}
+      {catModal && selectedType ? (
+        <EditCategoryModal
+          visible
+          mode={catModal.mode}
+          typeName={selectedType}
+          category={catModal.category}
+          existingNames={categoryNamesExcept(catModal.category?.id)}
+          onCancel={() => setCatModal(null)}
+          onSave={handleSaveCategory}
+          onToggleRetire={handleToggleRetire}
+          onDelete={handleDeleteCategory}
+        />
+      ) : null}
 
       {/* Bottom tab bar (4 tabs per navigation.md: Home, Assistant, Catalog, Settings) */}
       <View style={[styles.tabBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
