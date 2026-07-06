@@ -18,8 +18,9 @@ dependsOn:
 ## Purpose
 
 Full editor for a catalog item — name, description, category, and quantifier definitions.
-This is the **advanced/explicit** item editor. The fast path during logging is EditEntry's
-**Quick-Add Item** sheet; its "More options" opens this screen. Also reached from ConfigureCatalog.
+This is the **advanced/explicit** item editor, reached from ConfigureCatalog. The fast path during logging is
+EditEntry's inline create draft (the `ComboField` "+ Create" flow); this screen is for fuller edits
+(description, multiple quantifiers, re-categorizing).
 
 ## Route
 - `EditItem` · params `itemId?` (undefined = create), `type?` (pre-selected type in create mode).
@@ -41,7 +42,7 @@ This is the **advanced/explicit** item editor. The fast path during logging is E
 ## Behavior
 - **Create**: Type may be pre-selected; Name + Category required; Save upserts the item (idempotent by
   `(category, name)`) and its quantifiers, then returns to the caller (ConfigureCatalog, or back into the entry
-  when invoked via Quick-Add's "More options").
+  when opened for a fuller edit than the inline create draft allows).
 - **Edit**: fields prepopulated; Type readonly; Save persists name/description/category + quantifier set.
 - Category inline-create persists immediately (shared `EditCategory` modal — see its spec).
 
@@ -61,5 +62,5 @@ Existing `editItem.*` keys (name/description/type/category/quantifier editor). N
 those in `edit-item.md`.
 
 ---
-**Status**: Regenerated — advanced editor; integrates as the "More options" target of EditEntry Quick-Add; retire-aware
+**Status**: Regenerated — advanced editor; complements EditEntry's inline create draft; retire-aware
 **Last Updated**: 2026-07-05

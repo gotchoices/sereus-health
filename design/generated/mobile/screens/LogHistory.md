@@ -66,18 +66,19 @@ show a subtle zone hint (e.g. "UTC+2") so the user can tell where they were
 > device's local timezone". Domain `rules.md` was updated to **originating-zone**.
 > The two mobile specs should be updated to match (pending user approval).
 
-### Empty state = first-run onboarding (required)
+### Empty state (catalog-aware, required)
 
-Empty DB is now the **default first run** (`db/init.ts`, `general.md`). Present a friendly
-welcome and a clear get-started path, with **importing a starter catalog as the primary CTA**:
+The empty state depends on **why** there are no entries:
 
-- **Import a starter catalog** (primary) → pick a bundled canonical catalog — **Minimal**
-  (types + categories) or **Small/Medium/Large** (adds ~250/500/1000 foods), per `general.md` —
-  then preview before commit per `import-export.md`.
-- **Browse more catalogs online** → opens `https://sereus.org/health/` (system browser) for additional catalogs.
-- **Create your first entry** → `EditEntry` (mode=new).
+- **Catalog is empty** (no Types — a fresh install before any import): "Set up your catalog" with an
+  **Import a starter catalog** CTA that opens onboarding (GettingStarted: import from sereus.org / from a
+  file / start by hand). This case is normally pre-empted by the app's first-run onboarding gate, but is
+  reachable via "start from scratch" → Home.
+- **Catalog present, no entries yet** (the usual case after importing): "No entries yet — tap + to log your
+  first activity, condition, or outcome," with a single **Create your first entry** → `EditEntry` (mode=new).
 
-(Same get-started affordances mirror `ConfigureCatalog`'s "no types" empty state.)
+The screen loads `getTypeCount()` alongside history to decide which to show. (No import/browse prompts once a
+catalog exists — that was a prior bug.)
 
 ### Bottom tab bar
 Per `navigation.md`, pinned: Home (`home`), Catalog (`list`), Assistant (`sparkles`), Settings (`settings`) — outline/filled by active state; content scrolls above it.
@@ -117,10 +118,11 @@ logHistory.openGraphs: "Open graphs"
 logHistory.filterPlaceholder: "Filter entries…"
 logHistory.clearFilter: "Clear filter"
 logHistory.clone: "Clone entry"
-logHistory.emptyTitle: "Welcome to Sereus Health"
-logHistory.emptyMessage: "Log what you do and how you feel to find what helps. Start by importing a starter catalog."
-logHistory.emptyImportStarter: "Import a starter catalog"
-logHistory.emptyBrowseOnline: "Browse more catalogs online"
+logHistory.emptyTitle: "No entries yet"
+logHistory.emptyNoEntriesMessage: "Tap + to log your first activity, condition, or outcome."
+logHistory.emptyCatalogTitle: "Set up your catalog"
+logHistory.emptyCatalogMessage: "Import a starter catalog to start logging."
+logHistory.emptyImportBuiltin: "Import a starter catalog"
 logHistory.emptyCreateFirst: "Create your first entry"
 logHistory.errorLoading: "Failed to load entries"
 logHistory.retry: "Retry"

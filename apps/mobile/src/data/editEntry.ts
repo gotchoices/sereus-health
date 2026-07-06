@@ -209,23 +209,6 @@ export async function getTypeStats(): Promise<StatRow[]> {
   return (await getEditEntryStats()).typeStats ?? [];
 }
 
-export async function getCategoryStats(typeId: string): Promise<StatRow[]> {
-  if (USE_QUEREUS) {
-    await ensureDatabaseInitialized();
-    return dbStats.getCategoryStats(typeId);
-  }
-  const stats = await getEditEntryStats();
-  return stats.categoryStats?.[typeId] ?? [];
-}
-
-export async function getItemStats(categoryId: string): Promise<ItemStatRow[]> {
-  if (USE_QUEREUS) {
-    await ensureDatabaseInitialized();
-    return dbStats.getItemStats(categoryId);
-  }
-  const stats = await getEditEntryStats();
-  return stats.itemStats?.[categoryId] ?? [];
-}
 
 export async function createLogEntry(_data: unknown): Promise<{ success: true; entryId: string }> {
   if (!USE_QUEREUS) {
