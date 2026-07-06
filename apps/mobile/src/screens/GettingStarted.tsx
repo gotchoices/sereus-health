@@ -180,7 +180,7 @@ export default function GettingStarted({ onDone, onStartScratch }: Props) {
       </ScrollView>
 
       {busy || committing ? (
-        <View style={styles.overlay}>
+        <View style={styles.overlay} pointerEvents="none">
           <ActivityIndicator size="large" color="#fff" />
           <Text style={styles.overlayText}>
             {committing ? t('gettingStarted.importing') : t('common.loading')}

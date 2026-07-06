@@ -72,7 +72,7 @@ These are known decisions/inconsistencies that are easier to resolve once the re
 - [ ] **Defer detailed screen-spec review until the app boots**: once the scaffold runs, re-review `design/specs/mobile/screens/*.md` for correctness and remove stale/over-specified content.
 - [ ] **Graphs persistence model**: reconcile whether graphs are ad-hoc (not persisted across restarts) vs saved/named and persisted.
   - Current tension: `design/specs/mobile/navigation.md` vs `design/specs/mobile/global/general.md`.
-- [ ] **Inline-create policy**: decide where inline creation is allowed (EditEntry pickers vs Catalog-only vs EditItem-only) and make the relevant screen specs consistent.
+- [x] **Inline-create policy** (resolved 2026-07-05): **app-wide** — wherever a screen asks the user to *select* a catalog entity (Type, Category, Item, bundle member, quantifier), it must also let them *create* one on the fly (a "+ Create '<typed name>'" affordance), persisted immediately and selected. Explicit bulk management still lives in the Catalog screens. Policy recorded in `design/specs/mobile/global/general.md` (Shared UI conventions → Inline creation); realized first in EditEntry's item picker (`components/ItemPicker.tsx` + `QuickAddItem.tsx`).
 - [ ] **EditEntry spec variants**: decide whether to keep `design/specs/mobile/screens/edit-entry-wizard.md` (archive/delete vs merge ideas into `edit-entry.md`).
 - [ ] **Catalog tab scope**: confirm whether Catalog is a full manager (current), a read-only browser, or removed in favor of inline editing.
 - [ ] **Nested bundles**: schema supports nested bundles, but app-level support must be explicit (read/expand/cycle prevention). Decide whether to support nested bundles in MVP.

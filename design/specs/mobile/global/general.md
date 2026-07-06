@@ -27,6 +27,7 @@ Catalogs are **fetched, not bundled** — `sereus.org/health` is the single sour
 
 ### Shared UI conventions
 
+- **Inline creation (app-wide)**: wherever a screen asks the user to *select* a catalog entity (a Type, Category, Item, bundle member, or quantifier), it must also let the user *create* one on the fly — typically via a “+ Create ‘<typed name>’” row in the picker — without leaving the current task. The new entity is persisted to the catalog immediately and selected. Explicit bulk management still lives in the Catalog screens.
 - **Reusable selection list**: a shared list picker that supports optional filtering and single/multi-select, reused across screens.
 - **Shared dialogs/toasts**: confirmation dialogs and transient notifications are shared components/styles, not one-offs.
 - **Bottom tab bar**: when present, it is visually pinned to the bottom of the screen; scrollable content must not push it upward (content area scrolls above it).

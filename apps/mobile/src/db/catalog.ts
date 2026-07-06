@@ -372,6 +372,16 @@ export async function importCanonicalCatalog(
   return res;
 }
 
+/** Member item ids of a bundle, in display order (for expansion at log-time). */
+export async function getBundleItemIds(bundleId: string): Promise<string[]> {
+  const db = await getDatabase();
+  const stmt = await db.prepare('SELECT item_id FROM bundle_members WHERE bundle_id = ? AND item_id IS NOT NULL ORDER BY display_order');
+  const ids: string[] = [];
+  for await (const r of stmt.all([bundleId])) ids.push(r.item_id as string);
+  await stmt.finalize();
+  return ids;
+}
+
 export async function getAllCatalogBundles(): Promise<Array<{ id: string; name: string; type: string; itemIds: string[] }>> {
   const db = await getDatabase();
   const bundleStmt = await db.prepare(`
