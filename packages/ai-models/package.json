@@ -1,0 +1,29 @@
+{
+  "name": "@ser/ai-models",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Cross-provider model discovery, capability metadata (models.dev), and selection. Framework-free core + optional Vercel AI SDK chat seam.",
+  "main": "index.ts",
+  "react-native": "index.ts",
+  "types": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./chat": "./chat.ts"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "ai": ">=6",
+    "@ai-sdk/openai": ">=3",
+    "@ai-sdk/anthropic": ">=3",
+    "@ai-sdk/google": ">=3"
+  },
+  "peerDependenciesMeta": {
+    "ai": { "optional": true },
+    "@ai-sdk/openai": { "optional": true },
+    "@ai-sdk/anthropic": { "optional": true },
+    "@ai-sdk/google": { "optional": true }
+  }
+}
