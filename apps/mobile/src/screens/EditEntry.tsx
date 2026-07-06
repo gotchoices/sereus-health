@@ -112,9 +112,9 @@ export default function EditEntry(props: { mode: EditEntryMode; entryId?: string
   useEffect(() => {
     if (!typeId) { setTypeItems([]); setTypeCategories([]); return; }
     let alive = true;
-    track(Promise.all([getItemsForType(typeId), getCategoriesForTypeName(typeName)]))
-      .then(([items, cats]) => { if (alive) { setTypeItems(items); setTypeCategories(cats); } })
-      .catch(() => { /* leave empty */ });
+    // Load independently so one failing doesn't blank the other.
+    track(getItemsForType(typeId)).then((items) => { if (alive) setTypeItems(items); }).catch((e) => logger.error('load items failed', e));
+    track(getCategoriesForTypeName(typeName)).then((cats) => { if (alive) setTypeCategories(cats); }).catch((e) => logger.error('load categories failed', e));
     return () => { alive = false; };
   }, [typeId, typeName]);
 
@@ -297,26 +297,15 @@ export default function EditEntry(props: { mode: EditEntryMode; entryId?: string
                   style={[styles.draftInput, { borderColor: theme.border, color: theme.textPrimary }]}
                 />
                 <Text style={[styles.label, { color: theme.textSecondary }]}>{t('editEntry.quickAddCategory')}</Text>
-                <TextInput
+                <ComboField
+                  placeholder={t('editItem.categoryNamePlaceholder')}
                   value={draft.category}
                   onChangeText={(txt) => setDraft((d) => (d ? { ...d, category: txt } : d))}
-                  placeholder={t('editItem.categoryNamePlaceholder')}
-                  placeholderTextColor={theme.textSecondary}
-                  style={[styles.draftInput, { borderColor: theme.border, color: theme.textPrimary }]}
+                  options={typeCategories.map((c) => ({ id: c.id, label: c.name }))}
+                  onSelect={(opt) => setDraft((d) => (d ? { ...d, category: opt.label } : d))}
+                  onCreate={(txt) => setDraft((d) => (d ? { ...d, category: txt } : d))}
+                  createLabelKey="editEntry.pickerCreate"
                 />
-                {typeCategories.length ? (
-                  <View style={styles.chips}>
-                    {typeCategories.map((c) => (
-                      <TouchableOpacity
-                        key={c.id}
-                        onPress={() => setDraft((d) => (d ? { ...d, category: c.name } : d))}
-                        style={[styles.catChip, { borderColor: theme.border, backgroundColor: draft.category === c.name ? theme.accentPrimary : theme.surface }]}
-                      >
-                        <Text style={{ color: draft.category === c.name ? '#fff' : theme.textSecondary, ...typography.small }}>{c.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                ) : null}
                 <TextInput
                   value={draft.qName}
                   onChangeText={(txt) => setDraft((d) => (d ? { ...d, qName: txt } : d))}

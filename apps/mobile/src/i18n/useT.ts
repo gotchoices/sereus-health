@@ -77,6 +77,7 @@ const en: Dict = {
   'editEntry.addItemPlaceholder': 'Add an item…',
   'editEntry.draftQuantifierPlaceholder': 'Quantifier (optional), e.g. Intensity',
   'combo.create': 'Create "{name}"',
+  'combo.empty': 'No matches — type a name to create one',
   'editEntry.itemsEmptyHint': 'No items yet — add what you did, felt, or were exposed to.',
   'editEntry.pickerCreate': 'Create "{name}"',
   'editEntry.pickerEmpty': 'No items yet. Type a name to create one.',
