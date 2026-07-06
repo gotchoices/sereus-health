@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   Image,
-  Linking,
   StyleSheet,
   Text,
   TextInput,
@@ -11,6 +10,7 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getLogHistory, type LogEntry } from '../data/logHistory';
+import { getTypeCount } from '../data/catalogImport';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 
@@ -28,6 +28,7 @@ export default function LogHistory(props: {
   const theme = useTheme();
   const t = useT();
   const [entries, setEntries] = useState<LogEntry[]>([]);
+  const [catalogEmpty, setCatalogEmpty] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterVisible, setFilterVisible] = useState(false);
@@ -36,10 +37,11 @@ export default function LogHistory(props: {
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    getLogHistory()
-      .then((data) => {
+    Promise.all([getLogHistory(), getTypeCount()])
+      .then(([data, typeCount]) => {
         if (!alive) return;
         setEntries(data);
+        setCatalogEmpty(typeCount === 0);
         setError(null);
       })
       .catch((err) => {
@@ -90,13 +92,6 @@ export default function LogHistory(props: {
     return theme.accentPrimary;
   };
 
-  const handleBrowseOnline = () => {
-    Linking.openURL('https://health.sereus.org').catch((err) => {
-      // eslint-disable-next-line no-console
-      console.error('[LogHistory] Failed to open URL', err);
-    });
-  };
-
   const renderEntry = ({ item }: { item: LogEntry }) => {
     const allNames = [...(item.bundles ?? []), ...(item.items ?? [])];
     const shown = allNames.slice(0, 3);
@@ -143,37 +138,37 @@ export default function LogHistory(props: {
     );
   };
 
-  const renderEmptyState = () => (
-    <View style={styles.center}>
-      <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>{t('logHistory.emptyTitle')}</Text>
-      <Text style={{ color: theme.textSecondary, textAlign: 'center', marginBottom: spacing[3] }}>
-        {t('logHistory.emptyMessage')}
-      </Text>
-
-      {/* CTA: Import built-in starter */}
-      <TouchableOpacity
-        style={[styles.ctaButton, { backgroundColor: theme.accentPrimary }]}
-        onPress={props.onImportBuiltinCatalog}
-      >
-        <Text style={styles.ctaButtonText}>{t('logHistory.emptyImportBuiltin')}</Text>
-      </TouchableOpacity>
-
-      {/* CTA: Browse online */}
-      <TouchableOpacity
-        style={[styles.ctaButtonOutline, { borderColor: theme.accentPrimary }]}
-        onPress={handleBrowseOnline}
-      >
-        <Text style={[styles.ctaButtonOutlineText, { color: theme.accentPrimary }]}>
-          {t('logHistory.emptyBrowseOnline')}
+  // Empty state depends on WHY the list is empty:
+  //  - catalog empty  → guide the user to set up a catalog (onboarding)
+  //  - catalog present → just prompt to create the first entry
+  const renderEmptyState = () =>
+    catalogEmpty ? (
+      <View style={styles.center}>
+        <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>{t('logHistory.emptyCatalogTitle')}</Text>
+        <Text style={{ color: theme.textSecondary, textAlign: 'center', marginBottom: spacing[3] }}>
+          {t('logHistory.emptyCatalogMessage')}
         </Text>
-      </TouchableOpacity>
-
-      {/* CTA: Create first entry */}
-      <TouchableOpacity style={styles.ctaLink} onPress={props.onAddNew}>
-        <Text style={{ color: theme.accentPrimary }}>{t('logHistory.emptyCreateFirst')}</Text>
-      </TouchableOpacity>
-    </View>
-  );
+        <TouchableOpacity
+          style={[styles.ctaButton, { backgroundColor: theme.accentPrimary }]}
+          onPress={props.onImportBuiltinCatalog}
+        >
+          <Text style={styles.ctaButtonText}>{t('logHistory.emptyImportBuiltin')}</Text>
+        </TouchableOpacity>
+      </View>
+    ) : (
+      <View style={styles.center}>
+        <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>{t('logHistory.emptyTitle')}</Text>
+        <Text style={{ color: theme.textSecondary, textAlign: 'center', marginBottom: spacing[3] }}>
+          {t('logHistory.emptyNoEntriesMessage')}
+        </Text>
+        <TouchableOpacity
+          style={[styles.ctaButton, { backgroundColor: theme.accentPrimary }]}
+          onPress={props.onAddNew}
+        >
+          <Text style={styles.ctaButtonText}>{t('logHistory.emptyCreateFirst')}</Text>
+        </TouchableOpacity>
+      </View>
+    );
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>

@@ -9,14 +9,15 @@ Cross-cutting behaviors that apply across multiple screens and features.
   - import a starter catalog, or
   - create the first catalog entries manually.
 
-### Starter catalogs (built-in + online)
+### Starter catalogs & getting started
 
-When the catalog is empty, the app should offer:
+On first run (empty database), the app presents a clear “get started” choice — see story `01-exploring.md`. Three paths:
 
-- **Import a starter catalog (built-in)**: pick from a small set of bundled canonical catalogs, from a bare frame to a stocked pantry:
-  - **Minimal** — Types + Categories only (no items). Source: `design/specs/domain/catalog/categories.yaml`.
-  - **Small / Medium / Large** — the above plus ~250 / ~500 / ~1000 common food items. Sources: `web/catalogs/starter-{small,medium,large}.yaml`.
-- **Browse more catalogs (online)**: opens `sereus.org/health` in the system browser so the user can download additional catalog files and import them.
+- **Import from sereus.org**: browse the catalogs published at `sereus.org/health` and pick one by size (**Minimal / Small / Medium / Large** — progressively more food items). The app fetches the chosen canonical catalog and imports it, with preview-before-commit per `import-export.md`.
+- **Import from a file**: open a canonical catalog file (`.yaml` / `.yml` / `.json`) from device storage via the OS file picker, then import it (preview-before-commit).
+- **Start from scratch**: skip importing and begin creating catalog entries by hand.
+
+Catalogs are **fetched, not bundled** — `sereus.org/health` is the single source of truth, so catalogs can be updated without an app release. When offline, “Import from sereus.org” is unavailable; “Import from a file” and “Start from scratch” still work.
 
 ### Time and timestamps (UX rules)
 

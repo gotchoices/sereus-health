@@ -202,6 +202,176 @@ export async function getAllCatalogItems(): Promise<Array<{ id: string; name: st
   }));
 }
 
+// ── Canonical catalog import ─────────────────────────────────────────────────
+// Shape per design/specs/domain/import-export.md (name-referenced).
+
+export interface CanonicalCatalog {
+  version?: number;
+  name?: string;
+  description?: string;
+  catalog: {
+    types?: Array<{ name: string; color?: string; displayOrder?: number }>;
+    categories?: Array<{ typeName: string; name: string }>;
+    items?: Array<{
+      categoryName: string;
+      name: string;
+      description?: string;
+      typeName?: string;
+      quantifiers?: Array<{ name: string; units?: string; minValue?: number; maxValue?: number }>;
+    }>;
+    bundles?: Array<{ typeName?: string; name: string; members?: Array<{ itemName?: string }> }>;
+  };
+}
+
+export interface CatalogImportResult {
+  typesAdd: number;
+  categoriesAdd: number;
+  itemsAdd: number;
+  itemsSkip: number;
+  quantifiersAdd: number;
+  bundlesAdd: number;
+  bundlesSkip: number;
+  warnings: string[];
+}
+
+/** Number of Types — used to detect an empty (first-run) catalog. */
+export async function getTypeCount(): Promise<number> {
+  const db = await getDatabase();
+  try {
+    let count = 0;
+    for await (const row of db.eval('SELECT COUNT(*) as count FROM types')) count = (row.count as number) || 0;
+    return count;
+  } catch {
+    // Table not queryable yet on a fresh DB → treat as empty (show onboarding).
+    return 0;
+  }
+}
+
+/**
+ * Import a canonical catalog. Idempotent: existing types/categories/items are
+ * reused, not duplicated. `dryRun: true` computes the add/skip counts without
+ * writing (for preview-before-commit); `dryRun: false` writes in one transaction.
+ */
+export async function importCanonicalCatalog(
+  cat: CanonicalCatalog,
+  opts: { dryRun: boolean },
+): Promise<CatalogImportResult> {
+  const db = await getDatabase();
+  const c = cat.catalog ?? ({} as CanonicalCatalog['catalog']);
+  const write = !opts.dryRun;
+  const res: CatalogImportResult = {
+    typesAdd: 0, categoriesAdd: 0, itemsAdd: 0, itemsSkip: 0,
+    quantifiersAdd: 0, bundlesAdd: 0, bundlesSkip: 0, warnings: [],
+  };
+
+  const SEP = ' ';
+  // category name -> type name, from the catalog's own categories (helps resolve items)
+  const catCategoryType = new Map<string, string>();
+  for (const cg of c.categories ?? []) if (cg?.name && cg?.typeName) catCategoryType.set(cg.name, cg.typeName);
+
+  // Snapshot existing names (also the working set — mutated as we add, so dry-run counts are accurate).
+  const typeId = new Map<string, string>();        // typeName -> id
+  const catId = new Map<string, string>();         // `${typeId}\0${catName}` -> id
+  const itemSeen = new Set<string>();              // `${catId}\0${itemName}`
+  const bundleSeen = new Set<string>();            // `${typeId}\0${bundleName}`
+  {
+    const s = await db.prepare('SELECT id, name FROM types');
+    for await (const r of s.all()) typeId.set(r.name as string, r.id as string);
+    await s.finalize();
+  }
+  {
+    const s = await db.prepare('SELECT id, name, type_id FROM categories');
+    for await (const r of s.all()) catId.set(`${r.type_id as string}${SEP}${r.name as string}`, r.id as string);
+    await s.finalize();
+  }
+  {
+    const s = await db.prepare('SELECT name, category_id FROM items');
+    for await (const r of s.all()) itemSeen.add(`${r.category_id as string}${SEP}${r.name as string}`);
+    await s.finalize();
+  }
+  {
+    const s = await db.prepare('SELECT name, type_id FROM bundles');
+    for await (const r of s.all()) bundleSeen.add(`${r.type_id as string}${SEP}${r.name as string}`);
+    await s.finalize();
+  }
+
+  const ensureType = async (name: string): Promise<string> => {
+    const existing = typeId.get(name);
+    if (existing) return existing;
+    const id = newUuid();
+    if (write) await db.exec('INSERT INTO types (id, name, display_order) VALUES (?, ?, ?)', [id, name, 999]);
+    typeId.set(name, id);
+    res.typesAdd++;
+    return id;
+  };
+  const ensureCategory = async (name: string, tId: string): Promise<string> => {
+    const key = `${tId}${SEP}${name}`;
+    const existing = catId.get(key);
+    if (existing) return existing;
+    const id = newUuid();
+    if (write) await db.exec('INSERT INTO categories (id, name, type_id) VALUES (?, ?, ?)', [id, name, tId]);
+    catId.set(key, id);
+    res.categoriesAdd++;
+    return id;
+  };
+
+  if (write) await db.exec('BEGIN');
+  try {
+    for (const tp of c.types ?? []) {
+      if (tp?.name) await ensureType(tp.name);
+    }
+    for (const cg of c.categories ?? []) {
+      if (!cg?.name || !cg?.typeName) continue;
+      await ensureCategory(cg.name, await ensureType(cg.typeName));
+    }
+    for (const it of c.items ?? []) {
+      if (!it?.name || !it?.categoryName) { res.warnings.push(`Item skipped (missing name/category)`); continue; }
+      const tName = it.typeName ?? catCategoryType.get(it.categoryName);
+      if (!tName) { res.warnings.push(`Item "${it.name}": no type for category "${it.categoryName}"`); continue; }
+      const tId = await ensureType(tName);
+      const cId = await ensureCategory(it.categoryName, tId);
+      const iKey = `${cId}${SEP}${it.name}`;
+      if (itemSeen.has(iKey)) { res.itemsSkip++; continue; }
+      const iId = newUuid();
+      if (write) await db.exec('INSERT INTO items (id, name, description, category_id) VALUES (?, ?, ?, ?)', [iId, it.name, it.description ?? null, cId]);
+      itemSeen.add(iKey);
+      res.itemsAdd++;
+      for (const q of it.quantifiers ?? []) {
+        if (!q?.name) continue;
+        if (write) await db.exec('INSERT INTO item_quantifiers (id, item_id, name, min_value, max_value, units) VALUES (?, ?, ?, ?, ?, ?)', [newUuid(), iId, q.name, q.minValue ?? null, q.maxValue ?? null, q.units ?? null]);
+        res.quantifiersAdd++;
+      }
+    }
+    for (const b of c.bundles ?? []) {
+      if (!b?.name) continue;
+      if (!b.typeName) { res.warnings.push(`Bundle "${b.name}" skipped (no typeName)`); res.bundlesSkip++; continue; }
+      const tId = await ensureType(b.typeName);
+      const bKey = `${tId}${SEP}${b.name}`;
+      if (bundleSeen.has(bKey)) { res.bundlesSkip++; continue; }
+      const bId = newUuid();
+      if (write) {
+        await db.exec('INSERT INTO bundles (id, name, type_id) VALUES (?, ?, ?)', [bId, b.name, tId]);
+        let order = 0;
+        for (const m of b.members ?? []) {
+          if (!m?.itemName) continue;
+          const is = await db.prepare('SELECT i.id FROM items i JOIN categories c ON c.id = i.category_id WHERE i.name = ? AND c.type_id = ? LIMIT 1');
+          const ir = await is.get([m.itemName, tId]);
+          await is.finalize();
+          if (ir) await db.exec('INSERT INTO bundle_members (id, bundle_id, item_id, display_order) VALUES (?, ?, ?, ?)', [newUuid(), bId, ir.id as string, order++]);
+          else res.warnings.push(`Bundle "${b.name}": item "${m.itemName}" not found`);
+        }
+      }
+      bundleSeen.add(bKey);
+      res.bundlesAdd++;
+    }
+    if (write) await db.exec('COMMIT');
+  } catch (e) {
+    if (write) await db.exec('ROLLBACK');
+    throw e;
+  }
+  return res;
+}
+
 export async function getAllCatalogBundles(): Promise<Array<{ id: string; name: string; type: string; itemIds: string[] }>> {
   const db = await getDatabase();
   const bundleStmt = await db.prepare(`

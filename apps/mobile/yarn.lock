@@ -2917,56 +2917,56 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@quereus/isolation@npm:^3.3.0":
-  version: 3.3.0
-  resolution: "@quereus/isolation@npm:3.3.0"
+"@quereus/isolation@npm:^4.3.0":
+  version: 4.3.0
+  resolution: "@quereus/isolation@npm:4.3.0"
   dependencies:
-    "@quereus/quereus": "npm:^3.3.0"
+    "@quereus/quereus": "npm:^4.3.0"
   peerDependencies:
-    "@quereus/quereus": ^3.3.0
-  checksum: 10c0/26399cc5182bedc64d6b348dfb93f9c5bb54c18c6040035cb55c537ff33d08b681d7c83ef72f9fe5a1b9c3115964debd6550ea219f2efada2ed1bc675d7d5450
+    "@quereus/quereus": ^4.3.0
+  checksum: 10c0/d1ef0518c0f6ad7a4f2d38809194c7fe66fc41d7ec70863fa7037f056f9fff2d970603110350070e75f643fd9c5f24137319cbf714c67234bc84ec8161bb6325
   languageName: node
   linkType: hard
 
-"@quereus/plugin-react-native-leveldb@npm:^3.3.0":
-  version: 3.3.0
-  resolution: "@quereus/plugin-react-native-leveldb@npm:3.3.0"
+"@quereus/plugin-react-native-leveldb@npm:^4.3.0":
+  version: 4.3.0
+  resolution: "@quereus/plugin-react-native-leveldb@npm:4.3.0"
   dependencies:
-    "@quereus/quereus": "npm:^3.3.0"
-    "@quereus/store": "npm:^3.3.0"
+    "@quereus/quereus": "npm:^4.3.0"
+    "@quereus/store": "npm:^4.3.0"
   peerDependencies:
-    "@quereus/isolation": ^3.3.0
-    "@quereus/quereus": ^3.3.0
-    "@quereus/store": ^3.3.0
+    "@quereus/isolation": ^4.3.0
+    "@quereus/quereus": ^4.3.0
+    "@quereus/store": ^4.3.0
     rn-leveldb: ^3.11.0
-  checksum: 10c0/d7b0cf0da1efc29c27a2be7745c96c9cb801aec0187057680d88c11939475cfc5d0410c44215413de002d88b108747bc70b1d30c250da3b5171fc5fcbfae65c5
+  checksum: 10c0/89260a4faecb9138cbcd2cd917cebecedae0b677221f6aca9989f59135bdee231096eb874a090586a41627c30358fc06df22e1e8f1b8326bed4e1fce6e9a1808
   languageName: node
   linkType: hard
 
-"@quereus/quereus@npm:^3.3.0":
-  version: 3.3.0
-  resolution: "@quereus/quereus@npm:3.3.0"
+"@quereus/quereus@npm:^4.3.0":
+  version: 4.3.0
+  resolution: "@quereus/quereus@npm:4.3.0"
   dependencies:
     debug: "npm:^4.4.3"
     fast-json-patch: "npm:^3.1.1"
-    inheritree: "npm:^0.3.4"
+    inheritree: "npm:^0.4.0"
     moat-maker: "npm:^2.2.0"
     temporal-polyfill: "npm:^0.3.0"
-    uint8arrays: "npm:^5.1.0"
-  checksum: 10c0/313983be6402873de08758a951c02df24f25035e1af5d68741653af2b0e6da26593ad96f00c411504fe6a57f7d44cb939a0a6cf2b45662f3c5868d651022413a
+    uint8arrays: "npm:^6.1.1"
+  checksum: 10c0/d9ed52f1c8c85411fe6f040a1fc092092e9e03e3bed56c962ad92aefa767d41b4dc2c5b94a2113652f2ec2fbda035bff69983184ac5ed8bfc826b924d7287578
   languageName: node
   linkType: hard
 
-"@quereus/store@npm:^3.3.0":
-  version: 3.3.0
-  resolution: "@quereus/store@npm:3.3.0"
+"@quereus/store@npm:^4.3.0":
+  version: 4.3.0
+  resolution: "@quereus/store@npm:4.3.0"
   dependencies:
-    "@quereus/isolation": "npm:^3.3.0"
-    "@quereus/quereus": "npm:^3.3.0"
+    "@quereus/isolation": "npm:^4.3.0"
+    "@quereus/quereus": "npm:^4.3.0"
   peerDependencies:
-    "@quereus/isolation": ^3.3.0
-    "@quereus/quereus": ^3.3.0
-  checksum: 10c0/196961e65013c9f47262bf6ba65a3c58d920d7c29a1fb05277de267bedebb36f5afac76e3134d23e678d5ae76acfd2b1903df4646d49ea908964e2909e9f93d7
+    "@quereus/isolation": ^4.3.0
+    "@quereus/quereus": ^4.3.0
+  checksum: 10c0/032005749e25416f10f1ed0f66343e3a02c8612332959527189e764d30957fc41603d44d50d34d49b8958cf427b084435129f6417590bb42b4b1825693d897df
   languageName: node
   linkType: hard
 
@@ -6422,10 +6422,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"inheritree@npm:^0.3.4":
-  version: 0.3.4
-  resolution: "inheritree@npm:0.3.4"
-  checksum: 10c0/31c3791c5d140a04c952ccd9ca8db05bc5a5cfbc89cd6b966f483e5548819f084a9d1776a4f8e2d31c5da5f627c383a8ef62a5ae228ee3625fb3889811c97c27
+"inheritree@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "inheritree@npm:0.4.0"
+  checksum: 10c0/d96011ee4ac3b07724fb3cfb59af16c9e53ea9b614db40da26fa5b2ba84b1cb51459213c3ac8fb703edd744d18b46c6f01f7134c1a6098832af1acade2fb5e12
   languageName: node
   linkType: hard
 
@@ -8434,10 +8434,10 @@ __metadata:
     "@optimystic/db-p2p-storage-rn": "npm:^0.14.1"
     "@optimystic/quereus-plugin-crypto": "npm:^0.14.1"
     "@optimystic/quereus-plugin-optimystic": "npm:^0.14.1"
-    "@quereus/isolation": "npm:^3.3.0"
-    "@quereus/plugin-react-native-leveldb": "npm:^3.3.0"
-    "@quereus/quereus": "npm:^3.3.0"
-    "@quereus/store": "npm:^3.3.0"
+    "@quereus/isolation": "npm:^4.3.0"
+    "@quereus/plugin-react-native-leveldb": "npm:^4.3.0"
+    "@quereus/quereus": "npm:^4.3.0"
+    "@quereus/store": "npm:^4.3.0"
     "@react-native-async-storage/async-storage": "npm:^2.1.0"
     "@react-native-community/cli": "npm:20.0.0"
     "@react-native-community/cli-platform-android": "npm:20.0.0"

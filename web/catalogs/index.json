@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "catalogs": [
+    {
+      "id": "minimal",
+      "name": "Minimal",
+      "description": "Types and categories only — a blank frame to build your own.",
+      "file": "starter-minimal.yaml",
+      "types": 3,
+      "categories": 12,
+      "items": 0,
+      "bytes": 869
+    },
+    {
+      "id": "small",
+      "name": "Small",
+      "description": "Common categories plus ~250 everyday foods.",
+      "file": "starter-small.yaml",
+      "types": 3,
+      "categories": 12,
+      "items": 250,
+      "bytes": 21199
+    },
+    {
+      "id": "medium",
+      "name": "Medium",
+      "description": "Common categories plus ~500 foods.",
+      "file": "starter-medium.yaml",
+      "types": 3,
+      "categories": 12,
+      "items": 500,
+      "bytes": 43328
+    },
+    {
+      "id": "large",
+      "name": "Large",
+      "description": "Common categories plus ~1000 foods.",
+      "file": "starter-large.yaml",
+      "types": 3,
+      "categories": 12,
+      "items": 998,
+      "bytes": 88701
+    }
+  ]
+}

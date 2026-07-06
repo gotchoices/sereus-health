@@ -1,7 +1,7 @@
 # User Story: Graphing the Data
 
 ## Story Overview
-I want to be able to see trends in my data.
+I want to be able to see trends, correlations in my data.
 
 Context: Bob has already been [using the app daily](02-daily.md) for some time.  He now wants to use his data for his benefit.
 

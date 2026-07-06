@@ -65,8 +65,22 @@ const catalogs = [
   { file: 'starter-large.yaml',   name: 'Large',   description: 'Common categories plus ~1000 foods.', foods: foodsFrom('food_list_1000.csv') },
 ];
 
+const index = [];
 for (const c of catalogs) {
-  fs.writeFileSync(path.join(OUT_DIR, c.file), build(c, c.foods));
+  const body = build(c, c.foods);
+  fs.writeFileSync(path.join(OUT_DIR, c.file), body);
+  index.push({
+    id: c.file.replace(/^starter-|\.yaml$/g, ''),
+    name: c.name,
+    description: c.description,
+    file: c.file,
+    types: structure.types.length,
+    categories: structure.categories.length,
+    items: c.foods ? c.foods.length : 0,
+    bytes: Buffer.byteLength(body),
+  });
   console.log(`  ${c.file.padEnd(22)} ${c.foods ? c.foods.length : 0} items`);
 }
-console.log('Catalogs written to web/catalogs/');
+// Machine-readable index so the app can browse catalogs (story 01-exploring).
+fs.writeFileSync(path.join(OUT_DIR, 'index.json'), JSON.stringify({ version: 1, catalogs: index }, null, 2) + '\n');
+console.log('Catalogs + index.json written to web/catalogs/');

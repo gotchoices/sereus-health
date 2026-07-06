@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { Alert } from 'react-native';
+import { ActivityIndicator, Alert, View } from 'react-native';
 import LogHistory from './src/screens/LogHistory';
 import { useVariantParams, VariantProvider } from './src/mock';
 import EditEntry from './src/screens/EditEntry';
@@ -20,6 +20,9 @@ import BackupRestore from './src/screens/BackupRestore';
 import Assistant from './src/screens/Assistant';
 import ApiKeys from './src/screens/ApiKeys';
 import { isAssistantConfigured } from './src/data/apiKeys';
+import GettingStarted from './src/screens/GettingStarted';
+import { getTypeCount } from './src/data/catalogImport';
+import { ensureDatabaseInitialized } from './src/db/init';
 import { ThemeProvider } from './src/theme/useTheme';
 
 type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
@@ -82,6 +85,20 @@ function AppContent() {
 
   // Assistant configuration status
   const [assistantConfigured, setAssistantConfigured] = useState(false);
+
+  // First-run onboarding: show GettingStarted when the catalog is empty (no types).
+  const [catalogChecked, setCatalogChecked] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    ensureDatabaseInitialized()
+      .then(() => getTypeCount())
+      .then((count) => { if (alive) setShowOnboarding(count === 0); })
+      .catch(() => { /* if the check fails, fall through to the normal app */ })
+      .finally(() => { if (alive) setCatalogChecked(true); });
+    return () => { alive = false; };
+  }, []);
 
   // Check assistant configuration on mount and when screen changes
   useEffect(() => {
@@ -198,6 +215,23 @@ function AppContent() {
   // Also remount on stack changes so returning to a previous screen refreshes its data.
   const navKey = `${dlKey}-nav-${screenStack.join('>')}`;
 
+  // First-run onboarding gate (design/specs/mobile/global/general.md · story 01-exploring).
+  if (!catalogChecked) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+  if (showOnboarding) {
+    return (
+      <GettingStarted
+        onDone={() => { setShowOnboarding(false); resetToTabRoot('home'); }}
+        onStartScratch={() => { setShowOnboarding(false); resetToTabRoot('catalog'); }}
+      />
+    );
+  }
+
   return screen === 'EditEntry' ? (
     <EditEntry key={navKey} mode={editMode} entryId={editEntryId} onBack={popScreen} />
   ) : screen === 'ConfigureCatalog' ? (
@@ -205,6 +239,7 @@ function AppContent() {
       key={navKey}
       onNavigateTab={resetToTabRoot}
       activeTab={tab}
+      onImportBuiltinCatalog={() => setShowOnboarding(true)}
       onAddItem={(type) => {
         setEditItemId(undefined);
         setEditItemType(type);
@@ -322,6 +357,7 @@ function AppContent() {
       onOpenGraphs={() => pushScreen('Graphs')}
       onNavigateTab={resetToTabRoot}
       activeTab={tab}
+      onImportBuiltinCatalog={() => setShowOnboarding(true)}
     />
   );
 }

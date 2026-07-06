@@ -74,14 +74,14 @@ PACKAGES = collections.OrderedDict([
     ('@optimystic/db-p2p-storage-rn',        ('../../../optimystic/packages/db-p2p-storage-rn',        '^0.14.1', True,  True)),
     ('@optimystic/quereus-plugin-crypto',    ('../../../optimystic/packages/quereus-plugin-crypto',    '^0.14.1', True,  True)),
     ('@optimystic/quereus-plugin-optimystic',('../../../optimystic/packages/quereus-plugin-optimystic','^0.14.1', True,  True)),
-    ('@quereus/quereus',                     ('../../../quereus/packages/quereus',                     '^3.3.0',  True,  True)),
-    ('@quereus/isolation',                   ('../../../quereus/packages/quereus-isolation',           '^3.3.0',  True,  True)),
-    ('@quereus/store',                       ('../../../quereus/packages/quereus-store',               '^3.3.0',  True,  True)),
-    ('@quereus/plugin-leveldb',              ('../../../quereus/packages/quereus-plugin-leveldb',      '^3.3.0',  False, True)),
+    ('@quereus/quereus',                     ('../../../quereus/packages/quereus',                     '^4.3.0',  True,  True)),
+    ('@quereus/isolation',                   ('../../../quereus/packages/quereus-isolation',           '^4.3.0',  True,  True)),
+    ('@quereus/store',                       ('../../../quereus/packages/quereus-store',               '^4.3.0',  True,  True)),
+    ('@quereus/plugin-leveldb',              ('../../../quereus/packages/quereus-plugin-leveldb',      '^4.3.0',  False, True)),
     ('@serfab/strand-proto',                 ('../../../sereus/packages/strand-proto',                 '^0.8.1',  False, True)),
     ('p2p-fret',                             ('../../../fret/packages/fret',                            '^0.6.0',  True,  True)),
     # dep-only ser packages (never in resolutions)
-    ('@quereus/plugin-react-native-leveldb', ('../../../quereus/packages/quereus-plugin-react-native-leveldb', '^3.3.0', True, False)),
+    ('@quereus/plugin-react-native-leveldb', ('../../../quereus/packages/quereus-plugin-react-native-leveldb', '^4.3.0', True, False)),
     ('@serfab/cadre-core',                   ('../../../sereus/packages/cadre-core',                   '^0.8.1',  True,  False)),
 ])
 NAMES = set(PACKAGES)
@@ -182,9 +182,9 @@ if echo "$REPORT" | grep -q '^__CHANGED__'; then
       echo "Next: verify wiring with  bash stack-check"
       echo "      (run ../../../pull-stack.sh first if it reports stale builds)"
     else
-      echo "Next (npm mode): pinned to the coherent published set (quereus 3.3.0,"
-      echo "      optimystic 0.14.x).  quereus 4.x is intentionally avoided — the rest"
-      echo "      of the stack has not adopted it yet.  For iOS also run:"
+      echo "Next (npm mode): latest published stack (quereus 4.3.0, optimystic 0.14.x,"
+      echo "      cadre 0.8.x).  quereus 4.x is required — optimystic 0.14 calls a"
+      echo "      quereus 4.0+ API (Database.notifyExternalChange).  For iOS also run:"
       echo "      cd ios && pod install"
     fi
     exit $IRC
@@ -195,8 +195,8 @@ if echo "$REPORT" | grep -q '^__CHANGED__'; then
       echo "  2. bash stack-check      # confirm portal wiring + built targets"
     else
       echo "  2. cd ios && pod install # (iOS native deps)"
-      echo "     Note: pinned to quereus 3.3.0 (the coherent set); quereus 4.x is"
-      echo "     avoided until optimystic + src/db adopt it."
+      echo "     Note: latest stack — quereus 4.3.0 (optimystic 0.14 requires the"
+      echo "     quereus 4.0+ notifyExternalChange API)."
     fi
   fi
 fi
