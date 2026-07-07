@@ -12,6 +12,7 @@
  */
 import { getDatabase } from '../db';
 import { tool, jsonSchema, type ToolSet } from '@serfab/ai-models/chat';
+import type { ActionPlan } from './actionPlan';
 
 /** Bind params for a positional query. Quereus SqlValue: string | number | null. */
 type QueryParam = string | number | null;
@@ -87,7 +88,54 @@ const dbQuery = tool({
   },
 });
 
-/** Tools available to the assistant this phase (read-only). */
+/**
+ * Propose an action plan for the user to review/approve. This tool has NO
+ * execute: the AI SDK returns the tool call without running it (human-in-the-
+ * loop), so generation stops and the app captures the plan from result.toolCalls.
+ * Nothing is written until the user approves selected actions.
+ */
+const proposePlan = tool({
+  description:
+    'Propose an action plan for the user to review and approve. Use this whenever the ' +
+    'user asks you to CREATE catalog entries (types/categories/items/quantifiers/bundles), ' +
+    'CREATE log entries, set reminders, or import data. Do NOT claim the changes are done — ' +
+    'they run only after the user approves. Give every action a stable, unique actionId. ' +
+    'Propose the minimal set of actions needed. Query first (db_query) to avoid duplicates.',
+  inputSchema: jsonSchema<ActionPlan>({
+    type: 'object',
+    properties: {
+      planId: { type: 'string', description: 'Stable id for this plan.' },
+      summary: { type: 'string', description: 'One-sentence summary of the plan.' },
+      actions: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            actionId: { type: 'string', description: 'Stable, unique within the plan.' },
+            kind: {
+              type: 'string',
+              description:
+                "e.g. 'catalog.createItem', 'catalog.createBundle', 'logs.createEntry'.",
+            },
+            title: { type: 'string', description: 'Human-readable one-liner for the preview.' },
+            data: { type: 'object', additionalProperties: true, description: 'Kind-specific payload.' },
+          },
+          required: ['actionId', 'kind', 'title'],
+          additionalProperties: true,
+        },
+      },
+    },
+    required: ['planId', 'summary', 'actions'],
+    additionalProperties: false,
+  }),
+  // no execute → human-in-the-loop
+});
+
+/** Wire name of the plan-proposal tool (matches the tool key below). */
+export const PROPOSE_PLAN_TOOL = 'propose_plan';
+
+/** Tools available to the assistant: read-only query + plan proposal. */
 export const assistantTools: ToolSet = {
   db_query: dbQuery,
+  propose_plan: proposePlan,
 };

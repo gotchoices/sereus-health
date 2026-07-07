@@ -18,7 +18,9 @@ import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { getEnabledApiKey } from '../data/apiKeys';
 import { buildSystemPrompt } from '../assistant/systemPrompt';
-import { assistantTools } from '../assistant/tools';
+import { assistantTools, PROPOSE_PLAN_TOOL } from '../assistant/tools';
+import { parseActionPlan, type ActionPlan } from '../assistant/actionPlan';
+import ActionPlanCard from '../assistant/ActionPlanCard';
 
 type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
 
@@ -63,16 +65,56 @@ function sessionContext() {
   };
 }
 
+/**
+ * A tool-result message answering an open `propose_plan` call. Every tool call
+ * must be answered before the next turn, so this is appended to history on
+ * disposition (superseded / dismissed / executed) — carrying the outcome so the
+ * model can revise or confirm accordingly.
+ */
+function planToolResult(toolCallId: string, value: Record<string, unknown>): ModelMessage {
+  return {
+    role: 'tool',
+    content: [
+      {
+        type: 'tool-result',
+        toolCallId,
+        toolName: PROPOSE_PLAN_TOOL,
+        output: { type: 'text', value: JSON.stringify(value) },
+      },
+    ],
+  };
+}
+
 export default function Assistant(props: AssistantProps) {
   const theme = useTheme();
   const t = useT();
   const scrollViewRef = useRef<ScrollView>(null);
+  // The real conversation sent to the model — includes tool calls/results so the
+  // model remembers prior plans (enables conversational revision). The display
+  // `messages` list is a separate, human-facing projection.
+  const modelMessagesRef = useRef<ModelMessage[]>([]);
 
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [pendingPlan, setPendingPlan] = useState<{
+    plan: ActionPlan;
+    selected: Set<string>;
+    /** The open propose_plan tool call this plan answers — must be resolved before the next turn. */
+    toolCallId: string;
+  } | null>(null);
+
+  const togglePlanAction = useCallback((actionId: string) => {
+    setPendingPlan((prev) => {
+      if (!prev) return prev;
+      const selected = new Set(prev.selected);
+      if (selected.has(actionId)) selected.delete(actionId);
+      else selected.add(actionId);
+      return { ...prev, selected };
+    });
+  }, []);
 
   const isConfigured = props.isConfigured ?? false;
 
@@ -99,7 +141,24 @@ export default function Assistant(props: AssistantProps) {
     setError(null);
     setNotice(null);
 
-    // Add user message
+    const history = modelMessagesRef.current;
+    // If a plan was pending, its propose_plan tool call is still open. Answer it
+    // (superseded by a new prompt) before continuing — providers require every
+    // tool call to be resolved, and this hands the model the prior plan +
+    // selection so it can revise instead of starting over.
+    if (pendingPlan) {
+      history.push(
+        planToolResult(pendingPlan.toolCallId, {
+          status: 'superseded_by_new_prompt',
+          selectedActionIds: [...pendingPlan.selected],
+          note: 'The user sent a new message instead of approving. If it refines the plan, re-propose a revised plan, keeping stable actionIds for unchanged actions.',
+        }),
+      );
+      setPendingPlan(null);
+    }
+    history.push({ role: 'user', content: text });
+
+    // Add user message (display)
     const userMessage: Message = {
       id: `msg-${Date.now()}`,
       role: 'user',
@@ -130,30 +189,52 @@ export default function Assistant(props: AssistantProps) {
         setNotice(resolved.warning);
       }
 
-      // Build messages for the API (include conversation history)
-      const apiMessages: ModelMessage[] = [...messages, userMessage].map((m) =>
-        m.role === 'user'
-          ? { role: 'user', content: m.content }
-          : { role: 'assistant', content: m.content },
-      );
-
       const result = await chat({
         ...cred,
         modelId: resolved.id,
         system: buildSystemPrompt(sessionContext()),
-        messages: apiMessages,
+        messages: history,
         tools: assistantTools,
         // Allow: model → db_query → tool result → final answer (a few rounds).
         maxSteps: 6,
       });
 
-      // Add assistant response
-      const assistantMessage: Message = {
-        id: `msg-${Date.now()}-response`,
-        role: 'assistant',
-        content: result.text,
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
+      // Thread the model's turn (text + tool calls + executed tool results) into history.
+      history.push(...result.response.messages);
+
+      // Capture a proposed action plan, if the model called propose_plan.
+      const planCall = result.toolCalls.find((c) => c.toolName === PROPOSE_PLAN_TOOL);
+      const plan = planCall ? parseActionPlan(planCall.input) : null;
+      if (planCall && plan) {
+        setPendingPlan({
+          plan,
+          selected: new Set(plan.actions.map((a) => a.actionId)),
+          toolCallId: planCall.toolCallId,
+        });
+      } else if (planCall && !plan) {
+        // Malformed plan: the tool call is still open, so answer it to keep history valid.
+        history.push(
+          planToolResult(planCall.toolCallId, {
+            status: 'error',
+            note: 'The proposed plan was malformed and could not be used. Please re-propose.',
+          }),
+        );
+        setNotice('The assistant proposed an invalid plan. Please try rephrasing.');
+      }
+
+      // Add the assistant's text reply (may be empty when it ends on a tool call).
+      const replyText = result.text?.trim();
+      if (replyText) {
+        const assistantMessage: Message = {
+          id: `msg-${Date.now()}-response`,
+          role: 'assistant',
+          content: replyText,
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      } else if (!plan) {
+        // Nothing came back at all — surface a soft notice rather than a blank bubble.
+        setNotice('The assistant did not return a response. Please try rephrasing.');
+      }
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('[Assistant] Error:', err);
@@ -161,12 +242,27 @@ export default function Assistant(props: AssistantProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [inputText, isLoading, messages]);
+  }, [inputText, isLoading, pendingPlan]);
+
+  const dismissPlan = useCallback(() => {
+    if (pendingPlan) {
+      // Answer the open tool call so future turns stay valid.
+      modelMessagesRef.current.push(
+        planToolResult(pendingPlan.toolCallId, {
+          status: 'dismissed_by_user',
+          note: 'The user dismissed this plan without approving.',
+        }),
+      );
+    }
+    setPendingPlan(null);
+  }, [pendingPlan]);
 
   const handleClear = () => {
     setMessages([]);
     setError(null);
     setNotice(null);
+    setPendingPlan(null);
+    modelMessagesRef.current = [];
   };
 
   const renderMessage = (message: Message) => {
@@ -240,7 +336,7 @@ export default function Assistant(props: AssistantProps) {
             style={styles.conversation}
             contentContainerStyle={styles.conversationContent}
           >
-            {messages.length === 0 ? (
+            {messages.length === 0 && !pendingPlan ? (
               <View style={styles.emptyConversation}>
                 <Ionicons name="chatbubbles-outline" size={48} color={theme.textSecondary} />
                 <Text style={{ color: theme.textSecondary, textAlign: 'center', marginTop: spacing[2] }}>
@@ -249,6 +345,15 @@ export default function Assistant(props: AssistantProps) {
               </View>
             ) : (
               messages.map(renderMessage)
+            )}
+
+            {pendingPlan && (
+              <ActionPlanCard
+                plan={pendingPlan.plan}
+                selected={pendingPlan.selected}
+                onToggle={togglePlanAction}
+                onDismiss={dismissPlan}
+              />
             )}
 
             {isLoading && (

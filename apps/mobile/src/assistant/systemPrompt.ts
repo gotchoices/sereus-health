@@ -30,21 +30,33 @@ export function buildSystemPrompt(ctx: AssistantContext = {}): string {
     parts.push(section(name, doc));
   }
 
-  // Honest capability statement for this phase.
+  // Action-plan protocol, format, and guardrails (the operating manual for writes).
+  parts.push(section('ACTION PLAN PROTOCOL', PACK_DOCS.protocol));
+  parts.push(section('ACTION PLAN FORMAT', PACK_DOCS.actionPlan));
+  parts.push(section('GUARDRAILS', PACK_DOCS.guardrails));
+
+  // How the abstract protocol maps onto the concrete tools available now.
   parts.push(
     section(
-      'Current capabilities',
+      'Tools and current capabilities',
       [
-        'You can answer questions, explain how to use the app, and inspect the',
-        "user's data by running read-only SQL via the db_query tool (SELECT/WITH",
-        'only), using the SCHEMA_QSQL above for table and column names. Query the',
-        'database whenever it helps answer accurately (e.g. counts, existing',
-        'catalog entries), but do not run queries gratuitously.',
-        'You CANNOT yet create, modify, import, or delete data, or execute action',
-        'plans — that machinery is not wired yet. Never claim to have changed,',
-        'created, or imported anything. If asked to make changes, explain the',
-        'steps the user can take in the app instead (name the screen and the',
-        'minimal steps).',
+        'You have exactly two tools:',
+        '(1) db_query — run read-only SQL (SELECT/WITH only) using SCHEMA_QSQL for',
+        'table/column names. Query whenever it helps accuracy (counts, checking for',
+        'existing catalog entries before proposing duplicates), but not gratuitously.',
+        '(2) propose_plan — submit an action plan for the user to review and approve.',
+        '',
+        'CRITICAL — how to propose changes: To create/import/set ANYTHING, you MUST',
+        'invoke the propose_plan tool (an actual tool/function call). Do NOT write the',
+        'plan as text, markdown, or a JSON code block in your reply. The app can only',
+        'render and execute plans submitted THROUGH the propose_plan tool; a plan',
+        'merely described in prose does nothing and is a failure. The "ACTION PLAN',
+        'FORMAT" section defines that tool\'s input structure — it is not text to type',
+        'out. After you call propose_plan, add at most one short sentence like',
+        '"I\'ve proposed a plan below — review and approve it." Never claim a change',
+        'has been made; it runs only after the user approves.',
+        'For pure "how do I…?" questions, just answer (name the screen and steps) —',
+        'no tool needed.',
       ].join(' '),
     ),
   );
