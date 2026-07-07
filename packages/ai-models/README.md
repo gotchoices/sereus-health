@@ -1,10 +1,10 @@
-# @ser/ai-models
+# @serfab/ai-models
 
 Cross-provider LLM **model discovery, capability metadata, and selection** for
 OpenAI, Anthropic, and Google (Gemini API). Framework-free core, with an
 optional thin **Vercel AI SDK** chat seam.
 
-> **Name is a placeholder.** `@ser/ai-models` is the incubation name — rename the
+> **Name is a placeholder.** `@serfab/ai-models` is the incubation name — rename the
 > scope before promoting out of `health/`. The barrel exports mean import sites
 > only reference the package name, so a rename is mechanical.
 
@@ -36,15 +36,15 @@ src/
 
 Two entry points:
 
-- `@ser/ai-models` — core (no `ai`/`@ai-sdk` pulled in).
-- `@ser/ai-models/chat` — the Vercel AI SDK seam.
+- `@serfab/ai-models` — core (no `ai`/`@ai-sdk` pulled in).
+- `@serfab/ai-models/chat` — the Vercel AI SDK seam.
 
 ## Usage
 
 ### Pick / validate a model
 
 ```ts
-import { resolveModel } from '@ser/ai-models';
+import { resolveModel } from '@serfab/ai-models';
 
 // auto-pick a sensible default (cheapest chat model), verified against the key
 const { id, model, warning, entitlementVerified } = await resolveModel(
@@ -62,7 +62,7 @@ await resolveModel({ provider, apiKey }, { model: userModelId });
 ### List models for a picker UI
 
 ```ts
-import { listAvailableModels } from '@ser/ai-models';
+import { listAvailableModels } from '@serfab/ai-models';
 
 const { models } = await listAvailableModels({ provider, apiKey }, { cache });
 // models[].capabilities.{vision,pdf,tools,...} → drive the attach affordance
@@ -71,7 +71,7 @@ const { models } = await listAvailableModels({ provider, apiKey }, { cache });
 ### Chat (Vercel seam)
 
 ```ts
-import { chat, streamChat } from '@ser/ai-models/chat';
+import { chat, streamChat } from '@serfab/ai-models/chat';
 
 const res = await chat({ provider, apiKey, modelId: id, messages, tools });
 ```
@@ -93,7 +93,7 @@ const res = await chat({ provider, apiKey, modelId: id, messages, tools });
 ## Peer dependencies
 
 `ai`, `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google` are **optional peer
-deps** — required only if you import `@ser/ai-models/chat`. The core needs none.
+deps** — required only if you import `@serfab/ai-models/chat`. The core needs none.
 
 ## Refreshing the offline snapshot
 

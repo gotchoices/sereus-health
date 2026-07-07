@@ -8,6 +8,10 @@
 import { generateText, streamText, type ModelMessage, type ToolSet } from 'ai';
 import { createChatModel, type ChatModelSpec } from './factory';
 
+// Re-export the AI SDK types apps need to build requests, so consumers import
+// them through the library rather than reaching into `ai` directly.
+export type { ModelMessage, ToolSet } from 'ai';
+
 export interface ChatParams extends ChatModelSpec {
   messages: ModelMessage[];
   system?: string;

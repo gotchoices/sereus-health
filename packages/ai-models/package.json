@@ -1,5 +1,5 @@
 {
-  "name": "@ser/ai-models",
+  "name": "@serfab/ai-models",
   "version": "0.0.0",
   "private": true,
   "description": "Cross-provider model discovery, capability metadata (models.dev), and selection. Framework-free core + optional Vercel AI SDK chat seam.",

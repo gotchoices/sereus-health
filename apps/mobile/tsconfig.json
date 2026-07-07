@@ -1,7 +1,16 @@
 {
   "extends": "@react-native/typescript-config",
   "compilerOptions": {
-    "baseUrl": "."
+    "baseUrl": ".",
+    "resolveJsonModule": true,
+    "paths": {
+      "@serfab/ai-models": ["../../packages/ai-models/index.ts"],
+      "@serfab/ai-models/chat": ["../../packages/ai-models/chat.ts"],
+      "ai": ["node_modules/ai"],
+      "@ai-sdk/openai": ["node_modules/@ai-sdk/openai"],
+      "@ai-sdk/anthropic": ["node_modules/@ai-sdk/anthropic"],
+      "@ai-sdk/google": ["node_modules/@ai-sdk/google"]
+    }
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["**/node_modules", "**/Pods"]

@@ -120,6 +120,10 @@ const config = {
             '@quereus/store': path.resolve(workspaceRoot, 'quereus/packages/quereus-store'),
           }
         : {}),
+      // Health-local shared packages (source). Always aliased in both stack modes;
+      // health/ is already a watchFolder, and package `exports` are honored
+      // (unstable_enablePackageExports), so the `/chat` subpath resolves too.
+      '@serfab/ai-models': path.resolve(__dirname, '../../packages/ai-models'),
       // Node.js built-in stubs (for libp2p transitive deps)
       ...nodeBuiltinStubs,
     },

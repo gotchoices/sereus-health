@@ -11,13 +11,12 @@ import {
   View,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { generateText } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
-import { createAnthropic } from '@ai-sdk/anthropic';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { resolveModel, type CacheStore } from '@serfab/ai-models';
+import { chat, type ModelMessage } from '@serfab/ai-models/chat';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
-import { getEnabledApiKey, type ApiKeyEntry, type Provider } from '../data/apiKeys';
+import { getEnabledApiKey } from '../data/apiKeys';
 
 type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
 
@@ -35,41 +34,13 @@ interface AssistantProps {
 }
 
 /**
- * Create an AI model instance based on the provider and API key
+ * models.dev catalog cache, backed by AsyncStorage. Lets @serfab/ai-models
+ * cache the model catalog across launches instead of refetching each turn.
  */
-function createModel(entry: ApiKeyEntry) {
-  const modelName = entry.model || getDefaultModel(entry.provider);
-
-  switch (entry.provider) {
-    case 'openai': {
-      const openai = createOpenAI({ apiKey: entry.apiKey });
-      return openai(modelName);
-    }
-    case 'anthropic': {
-      const anthropic = createAnthropic({ apiKey: entry.apiKey });
-      return anthropic(modelName);
-    }
-    case 'google': {
-      const google = createGoogleGenerativeAI({ apiKey: entry.apiKey });
-      return google(modelName);
-    }
-    default:
-      throw new Error(`Unknown provider: ${entry.provider}`);
-  }
-}
-
-function getDefaultModel(provider: Provider): string {
-  switch (provider) {
-    case 'openai':
-      return 'gpt-4o-mini';
-    case 'anthropic':
-      return 'claude-3-5-sonnet-20241022';
-    case 'google':
-      return 'gemini-1.5-flash';
-    default:
-      return 'gpt-4o-mini';
-  }
-}
+const modelCache: CacheStore = {
+  get: (key) => AsyncStorage.getItem(key),
+  set: (key, value) => AsyncStorage.setItem(key, value),
+};
 
 export default function Assistant(props: AssistantProps) {
   const theme = useTheme();
@@ -80,6 +51,7 @@ export default function Assistant(props: AssistantProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const isConfigured = props.isConfigured ?? false;
 
@@ -104,6 +76,7 @@ export default function Assistant(props: AssistantProps) {
 
     setInputText('');
     setError(null);
+    setNotice(null);
 
     // Add user message
     const userMessage: Message = {
@@ -116,22 +89,35 @@ export default function Assistant(props: AssistantProps) {
 
     try {
       // Get enabled API key
-      const apiKey = await getEnabledApiKey();
-      if (!apiKey) {
+      const entry = await getEnabledApiKey();
+      if (!entry) {
         throw new Error('No API key configured');
       }
+      const cred = { provider: entry.provider, apiKey: entry.apiKey };
 
-      // Create model and generate response
-      const model = createModel(apiKey);
+      // Resolve a model this key can actually call: honor the user's explicit
+      // choice if set, otherwise auto-pick a valid default (@serfab/ai-models).
+      const resolved = await resolveModel(cred, {
+        model: entry.model || undefined,
+        cache: modelCache,
+      });
+      if (!resolved.id) {
+        throw new Error(resolved.warning ?? 'No suitable model available for this provider.');
+      }
+      if (resolved.warning) {
+        setNotice(resolved.warning);
+      }
 
       // Build messages for the API (include conversation history)
-      const apiMessages = [...messages, userMessage].map((m) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      }));
+      const apiMessages: ModelMessage[] = [...messages, userMessage].map((m) =>
+        m.role === 'user'
+          ? { role: 'user', content: m.content }
+          : { role: 'assistant', content: m.content },
+      );
 
-      const result = await generateText({
-        model,
+      const result = await chat({
+        ...cred,
+        modelId: resolved.id,
         messages: apiMessages,
       });
 
@@ -154,6 +140,7 @@ export default function Assistant(props: AssistantProps) {
   const handleClear = () => {
     setMessages([]);
     setError(null);
+    setNotice(null);
   };
 
   const renderMessage = (message: Message) => {
@@ -242,6 +229,13 @@ export default function Assistant(props: AssistantProps) {
               <View style={[styles.loadingBubble, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                 <ActivityIndicator size="small" color={theme.accentPrimary} />
                 <Text style={{ color: theme.textSecondary, marginLeft: spacing[2] }}>Thinking...</Text>
+              </View>
+            )}
+
+            {notice && (
+              <View style={[styles.errorBubble, { backgroundColor: '#fef9c3', borderColor: '#fde047' }]}>
+                <Ionicons name="information-circle-outline" size={16} color="#a16207" />
+                <Text style={{ color: '#a16207', marginLeft: spacing[1], flex: 1 }}>{notice}</Text>
               </View>
             )}
 
