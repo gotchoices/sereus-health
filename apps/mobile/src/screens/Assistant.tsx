@@ -20,6 +20,7 @@ import { getEnabledApiKey } from '../data/apiKeys';
 import { buildSystemPrompt } from '../assistant/systemPrompt';
 import { assistantTools, PROPOSE_PLAN_TOOL } from '../assistant/tools';
 import { parseActionPlan, type ActionPlan } from '../assistant/actionPlan';
+import { executePlan, summarizeExecution } from '../assistant/executor';
 import ActionPlanCard from '../assistant/ActionPlanCard';
 
 type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
@@ -106,6 +107,8 @@ export default function Assistant(props: AssistantProps) {
     toolCallId: string;
   } | null>(null);
 
+  const [planBusy, setPlanBusy] = useState(false);
+
   const togglePlanAction = useCallback((actionId: string) => {
     setPendingPlan((prev) => {
       if (!prev) return prev;
@@ -115,6 +118,35 @@ export default function Assistant(props: AssistantProps) {
       return { ...prev, selected };
     });
   }, []);
+
+  const approvePlan = useCallback(async () => {
+    if (!pendingPlan || planBusy) return;
+    const { plan, selected, toolCallId } = pendingPlan;
+    setPlanBusy(true);
+    setError(null);
+    try {
+      const exec = await executePlan(plan, selected);
+      // Feed the outcome back to the model (answers the open tool call) so it has
+      // context if the conversation continues.
+      modelMessagesRef.current.push(
+        planToolResult(toolCallId, {
+          status: exec.ok ? 'approved_and_executed' : 'execution_failed',
+          error: exec.error,
+          results: exec.results.map((r) => ({ title: r.title, status: r.status, detail: r.detail })),
+        }),
+      );
+      setPendingPlan(null);
+      // App-generated confirmation (deterministic, no extra model call).
+      setMessages((prev) => [
+        ...prev,
+        { id: `msg-${Date.now()}-exec`, role: 'assistant', content: summarizeExecution(exec) },
+      ]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to apply the plan.');
+    } finally {
+      setPlanBusy(false);
+    }
+  }, [pendingPlan, planBusy]);
 
   const isConfigured = props.isConfigured ?? false;
 
@@ -353,6 +385,8 @@ export default function Assistant(props: AssistantProps) {
                 selected={pendingPlan.selected}
                 onToggle={togglePlanAction}
                 onDismiss={dismissPlan}
+                onApprove={approvePlan}
+                busy={planBusy}
               />
             )}
 
