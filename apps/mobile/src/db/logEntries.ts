@@ -126,8 +126,9 @@ export async function deleteLogEntry(entryId: string): Promise<void> {
 export async function getAllLogEntries(): Promise<LogEntry[]> {
   const db = await getDatabase();
 
-  const entryStmt = await db.prepare(`
-    SELECT 
+  const entryRows: any[] = [];
+  for await (const row of db.eval(`
+    SELECT
       e.id,
       e.timestamp,
       e.type_id as typeId,
@@ -137,19 +138,18 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
     FROM log_entries e
     JOIN types t ON t.id = e.type_id
     ORDER BY e.timestamp DESC
-  `);
-
-  const entryRows: any[] = [];
-  for await (const row of entryStmt.all()) entryRows.push(row);
-  await entryStmt.finalize();
+  `)) {
+    entryRows.push(row);
+  }
 
   const out: LogEntry[] = [];
 
   for (const er of entryRows) {
     const entryId = er.id as string;
 
-    const itemStmt = await db.prepare(`
-      SELECT 
+    const itemRows: any[] = [];
+    for await (const row of db.eval(`
+      SELECT
         i.id,
         i.name,
         c.id as categoryId,
@@ -162,17 +162,16 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
       LEFT JOIN bundles b ON b.id = lei.source_bundle_id
       WHERE lei.entry_id = ?
       ORDER BY i.name ASC
-    `);
-
-    const itemRows: any[] = [];
-    for await (const row of itemStmt.all([entryId])) itemRows.push(row);
-    await itemStmt.finalize();
+    `, [entryId])) {
+      itemRows.push(row);
+    }
 
     const items: LogEntryItem[] = [];
     for (const ir of itemRows) {
       const itemId = ir.id as string;
-      const quantStmt = await db.prepare(`
-        SELECT 
+      const quantRows: any[] = [];
+      for await (const row of db.eval(`
+        SELECT
           q.id,
           q.name,
           qv.value,
@@ -183,10 +182,9 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
         JOIN item_quantifiers q ON q.id = qv.quantifier_id
         WHERE qv.entry_id = ? AND qv.item_id = ?
         ORDER BY q.name ASC
-      `);
-      const quantRows: any[] = [];
-      for await (const row of quantStmt.all([entryId, itemId])) quantRows.push(row);
-      await quantStmt.finalize();
+      `, [entryId, itemId])) {
+        quantRows.push(row);
+      }
 
       items.push({
         id: itemId,
@@ -223,8 +221,8 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
 export async function getLogEntryById(entryId: string): Promise<LogEntry | null> {
   const db = await getDatabase();
 
-  const entryStmt = await db.prepare(`
-      SELECT 
+  const entryRow = await db.get(`
+      SELECT
         e.id,
         e.timestamp,
         e.type_id as typeId,
@@ -234,14 +232,13 @@ export async function getLogEntryById(entryId: string): Promise<LogEntry | null>
       FROM log_entries e
       JOIN types t ON t.id = e.type_id
       WHERE e.id = ?
-    `);
-  const entryRow = await entryStmt.get([entryId]);
-  await entryStmt.finalize();
+    `, [entryId]);
 
   if (!entryRow) return null;
 
-  const itemStmt = await db.prepare(`
-    SELECT 
+  const itemRows: any[] = [];
+  for await (const row of db.eval(`
+    SELECT
       i.id,
       i.name,
       c.id as categoryId,
@@ -254,17 +251,16 @@ export async function getLogEntryById(entryId: string): Promise<LogEntry | null>
     LEFT JOIN bundles b ON b.id = lei.source_bundle_id
     WHERE lei.entry_id = ?
     ORDER BY i.name ASC
-  `);
-
-  const itemRows: any[] = [];
-  for await (const row of itemStmt.all([entryId])) itemRows.push(row);
-  await itemStmt.finalize();
+  `, [entryId])) {
+    itemRows.push(row);
+  }
 
   const items: LogEntryItem[] = [];
   for (const ir of itemRows) {
     const itemId = ir.id as string;
-    const quantStmt = await db.prepare(`
-      SELECT 
+    const quantRows: any[] = [];
+    for await (const row of db.eval(`
+      SELECT
         q.id,
         q.name,
         qv.value,
@@ -275,10 +271,9 @@ export async function getLogEntryById(entryId: string): Promise<LogEntry | null>
       JOIN item_quantifiers q ON q.id = qv.quantifier_id
       WHERE qv.entry_id = ? AND qv.item_id = ?
       ORDER BY q.name ASC
-    `);
-    const quantRows: any[] = [];
-    for await (const row of quantStmt.all([entryId, itemId])) quantRows.push(row);
-    await quantStmt.finalize();
+    `, [entryId, itemId])) {
+      quantRows.push(row);
+    }
 
     items.push({
       id: itemId,

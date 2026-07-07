@@ -77,11 +77,9 @@ async function initLeveldb(): Promise<Database> {
   // Check if schema already exists (persistent DB from prior run)
   let schemaExists = false;
   try {
-    const stmt = await db.prepare(
+    const row = await db.get(
       "SELECT name FROM schema() WHERE type = 'table' AND name = 'types'",
     );
-    const row = await stmt.get();
-    await stmt.finalize();
     schemaExists = row !== undefined;
   } catch {
     schemaExists = false;
