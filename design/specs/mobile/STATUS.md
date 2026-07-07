@@ -57,6 +57,15 @@ This checklist tracks spec review work for the **mobile** target. Treat it as th
 - [x] `@babel/runtime` ESM/CJS interop (`resolveRequest` forces CJS helpers)
 - [x] `CadreService` singleton created (`src/services/CadreService.ts`)
 
+### Known Quereus workarounds (revert when upstream fixes land)
+
+- [ ] **Scanning `DELETE ... WHERE <fk> = ?` tree-mutation bug** (Quereus 4.3.0): child-row
+  replacement/cleanup currently uses drain-then-point-delete-by-PK loops instead of a plain predicate
+  `DELETE`, because a scanning delete that removes rows throws "Path is invalid due to mutation of the
+  tree". **Revert to plain `DELETE ... WHERE <fk> = ?`** once fixed, in `updateLogEntry` +
+  `deleteLogEntry` (`src/db/logEntries.ts`) and `upsertItem` + `upsertBundle` (`src/db/catalog.ts`).
+  Details: `docs/quereus-rn-issues.md` §6 and `apps/mobile/tmp/quereus-bug-delete-path-invalid-tree-mutation.md`.
+
 ### Step 1: Local-only node (app "just works")
 
 CadreNode starts at app startup with auto-generated party ID.  Health data

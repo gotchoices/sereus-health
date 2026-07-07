@@ -227,6 +227,51 @@ TypeError: existingEntry.primaryKeys.add is not a function (it is undefined)
 
 ---
 
+## 6. Scanning `DELETE ... WHERE <predicate>` invalidates its own tree path (ACTIVE — worked around)
+
+**Version**: Quereus `4.3.0` (on an `@optimystic/db-core` 0.14 strand), RN 0.82.1 / Hermes.
+
+**Issue**: A `DELETE FROM <table> WHERE <col> = ?` that **matches and removes ≥1 row** throws:
+
+```
+QuereusError: Error during query on table 'log_entry_items':
+Query failed: Path is invalid due to mutation of the tree
+```
+
+The delete scans the b-tree to find matches and deletes in place; the mutation invalidates the
+cursor path the scan is walking. It correlates exactly with rows-actually-removed:
+
+| Case | Result |
+|------|--------|
+| `INSERT` only | ✅ works |
+| `DELETE ... WHERE k = ?` matching **0 rows** | ✅ works (nothing mutated) |
+| `DELETE ... WHERE k = ?` matching **≥1 row** | ❌ throws |
+
+Repro'd for both PK-prefix predicates (`WHERE entry_id = ?` on PK `(entry_id, item_id)`) and non-PK
+column predicates (`WHERE item_id = ?`). Full write-up for maintainers:
+`apps/mobile/tmp/quereus-bug-delete-path-invalid-tree-mutation.md`.
+
+**Workaround (shipped)**: never issue a scanning delete — read the target keys into memory first
+(drain the cursor fully), then **point-delete each row by full primary key**:
+
+```js
+const ids = [];
+for await (const r of db.eval('SELECT item_id FROM log_entry_items WHERE entry_id = ?', [entryId]))
+  ids.push(r.item_id);
+for (const itemId of ids)
+  await db.exec('DELETE FROM log_entry_items WHERE entry_id = ? AND item_id = ?', [entryId, itemId]);
+```
+
+**Workaround sites to revert once Quereus is fixed** (replace the drain-then-point-delete loops with
+a plain `DELETE ... WHERE <fk> = ?`):
+- `src/db/logEntries.ts` → `updateLogEntry` (child replace) and `deleteLogEntry` (child cleanup)
+- `src/db/catalog.ts` → `upsertItem` (item_quantifiers replace) and `upsertBundle` (bundle_members replace)
+
+**Expected**: a predicate `DELETE` that matches rows deletes them without invalidating its own
+traversal (materialize the match set before deleting, or re-seek after each removal).
+
+---
+
 ## Summary
 
 **Issues #1 and #2** have been successfully resolved with polyfills and patches.
