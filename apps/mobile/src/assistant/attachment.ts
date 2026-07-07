@@ -6,8 +6,10 @@
  * and PDFs — the model-native input formats. Spreadsheets/office docs are NOT
  * model-native and would need client-side extraction to text/CSV first (future).
  */
+import { PermissionsAndroid, Platform } from 'react-native';
 import RNFS from 'react-native-fs';
 import { pick, types, errorCodes, isErrorWithCode } from '@react-native-documents/picker';
+import { launchCamera } from 'react-native-image-picker';
 
 export interface Attachment {
   name: string;
@@ -68,4 +70,44 @@ export async function pickAttachment(): Promise<Attachment | null> {
     if (isErrorWithCode(e) && e.code === errorCodes.OPERATION_CANCELED) return null;
     throw e;
   }
+}
+
+async function ensureCameraPermission(): Promise<boolean> {
+  if (Platform.OS !== 'android') return true; // iOS prompts via Info.plist usage string
+  const result = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA, {
+    title: 'Camera access',
+    message: 'Allow the assistant to take a photo to attach?',
+    buttonPositive: 'OK',
+    buttonNegative: 'Cancel',
+  });
+  return result === PermissionsAndroid.RESULTS.GRANTED;
+}
+
+/**
+ * Capture a photo with the camera. Returns null if the user cancels.
+ * Uses base64 directly from the picker (no file read needed).
+ */
+export async function captureFromCamera(): Promise<Attachment | null> {
+  if (!(await ensureCameraPermission())) {
+    throw new Error('Camera permission was denied.');
+  }
+  const res = await launchCamera({
+    mediaType: 'photo',
+    includeBase64: true,
+    quality: 0.7,
+    saveToPhotos: false,
+  });
+  if (res.didCancel) return null;
+  if (res.errorCode) {
+    throw new Error(res.errorMessage ?? `Camera error: ${res.errorCode}`);
+  }
+  const asset = res.assets?.[0];
+  if (!asset?.base64) return null;
+  return {
+    name: asset.fileName ?? `photo-${Date.now()}.jpg`,
+    mediaType: asset.type ?? 'image/jpeg',
+    base64: asset.base64,
+    size: asset.fileSize ?? null,
+    kind: 'image',
+  };
 }

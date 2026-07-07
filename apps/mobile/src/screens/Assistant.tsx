@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -20,7 +21,7 @@ import { useT } from '../i18n/useT';
 import { getEnabledApiKey } from '../data/apiKeys';
 import { buildSystemPrompt } from '../assistant/systemPrompt';
 import { assistantTools, PROPOSE_PLAN_TOOL } from '../assistant/tools';
-import { pickAttachment, type Attachment } from '../assistant/attachment';
+import { pickAttachment, captureFromCamera, type Attachment } from '../assistant/attachment';
 import { parseActionPlan, type ActionPlan } from '../assistant/actionPlan';
 import { executePlan, summarizeExecution } from '../assistant/executor';
 import ActionPlanCard from '../assistant/ActionPlanCard';
@@ -128,18 +129,26 @@ export default function Assistant(props: AssistantProps) {
   const [planBusy, setPlanBusy] = useState(false);
   const [attachment, setAttachment] = useState<Attachment | null>(null);
 
-  const handleAttach = useCallback(async () => {
-    if (isLoading) return;
+  const addAttachment = useCallback(async (source: () => Promise<Attachment | null>) => {
     try {
-      const att = await pickAttachment();
+      const att = await source();
       if (att) {
         setAttachment(att);
         setError(null);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not attach that file.');
+      setError(e instanceof Error ? e.message : 'Could not add that attachment.');
     }
-  }, [isLoading]);
+  }, []);
+
+  const handleAttach = useCallback(() => {
+    if (isLoading) return;
+    Alert.alert('Add an image or file', undefined, [
+      { text: 'Take Photo', onPress: () => addAttachment(captureFromCamera) },
+      { text: 'Choose File', onPress: () => addAttachment(pickAttachment) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }, [isLoading, addAttachment]);
 
   const togglePlanAction = useCallback((actionId: string) => {
     setPendingPlan((prev) => {
@@ -608,7 +617,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing[6],
+    paddingVertical: spacing[5],
   },
   messageBubble: {
     maxWidth: '85%',

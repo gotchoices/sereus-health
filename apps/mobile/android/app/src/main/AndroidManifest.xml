@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="org.sereus.health">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Assistant camera capture (react-native-image-picker). Camera is optional. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
       android:name=".MainApplication"
