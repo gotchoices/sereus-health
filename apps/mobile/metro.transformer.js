@@ -13,6 +13,11 @@ try {
  *
  * This lets app code do:
  *   import schemaSQL from '../../../../design/specs/domain/schema.qsql';
+ *
+ * NOTE: this is only viable for rare extensions. `.md` is intentionally NOT
+ * handled here — adding it to `sourceExts` makes Metro index every markdown file
+ * under the monorepo (~18k), pegging the packager. The assistant prompt pack is
+ * bundled via build-time codegen instead (scripts/build-assistant-pack.js).
  */
 module.exports.transform = function transform({ src, filename, options }) {
 	if (filename.endsWith('.qsql')) {

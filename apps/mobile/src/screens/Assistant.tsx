@@ -17,6 +17,7 @@ import { chat, type ModelMessage } from '@serfab/ai-models/chat';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { getEnabledApiKey } from '../data/apiKeys';
+import { buildSystemPrompt } from '../assistant/systemPrompt';
 
 type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
 
@@ -41,6 +42,25 @@ const modelCache: CacheStore = {
   get: (key) => AsyncStorage.getItem(key),
   set: (key, value) => AsyncStorage.setItem(key, value),
 };
+
+/** Per-turn session context for the system prompt (locale/timezone are best-effort). */
+function sessionContext() {
+  let locale: string | undefined;
+  let timeZone: string | undefined;
+  try {
+    const resolved = Intl.DateTimeFormat().resolvedOptions();
+    locale = resolved.locale;
+    timeZone = resolved.timeZone;
+  } catch {
+    // Intl may be unavailable/partial on some Hermes builds — omit gracefully.
+  }
+  return {
+    screen: 'Assistant',
+    nowUtc: new Date().toISOString(),
+    locale,
+    timeZone,
+  };
+}
 
 export default function Assistant(props: AssistantProps) {
   const theme = useTheme();
@@ -118,6 +138,7 @@ export default function Assistant(props: AssistantProps) {
       const result = await chat({
         ...cred,
         modelId: resolved.id,
+        system: buildSystemPrompt(sessionContext()),
         messages: apiMessages,
       });
 

@@ -11,6 +11,8 @@
     "build:android:apk": "cd android && bundle exec fastlane build_apk",
     "build:android:aab": "cd android && bundle exec fastlane build_app_bundle",
     "lint": "eslint .",
+    "pack:build": "node scripts/build-assistant-pack.js",
+    "prestart": "node scripts/build-assistant-pack.js",
     "start": "react-native start",
     "test": "jest"
   },
