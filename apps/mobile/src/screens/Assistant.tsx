@@ -18,6 +18,7 @@ import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { getEnabledApiKey } from '../data/apiKeys';
 import { buildSystemPrompt } from '../assistant/systemPrompt';
+import { assistantTools } from '../assistant/tools';
 
 type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
 
@@ -119,6 +120,7 @@ export default function Assistant(props: AssistantProps) {
       // choice if set, otherwise auto-pick a valid default (@serfab/ai-models).
       const resolved = await resolveModel(cred, {
         model: entry.model || undefined,
+        require: ['tools'], // the assistant relies on tool-calling (db_query)
         cache: modelCache,
       });
       if (!resolved.id) {
@@ -140,6 +142,9 @@ export default function Assistant(props: AssistantProps) {
         modelId: resolved.id,
         system: buildSystemPrompt(sessionContext()),
         messages: apiMessages,
+        tools: assistantTools,
+        // Allow: model → db_query → tool result → final answer (a few rounds).
+        maxSteps: 6,
       });
 
       // Add assistant response

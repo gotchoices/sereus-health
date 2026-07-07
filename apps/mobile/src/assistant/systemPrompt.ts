@@ -35,13 +35,16 @@ export function buildSystemPrompt(ctx: AssistantContext = {}): string {
     section(
       'Current capabilities',
       [
-        'You can answer questions, explain how to use the app, and discuss the',
-        'schema, catalog, taxonomy, and logging concepts above.',
-        'You CANNOT yet execute actions, run SQL, propose action plans, or modify',
-        'data — that machinery is not wired yet. Never claim to have created,',
-        'changed, imported, or queried anything. If the user asks you to do such a',
-        'thing, explain the steps they can take in the app instead (name the',
-        'screen and the minimal steps).',
+        'You can answer questions, explain how to use the app, and inspect the',
+        "user's data by running read-only SQL via the db_query tool (SELECT/WITH",
+        'only), using the SCHEMA_QSQL above for table and column names. Query the',
+        'database whenever it helps answer accurately (e.g. counts, existing',
+        'catalog entries), but do not run queries gratuitously.',
+        'You CANNOT yet create, modify, import, or delete data, or execute action',
+        'plans — that machinery is not wired yet. Never claim to have changed,',
+        'created, or imported anything. If asked to make changes, explain the',
+        'steps the user can take in the app instead (name the screen and the',
+        'minimal steps).',
       ].join(' '),
     ),
   );
