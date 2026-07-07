@@ -12,13 +12,15 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { resolveModel, type CacheStore } from '@serfab/ai-models';
+import { Buffer } from 'buffer';
+import { resolveModel, type CacheStore, type CapabilityKey } from '@serfab/ai-models';
 import { chat, type ModelMessage } from '@serfab/ai-models/chat';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { getEnabledApiKey } from '../data/apiKeys';
 import { buildSystemPrompt } from '../assistant/systemPrompt';
 import { assistantTools, PROPOSE_PLAN_TOOL } from '../assistant/tools';
+import { pickAttachment, type Attachment } from '../assistant/attachment';
 import { parseActionPlan, type ActionPlan } from '../assistant/actionPlan';
 import { executePlan, summarizeExecution } from '../assistant/executor';
 import ActionPlanCard from '../assistant/ActionPlanCard';
@@ -29,6 +31,8 @@ interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  /** Name of a file attached to this (user) message, shown as a chip. */
+  attachmentName?: string;
 }
 
 interface AssistantProps {
@@ -86,6 +90,20 @@ function planToolResult(toolCallId: string, value: Record<string, unknown>): Mod
   };
 }
 
+/** Build the user turn's ModelMessage, multimodal when an attachment is present. */
+function userModelMessage(text: string, att: Attachment | null): ModelMessage {
+  if (!att) return { role: 'user', content: text };
+  // Pass raw bytes, not a base64/data-URI string. The AI SDK treats any string as
+  // a URL and tries to fetch it — and RN's fetch can't handle data: URLs, so it
+  // fails with AI_DownloadError. A Uint8Array (Buffer) is used directly.
+  const bytes = Buffer.from(att.base64, 'base64');
+  const media =
+    att.kind === 'image'
+      ? { type: 'image' as const, image: bytes, mediaType: att.mediaType }
+      : { type: 'file' as const, data: bytes, mediaType: att.mediaType, filename: att.name };
+  return { role: 'user', content: text ? [{ type: 'text' as const, text }, media] : [media] };
+}
+
 export default function Assistant(props: AssistantProps) {
   const theme = useTheme();
   const t = useT();
@@ -108,6 +126,20 @@ export default function Assistant(props: AssistantProps) {
   } | null>(null);
 
   const [planBusy, setPlanBusy] = useState(false);
+  const [attachment, setAttachment] = useState<Attachment | null>(null);
+
+  const handleAttach = useCallback(async () => {
+    if (isLoading) return;
+    try {
+      const att = await pickAttachment();
+      if (att) {
+        setAttachment(att);
+        setError(null);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not attach that file.');
+    }
+  }, [isLoading]);
 
   const togglePlanAction = useCallback((actionId: string) => {
     setPendingPlan((prev) => {
@@ -149,6 +181,7 @@ export default function Assistant(props: AssistantProps) {
   }, [pendingPlan, planBusy]);
 
   const isConfigured = props.isConfigured ?? false;
+  const canSend = (!!inputText.trim() || !!attachment) && !isLoading;
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -167,9 +200,11 @@ export default function Assistant(props: AssistantProps) {
 
   const handleSend = useCallback(async () => {
     const text = inputText.trim();
-    if (!text || isLoading) return;
+    const att = attachment;
+    if ((!text && !att) || isLoading) return;
 
     setInputText('');
+    setAttachment(null);
     setError(null);
     setNotice(null);
 
@@ -188,13 +223,14 @@ export default function Assistant(props: AssistantProps) {
       );
       setPendingPlan(null);
     }
-    history.push({ role: 'user', content: text });
+    history.push(userModelMessage(text, att));
 
     // Add user message (display)
     const userMessage: Message = {
       id: `msg-${Date.now()}`,
       role: 'user',
       content: text,
+      attachmentName: att?.name,
     };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
@@ -209,9 +245,13 @@ export default function Assistant(props: AssistantProps) {
 
       // Resolve a model this key can actually call: honor the user's explicit
       // choice if set, otherwise auto-pick a valid default (@serfab/ai-models).
+      // The assistant relies on tool-calling; an attachment additionally needs a
+      // vision- or pdf-capable model.
+      const require: CapabilityKey[] = ['tools'];
+      if (att) require.push(att.kind === 'image' ? 'vision' : 'pdf');
       const resolved = await resolveModel(cred, {
         model: entry.model || undefined,
-        require: ['tools'], // the assistant relies on tool-calling (db_query)
+        require,
         cache: modelCache,
       });
       if (!resolved.id) {
@@ -274,7 +314,7 @@ export default function Assistant(props: AssistantProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [inputText, isLoading, pendingPlan]);
+  }, [inputText, isLoading, pendingPlan, attachment]);
 
   const dismissPlan = useCallback(() => {
     if (pendingPlan) {
@@ -311,14 +351,24 @@ export default function Assistant(props: AssistantProps) {
           },
         ]}
       >
-        <Text
-          style={[
-            styles.messageText,
-            { color: isUser ? '#fff' : theme.textPrimary },
-          ]}
-        >
-          {message.content}
-        </Text>
+        {message.attachmentName && (
+          <View style={styles.attachmentChipInline}>
+            <Ionicons name="document-attach" size={14} color={isUser ? '#fff' : theme.textSecondary} />
+            <Text style={{ color: isUser ? '#fff' : theme.textSecondary, marginLeft: 4, fontSize: 12 }}>
+              {message.attachmentName}
+            </Text>
+          </View>
+        )}
+        {!!message.content && (
+          <Text
+            style={[
+              styles.messageText,
+              { color: isUser ? '#fff' : theme.textPrimary },
+            ]}
+          >
+            {message.content}
+          </Text>
+        )}
       </View>
     );
   };
@@ -413,23 +463,43 @@ export default function Assistant(props: AssistantProps) {
           </ScrollView>
 
           {/* Prompt bar */}
-          <View style={[styles.promptBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
-            <TextInput
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder={t('assistant.inputPlaceholder')}
-              placeholderTextColor={theme.textSecondary}
-              style={[styles.input, { color: theme.textPrimary, backgroundColor: theme.background }]}
-              multiline
-              editable={!isLoading}
-            />
-            <TouchableOpacity
-              style={[styles.sendButton, { backgroundColor: inputText.trim() && !isLoading ? theme.accentPrimary : theme.border }]}
-              onPress={handleSend}
-              disabled={!inputText.trim() || isLoading}
-            >
-              <Ionicons name="send" size={18} color={inputText.trim() && !isLoading ? '#fff' : theme.textSecondary} />
-            </TouchableOpacity>
+          <View style={[styles.promptBarWrap, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
+            {attachment && (
+              <View style={[styles.attachmentPending, { backgroundColor: theme.background, borderColor: theme.border }]}>
+                <Ionicons
+                  name={attachment.kind === 'image' ? 'image' : 'document-text'}
+                  size={16}
+                  color={theme.accentPrimary}
+                />
+                <Text style={{ color: theme.textPrimary, marginLeft: spacing[1], flex: 1 }} numberOfLines={1}>
+                  {attachment.name}
+                </Text>
+                <TouchableOpacity onPress={() => setAttachment(null)} hitSlop={HIT_SLOP}>
+                  <Ionicons name="close-circle" size={18} color={theme.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            )}
+            <View style={styles.promptBarRow}>
+              <TouchableOpacity onPress={handleAttach} disabled={isLoading} style={styles.attachButton} hitSlop={HIT_SLOP}>
+                <Ionicons name="add-circle-outline" size={26} color={isLoading ? theme.border : theme.textSecondary} />
+              </TouchableOpacity>
+              <TextInput
+                value={inputText}
+                onChangeText={setInputText}
+                placeholder={t('assistant.inputPlaceholder')}
+                placeholderTextColor={theme.textSecondary}
+                style={[styles.input, { color: theme.textPrimary, backgroundColor: theme.background }]}
+                multiline
+                editable={!isLoading}
+              />
+              <TouchableOpacity
+                style={[styles.sendButton, { backgroundColor: canSend ? theme.accentPrimary : theme.border }]}
+                onPress={handleSend}
+                disabled={!canSend}
+              >
+                <Ionicons name="send" size={18} color={canSend ? '#fff' : theme.textSecondary} />
+              </TouchableOpacity>
+            </View>
           </View>
         </KeyboardAvoidingView>
       )}
@@ -574,12 +644,34 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
   },
-  promptBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+  promptBarWrap: {
     padding: spacing[2],
     gap: spacing[2],
     borderTopWidth: 1,
+  },
+  promptBarRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing[2],
+  },
+  attachButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attachmentPending: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing[1],
+    paddingHorizontal: spacing[2],
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  attachmentChipInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing[1],
   },
   input: {
     flex: 1,
