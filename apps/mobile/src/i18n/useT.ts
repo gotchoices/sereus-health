@@ -179,6 +179,12 @@ const en: Dict = {
   'editBundle.searchItems': 'Search items…',
   'editBundle.alreadyInBundle': 'in bundle',
   'editBundle.addSelected': 'Add {count} Selected Items',
+  'editBundle.addItemPlaceholder': 'Add or create an item…',
+  'editBundle.browseAll': 'Browse all',
+  'editBundle.newItem': 'New item',
+  'editBundle.newItemName': 'Item name…',
+  'editBundle.newItemCategory': 'Category…',
+  'editBundle.addItem': 'Add',
 
   'graphs.title': 'Graphs',
   'graphs.emptyTitle': 'No graphs yet',

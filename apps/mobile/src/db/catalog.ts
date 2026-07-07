@@ -196,7 +196,7 @@ export async function getItemDetail(itemId: string): Promise<{
   const qStmt = await db.prepare(`
     SELECT id, name, min_value as minValue, max_value as maxValue, units
     FROM item_quantifiers
-    WHERE item_id = ?
+    WHERE item_id = ? AND retired_at IS NULL
     ORDER BY name ASC
   `);
   const qs: any[] = [];
@@ -232,6 +232,26 @@ export async function upsertItem(input: {
   const categoryId = await getOrCreateCategory(db, input.categoryName, typeId);
   const itemId = input.id ?? newUuid();
 
+  // Snapshot existing quantifier ids BEFORE the transaction. Quereus throws
+  // "Path is invalid due to mutation of the tree" on a scanning DELETE
+  // (`WHERE item_id = ?`) that removes rows, so we point-delete each by PK
+  // instead (see updateLogEntry in db/logEntries.ts for the same pattern).
+  const prevQuantIds: string[] = [];
+  {
+    const s = await db.prepare('SELECT id FROM item_quantifiers WHERE item_id = ?');
+    for await (const r of s.all([itemId])) prevQuantIds.push(r.id as string);
+    await s.finalize();
+  }
+  // Which existing quantifiers are referenced by log history? Those can't be
+  // hard-deleted (fk_log_quant_values_quant) — they're retired instead.
+  const referencedQuantIds = new Set<string>();
+  for (const qid of prevQuantIds) {
+    const s = await db.prepare('SELECT 1 AS x FROM log_entry_quantifier_values WHERE quantifier_id = ? LIMIT 1');
+    const row = await s.get([qid]);
+    await s.finalize();
+    if (row) referencedQuantIds.add(qid);
+  }
+
   await db.exec('BEGIN');
   try {
     const existsStmt = await db.prepare('SELECT id FROM items WHERE id = ?');
@@ -254,17 +274,43 @@ export async function upsertItem(input: {
       ]);
     }
 
-    // Quantifiers: replace-all strategy (Phase 1)
-    await db.exec('DELETE FROM item_quantifiers WHERE item_id = ?', [itemId]);
+    // Quantifiers: MERGE by identity rather than replace-all. Deleting a
+    // quantifier that a log entry references violates fk_log_quant_values_quant,
+    // so we update existing rows in place (id preserved → history stays valid),
+    // insert new ones, and for removed ones retire (if referenced) or delete.
+    const prevQuantSet = new Set(prevQuantIds);
+    const keepIds = new Set<string>();
     for (const q of input.quantifiers) {
-      await db.exec('INSERT INTO item_quantifiers (id, item_id, name, min_value, max_value, units) VALUES (?, ?, ?, ?, ?, ?)', [
-        q.id ?? newUuid(),
-        itemId,
-        q.name,
-        q.minValue ?? null,
-        q.maxValue ?? null,
-        q.units ?? null,
-      ]);
+      if (q.id && prevQuantSet.has(q.id)) {
+        await db.exec('UPDATE item_quantifiers SET name = ?, min_value = ?, max_value = ?, units = ?, retired_at = NULL WHERE id = ?', [
+          q.name,
+          q.minValue ?? null,
+          q.maxValue ?? null,
+          q.units ?? null,
+          q.id,
+        ]);
+        keepIds.add(q.id);
+      } else {
+        const qid = q.id ?? newUuid();
+        await db.exec('INSERT INTO item_quantifiers (id, item_id, name, min_value, max_value, units) VALUES (?, ?, ?, ?, ?, ?)', [
+          qid,
+          itemId,
+          q.name,
+          q.minValue ?? null,
+          q.maxValue ?? null,
+          q.units ?? null,
+        ]);
+        keepIds.add(qid);
+      }
+    }
+    for (const qid of prevQuantIds) {
+      if (keepIds.has(qid)) continue;
+      if (referencedQuantIds.has(qid)) {
+        // Referenced by history — retire (FK-safe) instead of hard delete.
+        await db.exec('UPDATE item_quantifiers SET retired_at = ? WHERE id = ?', [new Date().toISOString(), qid]);
+      } else {
+        await db.exec('DELETE FROM item_quantifiers WHERE id = ?', [qid]);
+      }
     }
 
     await db.exec('COMMIT');
@@ -469,6 +515,65 @@ export async function importCanonicalCatalog(
     throw e;
   }
   return res;
+}
+
+/**
+ * Create or update a bundle and its item members (members are replaced).
+ * Members are replaced via point-delete (a scanning DELETE that removes rows
+ * trips Quereus's "Path is invalid due to mutation of the tree").
+ */
+export async function upsertBundle(input: {
+  id?: string;
+  name: string;
+  typeName: string;
+  members: Array<{ itemId: string; displayOrder?: number }>;
+}): Promise<string> {
+  const db = await getDatabase();
+  const typeId = await getOrCreateType(db, input.typeName);
+  const bundleId = input.id ?? newUuid();
+
+  // Snapshot existing member row ids BEFORE the transaction (drain the cursor).
+  const prevMemberIds: string[] = [];
+  {
+    const s = await db.prepare('SELECT id FROM bundle_members WHERE bundle_id = ?');
+    for await (const r of s.all([bundleId])) prevMemberIds.push(r.id as string);
+    await s.finalize();
+  }
+
+  await db.exec('BEGIN');
+  try {
+    const existsStmt = await db.prepare('SELECT id FROM bundles WHERE id = ?');
+    const exists = await existsStmt.get([bundleId]);
+    await existsStmt.finalize();
+    if (exists) {
+      await db.exec('UPDATE bundles SET name = ?, type_id = ? WHERE id = ?', [input.name, typeId, bundleId]);
+    } else {
+      await db.exec('INSERT INTO bundles (id, type_id, name) VALUES (?, ?, ?)', [bundleId, typeId, input.name]);
+    }
+
+    for (const mid of prevMemberIds) {
+      await db.exec('DELETE FROM bundle_members WHERE id = ?', [mid]);
+    }
+    let order = 0;
+    for (const m of input.members) {
+      // Item members set item_id (member_bundle_id stays null) per the
+      // one_member_type CHECK constraint.
+      await db.exec('INSERT INTO bundle_members (id, bundle_id, item_id, member_bundle_id, display_order) VALUES (?, ?, ?, ?, ?)', [
+        newUuid(),
+        bundleId,
+        m.itemId,
+        null,
+        m.displayOrder ?? order,
+      ]);
+      order++;
+    }
+
+    await db.exec('COMMIT');
+    return bundleId;
+  } catch (e) {
+    await db.exec('ROLLBACK');
+    throw e;
+  }
 }
 
 /** Member item ids of a bundle, in display order (for expansion at log-time). */

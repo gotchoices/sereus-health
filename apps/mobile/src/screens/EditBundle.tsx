@@ -14,6 +14,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { getEditBundle, saveBundle, type AvailableItem, type BundleEdit } from '../data/editBundle';
+import { createInlineItem, getCategoriesForTypeName } from '../data/editEntry';
+import ComboField from '../components/ComboField';
 import type { CatalogType } from '../data/configureCatalog';
 
 const TYPES: CatalogType[] = ['Activity', 'Condition', 'Outcome'];
@@ -32,6 +34,10 @@ export default function EditBundle(props: { bundleId?: string; type?: CatalogTyp
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerFilter, setPickerFilter] = useState('');
   const [pending, setPending] = useState<Record<string, boolean>>({});
+
+  // Inline add / create (mirrors EditEntry's item ComboField).
+  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
+  const [draft, setDraft] = useState<{ name: string; category: string } | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -63,7 +69,23 @@ export default function EditBundle(props: { bundleId?: string; type?: CatalogTyp
     setBundle((b) => ({ ...b, items: [] }));
     setPending({});
     setPickerFilter('');
+    setDraft(null);
   }, [bundle.type, editing]);
+
+  // Categories for the current Type — for the inline-create draft's category field.
+  useEffect(() => {
+    let alive = true;
+    getCategoriesForTypeName(String(bundle.type))
+      .then((cs) => {
+        if (alive) setCategories(cs);
+      })
+      .catch(() => {
+        /* non-fatal */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [bundle.type]);
 
   const title = editing ? t('editBundle.editTitle') : t('editBundle.addTitle');
 
@@ -94,6 +116,38 @@ export default function EditBundle(props: { bundleId?: string; type?: CatalogTyp
   }, [filteredAvailable]);
 
   const selectedCount = useMemo(() => Object.values(pending).filter(Boolean).length, [pending]);
+
+  // Options for the inline add ComboField — items of this Type not already members.
+  const addOptions = useMemo(
+    () =>
+      available
+        .filter((it) => it.type === bundle.type && !memberIds.has(it.id))
+        .map((it) => ({ id: it.id, label: it.name, sublabel: it.category })),
+    [available, bundle.type, memberIds],
+  );
+
+  const addMember = (item: { id: string; name: string; category: string }) => {
+    if (memberIds.has(item.id)) return;
+    setBundle((b) => ({
+      ...b,
+      items: [...b.items, { itemId: item.id, itemName: item.name, categoryName: item.category, displayOrder: b.items.length }],
+    }));
+  };
+
+  const confirmDraft = async () => {
+    if (!draft) return;
+    const name = draft.name.trim();
+    const category = draft.category.trim();
+    if (!name || !category) return;
+    try {
+      const created = await createInlineItem({ typeName: String(bundle.type), categoryName: category, name });
+      setAvailable((prev) => [...prev, { id: created.id, name, category, type: bundle.type }]);
+      addMember({ id: created.id, name, category });
+      setDraft(null);
+    } catch {
+      setError(t('editBundle.saveError'));
+    }
+  };
 
   const openPicker = () => {
     const next: Record<string, boolean> = {};
@@ -155,7 +209,7 @@ export default function EditBundle(props: { bundleId?: string; type?: CatalogTyp
           <Text style={{ color: theme.textSecondary }}>{t('common.loading')}</Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={{ padding: spacing[3], gap: spacing[3] }}>
+        <ScrollView contentContainerStyle={{ padding: spacing[3], gap: spacing[3] }} keyboardShouldPersistTaps="handled">
           {error ? (
             <View style={[styles.banner, { backgroundColor: theme.bannerError }]}>
               <Text style={{ color: theme.textPrimary }}>{error}</Text>
@@ -287,6 +341,53 @@ export default function EditBundle(props: { bundleId?: string; type?: CatalogTyp
               </View>
             )}
           </View>
+
+          {/* Inline add / create — search existing items or create one on the fly
+              (mirrors EditEntry). The section-header (+) still opens the batch picker. */}
+          <View style={{ gap: spacing[2] }}>
+            <ComboField
+              placeholder={t('editBundle.addItemPlaceholder')}
+              options={addOptions}
+              onSelect={(opt) => {
+                const it = available.find((a) => a.id === opt.id);
+                if (it) addMember({ id: it.id, name: it.name, category: it.category });
+              }}
+              onCreate={(text) => setDraft({ name: text, category: '' })}
+            />
+
+            {draft ? (
+              <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border, gap: spacing[2] }]}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>{t('editBundle.newItem')}</Text>
+                <TextInput
+                  value={draft.name}
+                  onChangeText={(v) => setDraft((d) => (d ? { ...d, name: v } : d))}
+                  placeholder={t('editBundle.newItemName')}
+                  placeholderTextColor={theme.textSecondary}
+                  style={[styles.input, { borderColor: theme.border, color: theme.textPrimary }]}
+                />
+                <ComboField
+                  placeholder={t('editBundle.newItemCategory')}
+                  options={categories.map((c) => ({ id: c.id, label: c.name }))}
+                  value={draft.category}
+                  onChangeText={(txt) => setDraft((d) => (d ? { ...d, category: txt } : d))}
+                  onSelect={(opt) => setDraft((d) => (d ? { ...d, category: opt.label } : d))}
+                  onCreate={(txt) => setDraft((d) => (d ? { ...d, category: txt } : d))}
+                />
+                <View style={{ flexDirection: 'row', gap: spacing[2], justifyContent: 'flex-end' }}>
+                  <TouchableOpacity onPress={() => setDraft(null)} style={styles.draftBtn}>
+                    <Text style={{ color: theme.textSecondary, fontWeight: '600' }}>{t('common.cancel')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={confirmDraft}
+                    style={[styles.draftBtn, { backgroundColor: theme.accentPrimary, opacity: draft.name.trim() && draft.category.trim() ? 1 : 0.5 }]}
+                    disabled={!draft.name.trim() || !draft.category.trim()}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: '600' }}>{t('editBundle.addItem')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : null}
+          </View>
         </ScrollView>
       )}
 
@@ -386,6 +487,7 @@ const styles = StyleSheet.create({
   typeRow: { flexDirection: 'row', gap: spacing[2] },
   typeChip: { paddingHorizontal: spacing[2], paddingVertical: spacing[1], borderRadius: 999, borderWidth: 1 },
   card: { borderWidth: 1, borderRadius: 12, padding: spacing[3] },
+  draftBtn: { paddingVertical: spacing[2], paddingHorizontal: spacing[3], borderRadius: 8 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing[2] },
   sectionTitle: { ...typography.body, fontWeight: '600' },
   memberRow: {

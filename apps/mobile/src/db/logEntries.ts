@@ -83,6 +83,36 @@ export async function createLogEntry(input: CreateLogEntryInput): Promise<string
 export async function updateLogEntry(entryId: string, input: CreateLogEntryInput): Promise<void> {
   const db = await getDatabase();
 
+  // Snapshot the current child rows BEFORE any mutation (drain the cursors fully).
+  // Quereus throws "Path is invalid due to mutation of the tree" if a table is
+  // deleted-from via a scanning DELETE (`WHERE entry_id = ?`) that removes rows —
+  // the delete mutates the b-tree the scan is walking. We avoid that two ways:
+  //   1. If the child set is unchanged (the common case — editing only the time
+  //      or comment), skip child mutation entirely and just update log_entries.
+  //   2. When children DO change, delete each row by full primary key (a point
+  //      delete, not a scan) after reading the keys into memory.
+  const prevItems: Array<{ itemId: string; sourceBundleId: string | null }> = [];
+  for await (const r of db.eval('SELECT item_id, source_bundle_id FROM log_entry_items WHERE entry_id = ?', [entryId])) {
+    prevItems.push({ itemId: r.item_id as string, sourceBundleId: (r.source_bundle_id as string) ?? null });
+  }
+  const prevQuants: Array<{ itemId: string; quantifierId: string; value: number }> = [];
+  for await (const r of db.eval('SELECT item_id, quantifier_id, value FROM log_entry_quantifier_values WHERE entry_id = ?', [entryId])) {
+    prevQuants.push({ itemId: r.item_id as string, quantifierId: r.quantifier_id as string, value: r.value as number });
+  }
+
+  // Build normalized signatures to decide whether the children actually changed.
+  const sigItems = (rows: Array<{ itemId: string; sourceBundleId: string | null }>) =>
+    rows.map((x) => `${x.itemId}|${x.sourceBundleId ?? ''}`).sort().join(',');
+  const sigQuants = (rows: Array<{ itemId: string; quantifierId: string; value: number }>) =>
+    rows.map((x) => `${x.itemId}|${x.quantifierId}|${x.value}`).sort().join(',');
+
+  const nextItems = input.items.map((it) => ({ itemId: it.itemId, sourceBundleId: it.sourceBundleId }));
+  const nextQuants = input.items.flatMap((it) =>
+    it.quantifiers.map((q) => ({ itemId: it.itemId, quantifierId: q.quantifierId, value: q.value })),
+  );
+  const childrenChanged =
+    sigItems(prevItems) !== sigItems(nextItems) || sigQuants(prevQuants) !== sigQuants(nextQuants);
+
   await db.exec('BEGIN');
   try {
     await db.exec('UPDATE log_entries SET timestamp = ?, type_id = ?, comment = ?, event_utc_offset_minutes = ? WHERE id = ?', [
@@ -93,21 +123,32 @@ export async function updateLogEntry(entryId: string, input: CreateLogEntryInput
       entryId,
     ]);
 
-    await db.exec('DELETE FROM log_entry_items WHERE entry_id = ?', [entryId]);
-    await db.exec('DELETE FROM log_entry_quantifier_values WHERE entry_id = ?', [entryId]);
+    if (childrenChanged) {
+      // Point-delete existing children by full PK (never a scanning DELETE).
+      for (const q of prevQuants) {
+        await db.exec('DELETE FROM log_entry_quantifier_values WHERE entry_id = ? AND item_id = ? AND quantifier_id = ?', [
+          entryId,
+          q.itemId,
+          q.quantifierId,
+        ]);
+      }
+      for (const it of prevItems) {
+        await db.exec('DELETE FROM log_entry_items WHERE entry_id = ? AND item_id = ?', [entryId, it.itemId]);
+      }
 
-    for (const item of input.items) {
-      await db.exec('INSERT INTO log_entry_items (entry_id, item_id, source_bundle_id) VALUES (?, ?, ?)', [
-        entryId,
-        item.itemId,
-        item.sourceBundleId,
-      ]);
+      for (const item of input.items) {
+        await db.exec('INSERT INTO log_entry_items (entry_id, item_id, source_bundle_id) VALUES (?, ?, ?)', [
+          entryId,
+          item.itemId,
+          item.sourceBundleId,
+        ]);
 
-      for (const q of item.quantifiers) {
-        await db.exec(
-          'INSERT INTO log_entry_quantifier_values (entry_id, item_id, quantifier_id, value) VALUES (?, ?, ?, ?)',
-          [entryId, item.itemId, q.quantifierId, q.value]
-        );
+        for (const q of item.quantifiers) {
+          await db.exec(
+            'INSERT INTO log_entry_quantifier_values (entry_id, item_id, quantifier_id, value) VALUES (?, ?, ?, ?)',
+            [entryId, item.itemId, q.quantifierId, q.value]
+          );
+        }
       }
     }
 
@@ -120,7 +161,38 @@ export async function updateLogEntry(entryId: string, input: CreateLogEntryInput
 
 export async function deleteLogEntry(entryId: string): Promise<void> {
   const db = await getDatabase();
-  await db.exec('DELETE FROM log_entries WHERE id = ?', [entryId]);
+
+  // Delete children first (their FKs reference log_entries with no ON DELETE
+  // CASCADE, so deleting the parent alone would orphan/violate). Snapshot the
+  // child keys first, then point-delete by full PK — never a scanning DELETE,
+  // which trips Quereus's "Path is invalid due to mutation of the tree".
+  const items: string[] = [];
+  for await (const r of db.eval('SELECT item_id FROM log_entry_items WHERE entry_id = ?', [entryId])) {
+    items.push(r.item_id as string);
+  }
+  const quants: Array<{ itemId: string; quantifierId: string }> = [];
+  for await (const r of db.eval('SELECT item_id, quantifier_id FROM log_entry_quantifier_values WHERE entry_id = ?', [entryId])) {
+    quants.push({ itemId: r.item_id as string, quantifierId: r.quantifier_id as string });
+  }
+
+  await db.exec('BEGIN');
+  try {
+    for (const q of quants) {
+      await db.exec('DELETE FROM log_entry_quantifier_values WHERE entry_id = ? AND item_id = ? AND quantifier_id = ?', [
+        entryId,
+        q.itemId,
+        q.quantifierId,
+      ]);
+    }
+    for (const itemId of items) {
+      await db.exec('DELETE FROM log_entry_items WHERE entry_id = ? AND item_id = ?', [entryId, itemId]);
+    }
+    await db.exec('DELETE FROM log_entries WHERE id = ?', [entryId]);
+    await db.exec('COMMIT');
+  } catch (e) {
+    await db.exec('ROLLBACK');
+    throw e;
+  }
 }
 
 export async function getAllLogEntries(): Promise<LogEntry[]> {

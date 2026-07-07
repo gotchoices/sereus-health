@@ -1,4 +1,7 @@
 import { getVariant } from '../mock';
+import { USE_QUEREUS } from '../db/config';
+import { ensureDatabaseInitialized } from '../db/init';
+import { upsertBundle } from '../db/catalog';
 import { getConfigureCatalog, type CatalogType } from './configureCatalog';
 
 export type BundleMemberEdit = {
@@ -71,8 +74,20 @@ export async function getEditBundle(params: { bundleId?: string; type?: CatalogT
 }
 
 export async function saveBundle(bundle: BundleEdit): Promise<{ success: true; id: string }> {
-  // Stub: replace with persistence later.
-  return { success: true, id: bundle.id ?? `bundle-${Date.now()}` };
+  if (!USE_QUEREUS) {
+    return { success: true, id: bundle.id ?? `bundle-mock-${Date.now()}` };
+  }
+  await ensureDatabaseInitialized();
+  const id = await upsertBundle({
+    id: bundle.id,
+    name: bundle.name.trim(),
+    typeName: String(bundle.type),
+    members: bundle.items
+      .slice()
+      .sort((a, b) => a.displayOrder - b.displayOrder)
+      .map((m, idx) => ({ itemId: m.itemId, displayOrder: idx })),
+  });
+  return { success: true, id };
 }
 
 

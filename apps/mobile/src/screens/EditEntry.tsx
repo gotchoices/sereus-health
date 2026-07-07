@@ -195,8 +195,25 @@ export default function EditEntry(props: { mode: EditEntryMode; entryId?: string
           items.push({ itemId: a.id, sourceBundleId: null, quantifiers });
         }
       }
-      const seen = new Set<string>();
-      const deduped = items.filter((it) => (seen.has(it.itemId) ? false : (seen.add(it.itemId), true)));
+      // Dedup by itemId, MERGING rather than keeping-first: an item can appear
+      // both via a bundle expansion (no quantifiers) and as a direct add (with
+      // quantifier values). Keep whichever occurrence carries quantifiers, and
+      // prefer a direct add (null bundle) for provenance — so values aren't lost
+      // just because the bundle happened to be listed first.
+      const byId = new Map<string, SaveItem>();
+      for (const it of items) {
+        const prev = byId.get(it.itemId);
+        if (!prev) {
+          byId.set(it.itemId, it);
+          continue;
+        }
+        byId.set(it.itemId, {
+          itemId: it.itemId,
+          sourceBundleId: prev.sourceBundleId === null || it.sourceBundleId === null ? null : prev.sourceBundleId,
+          quantifiers: prev.quantifiers.length ? prev.quantifiers : it.quantifiers,
+        });
+      }
+      const deduped = Array.from(byId.values());
       const payload = { timestamp, typeId, comment: comment || null, items: deduped };
       if (props.mode === 'edit' && props.entryId) await track(updateLogEntry(props.entryId, payload));
       else await track(createLogEntry(payload));

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
-  FlatList,
   Modal,
   ScrollView,
   StyleSheet,
@@ -14,6 +13,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { getEditItem, saveItem, type CategoryOption, type ItemEdit, type QuantifierEdit } from '../data/editItem';
+import ComboField from '../components/ComboField';
 import type { CatalogType } from '../data/configureCatalog';
 
 const TYPES: CatalogType[] = ['Activity', 'Condition', 'Outcome'];
@@ -37,11 +37,6 @@ export default function EditItem(props: { itemId?: string; type?: CatalogType; o
   const [categories, setCategories] = useState<CategoryOption[]>([]);
 
   // Modals
-  const [categoryModal, setCategoryModal] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [createCategoryModal, setCreateCategoryModal] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
-
   const [quantModal, setQuantModal] = useState(false);
   const [editingQuantIndex, setEditingQuantIndex] = useState<number | null>(null);
   const [qName, setQName] = useState('');
@@ -103,12 +98,6 @@ export default function EditItem(props: { itemId?: string; type?: CatalogType; o
     if (!item.category.trim()) return false;
     return true;
   }, [item.category, item.name]);
-
-  const filteredCategories = useMemo(() => {
-    const q = categoryFilter.trim().toLowerCase();
-    if (!q) return categories;
-    return categories.filter((c) => c.name.toLowerCase().includes(q));
-  }, [categories, categoryFilter]);
 
   const openQuantifierEditor = (idx: number | null) => {
     setEditingQuantIndex(idx);
@@ -181,7 +170,7 @@ export default function EditItem(props: { itemId?: string; type?: CatalogType; o
           <Text style={{ color: theme.textSecondary }}>{t('common.loading')}</Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={{ padding: spacing[3], gap: spacing[3] }}>
+        <ScrollView contentContainerStyle={{ padding: spacing[3], gap: spacing[3] }} keyboardShouldPersistTaps="handled">
           {error ? (
             <View style={[styles.banner, { backgroundColor: theme.bannerError }]}>
               <Text style={{ color: theme.textPrimary }}>{error}</Text>
@@ -243,19 +232,17 @@ export default function EditItem(props: { itemId?: string; type?: CatalogType; o
             </View>
           </View>
 
-          {/* Category */}
+          {/* Category — inline select-or-create (consistent with EditEntry / EditBundle) */}
           <View>
             <Text style={[styles.label, { color: theme.textSecondary }]}>{t('editItem.categoryLabel')}</Text>
-            <TouchableOpacity
-              onPress={() => setCategoryModal(true)}
-              style={[styles.selector, { backgroundColor: theme.surface, borderColor: theme.border }]}
-              activeOpacity={0.85}
-            >
-              <Text style={[styles.selectorText, { color: item.category ? theme.textPrimary : theme.textSecondary }]}>
-                {item.category ? item.category : t('editItem.selectCategory')}
-              </Text>
-              <Ionicons name="chevron-down" size={18} color={theme.textSecondary} />
-            </TouchableOpacity>
+            <ComboField
+              placeholder={t('editItem.selectCategory')}
+              options={categories.map((c) => ({ id: c.id, label: c.name }))}
+              value={item.category}
+              onChangeText={(txt) => setItem((p) => ({ ...p, category: txt }))}
+              onSelect={(opt) => setItem((p) => ({ ...p, category: opt.label }))}
+              onCreate={(txt) => setItem((p) => ({ ...p, category: txt }))}
+            />
           </View>
 
           {/* Quantifiers */}
@@ -308,95 +295,6 @@ export default function EditItem(props: { itemId?: string; type?: CatalogType; o
           </View>
         </ScrollView>
       )}
-
-      {/* Category modal */}
-      <Modal visible={categoryModal} animationType="slide" onRequestClose={() => setCategoryModal(false)}>
-        <View style={[styles.modalContainer, { backgroundColor: theme.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
-            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{t('editItem.selectCategory')}</Text>
-            <TouchableOpacity onPress={() => setCategoryModal(false)} hitSlop={HIT_SLOP}>
-              <Ionicons name="close" size={22} color={theme.textPrimary} />
-            </TouchableOpacity>
-          </View>
-          <View style={[styles.modalFilter, { borderBottomColor: theme.border }]}>
-            <Ionicons name="search-outline" size={18} color={theme.textSecondary} />
-            <TextInput
-              value={categoryFilter}
-              onChangeText={setCategoryFilter}
-              placeholder={t('common.search')}
-              placeholderTextColor={theme.textSecondary}
-              style={[styles.modalFilterInput, { color: theme.textPrimary }]}
-            />
-          </View>
-          <FlatList
-            data={filteredCategories}
-            keyExtractor={(c) => c.id}
-            renderItem={({ item: c }) => (
-              <TouchableOpacity
-                style={[styles.modalRow, { borderBottomColor: theme.border }]}
-                onPress={() => {
-                  setItem((p) => ({ ...p, category: c.id }));
-                  setCategoryModal(false);
-                  setCategoryFilter('');
-                }}
-              >
-                <Text style={{ color: theme.textPrimary, flex: 1 }}>{c.name}</Text>
-                {c.id === item.category ? <Ionicons name="checkmark" size={18} color={theme.accentPrimary} /> : null}
-              </TouchableOpacity>
-            )}
-            ListFooterComponent={
-              <TouchableOpacity
-                style={[styles.modalRow, { borderBottomColor: theme.border }]}
-                onPress={() => {
-                  setCategoryModal(false);
-                  setCreateCategoryModal(true);
-                  setNewCategoryName(categoryFilter.trim());
-                }}
-              >
-                <Ionicons name="add" size={18} color={theme.accentPrimary} />
-                <Text style={{ color: theme.accentPrimary, fontWeight: '600' }}>{t('editItem.createCategory')}</Text>
-              </TouchableOpacity>
-            }
-          />
-        </View>
-      </Modal>
-
-      {/* Create category modal */}
-      <Modal visible={createCategoryModal} transparent animationType="fade" onRequestClose={() => setCreateCategoryModal(false)}>
-        <View style={styles.backdrop}>
-          <View style={[styles.dialog, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.dialogTitle, { color: theme.textPrimary }]}>{t('editItem.newCategory')}</Text>
-            <TextInput
-              value={newCategoryName}
-              onChangeText={setNewCategoryName}
-              placeholder={t('editItem.categoryNamePlaceholder')}
-              placeholderTextColor={theme.textSecondary}
-              style={[styles.input, { borderColor: theme.border, color: theme.textPrimary }]}
-            />
-            <View style={styles.dialogActions}>
-              <TouchableOpacity onPress={() => setCreateCategoryModal(false)}>
-                <Text style={{ color: theme.textSecondary, fontWeight: '600' }}>{t('common.cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  const name = newCategoryName.trim();
-                  if (!name) return;
-                  // Local-only: append to options and select immediately.
-                  setCategories((prev) => {
-                    if (prev.some((c) => c.id === name)) return prev;
-                    return [...prev, { id: name, name }].sort((a, b) => a.name.localeCompare(b.name));
-                  });
-                  setItem((p) => ({ ...p, category: name }));
-                  setCreateCategoryModal(false);
-                  setNewCategoryName('');
-                }}
-              >
-                <Text style={{ color: theme.accentPrimary, fontWeight: '700' }}>{t('common.done')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       {/* Quantifier modal */}
       <Modal visible={quantModal} animationType="slide" onRequestClose={() => setQuantModal(false)}>
