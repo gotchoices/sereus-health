@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityIndicator, Alert, BackHandler, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, BackHandler, View } from 'react-native';
 import LogHistory from './src/screens/LogHistory';
 import { useVariantParams, VariantProvider } from './src/mock';
 import EditEntry from './src/screens/EditEntry';
@@ -23,6 +23,12 @@ import { isAssistantConfigured } from './src/data/apiKeys';
 import GettingStarted from './src/screens/GettingStarted';
 import { getTypeCount } from './src/data/catalogImport';
 import { ensureDatabaseInitialized } from './src/db/init';
+import {
+  getInitialReminderRoute,
+  initReminders,
+  onReminderPress,
+  syncReminders,
+} from './src/services/reminders/notifications';
 import GlobalActivityIndicator from './src/components/GlobalActivityIndicator';
 import { ThemeProvider } from './src/theme/useTheme';
 
@@ -150,6 +156,38 @@ function AppContent() {
             : 'LogHistory';
     setScreenStack([rootScreen]);
   };
+
+  // Open the new-entry screen (used by reminder notification taps and deep links).
+  const openNewEntry = () => {
+    setEditMode('new');
+    setEditEntryId(undefined);
+    setTab('home');
+    setScreenStack(['LogHistory', 'EditEntry']);
+  };
+
+  // Reminders: create the notifee channel, (re)schedule from the persisted state, and
+  // route notification taps to the new-entry screen. Re-arm on foreground so the
+  // inactivity nudge is measured from the last time the app was active.
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      await initReminders();
+      await syncReminders();
+      const initial = await getInitialReminderRoute();
+      if (mounted && initial) openNewEntry();
+    })();
+
+    const unsubPress = onReminderPress(() => openNewEntry());
+    const appStateSub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') syncReminders();
+    });
+    return () => {
+      mounted = false;
+      unsubPress();
+      appStateSub.remove();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Android hardware back: pop a pushed screen (the "back arrow" case) rather than
   // exiting the app. At a tab root, fall back to the Home tab; only exit from Home.

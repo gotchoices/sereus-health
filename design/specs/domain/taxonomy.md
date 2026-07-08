@@ -6,6 +6,31 @@ description: Types → Categories → Items, plus per-item quantifier definition
 
 Defines the user-editable catalog used for logging and analysis.
 
+## Choosing types and categories
+
+The catalog classifies loggable things by **what they intrinsically are**, never by
+the occasion, time, or context in which they happened to be used. That contextual
+information lives on the **log entry** (its timestamp, comment), not in the taxonomy.
+
+- **Type** — the broad kind of thing being tracked, chosen so entries of that type
+  are analyzed together (e.g. `Activity`, `Condition`, `Outcome`). Few and stable.
+- **Category** — a grouping of items by their **intrinsic nature** within a Type
+  (e.g. under a food Type: `Vegetables`, `Fruits`, `Grains`, `Beverages`; under
+  `Activity`: `Cardio`, `Strength`). A category answers "what kind of thing is this?"
+- **Item** — the specific loggable unit (e.g. `Corn`, `Running`).
+
+**Anti-pattern — do not categorize by occasion.** A category like `Breakfast`,
+`Monday`, or `At the gym` is wrong: `Corn` can be eaten at any meal, so filing it
+under `Breakfast` wrongly binds the item's identity to one occasion and fragments
+the catalog. *When* something happened is the log entry's timestamp; the meal or
+context belongs in the entry's comment or is inferred from the time — not baked into
+the item's category. Categorize `Corn` as `Vegetables`, then log it with a
+timestamp (and optionally a "breakfast" comment).
+
+**For the assistant:** prefer reusing an existing category; only create a new one
+named for the item's *kind* (`Vegetables`), never for the logging *occasion*
+(`Breakfast`). Query the catalog first (see GUARDRAILS).
+
 Notes:
 
 - **Bundles** are defined separately (see `bundles.md`) but reference Items from this taxonomy.

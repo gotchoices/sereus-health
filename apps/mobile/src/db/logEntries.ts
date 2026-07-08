@@ -1,6 +1,7 @@
 import { getDatabase } from './index';
 import { newUuid } from '../util/id';
 import { toDbDatetime, fromDbDatetime, captureUtcOffsetMinutes } from '../util/datetime';
+import { noteLogActivity } from '../services/reminders/notifications';
 
 export interface LogEntry {
   id: string;
@@ -73,6 +74,8 @@ export async function createLogEntry(input: CreateLogEntryInput): Promise<string
     }
 
     await db.exec('COMMIT');
+    // Logging resets the inactivity nudge (fire-and-forget; never block the write).
+    noteLogActivity().catch(() => {});
     return entryId;
   } catch (e) {
     await db.exec('ROLLBACK');

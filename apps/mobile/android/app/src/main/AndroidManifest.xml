@@ -1,9 +1,17 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="org.sereus.health">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="org.sereus.health">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Assistant camera capture (react-native-image-picker). Camera is optional. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!-- Reminder notifications (notifee). POST_NOTIFICATIONS is the Android 13+ runtime
+         permission. notifee's AAR injects SCHEDULE_EXACT_ALARM; we schedule only inexact
+         (SET_AND_ALLOW_WHILE_IDLE) alarms, so strip it to satisfy Google Play's policy. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
 
     <application
       android:name=".MainApplication"

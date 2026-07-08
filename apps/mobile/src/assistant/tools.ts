@@ -15,6 +15,7 @@ import { tool, jsonSchema, type ToolSet } from '@serfab/ai-models/chat';
 import type { Provider } from '@serfab/ai-models';
 import type { ActionPlan } from './actionPlan';
 import { loadAttachment } from './attachmentStore';
+import { getReminders } from '../data/reminders';
 
 /** Bind params for a positional query. Quereus SqlValue: string | number | null. */
 type QueryParam = string | number | null;
@@ -168,6 +169,32 @@ const viewAttachment = tool({
   },
 });
 
+/**
+ * List the user's device-local reminders (inactivity nudge + scheduled daily
+ * reminders). These are not in the SQL schema, so db_query can't see them — the
+ * assistant calls this before proposing reminder changes so it edits/deletes by
+ * existing id instead of duplicating.
+ */
+const listReminders = tool({
+  description:
+    "List the user's current reminders: the inactivity nudge ({ enabled, intervalHours }) " +
+    'and scheduled daily reminders (each { id, timeOfDay "HH:MM", label?, enabled }). ' +
+    'Reminders are device-local (not in the database). Call this before proposing reminder ' +
+    'changes so you modify or delete existing reminders by id rather than creating duplicates.',
+  inputSchema: jsonSchema<Record<string, never>>({
+    type: 'object',
+    properties: {},
+    additionalProperties: false,
+  }),
+  execute: async () => {
+    const state = await getReminders();
+    return {
+      inactivity: state.inactivity,
+      scheduled: state.scheduled,
+    };
+  },
+});
+
 /** Providers whose tool results can carry media (images), enabling view_attachment. */
 const MEDIA_TOOL_RESULT_PROVIDERS = new Set<Provider>(['anthropic']);
 
@@ -177,7 +204,11 @@ const MEDIA_TOOL_RESULT_PROVIDERS = new Set<Provider>(['anthropic']);
  * inline for its turn (that works everywhere) — only re-viewing is unavailable.
  */
 export function buildAssistantTools(provider: Provider): ToolSet {
-  const tools: ToolSet = { db_query: dbQuery, propose_plan: proposePlan };
+  const tools: ToolSet = {
+    db_query: dbQuery,
+    propose_plan: proposePlan,
+    list_reminders: listReminders,
+  };
   if (MEDIA_TOOL_RESULT_PROVIDERS.has(provider)) {
     tools.view_attachment = viewAttachment;
   }

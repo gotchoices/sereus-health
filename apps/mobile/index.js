@@ -225,6 +225,20 @@ if (typeof Intl !== 'undefined' && typeof Intl.PluralRules === 'undefined') {
   };
 }
 
+// notifee requires a background event handler registered at the top level. A reminder
+// tapped while the app is backgrounded is routed on next foreground via
+// getInitialNotification()/onForegroundEvent; here we just acknowledge the event.
+// Guarded: if the native module isn't ready during bundle eval (bridgeless), a throw
+// here must not abort AppRegistry.registerComponent below.
+import notifee from '@notifee/react-native';
+try {
+  notifee.onBackgroundEvent(async () => {
+    // No background work needed; navigation happens when the app returns to foreground.
+  });
+} catch (e) {
+  console.warn('[reminders] background handler registration failed:', e);
+}
+
 import { AppRegistry } from 'react-native';
 import App from './App';
 import { name as appName } from './app.json';

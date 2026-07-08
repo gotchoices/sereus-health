@@ -14,6 +14,15 @@ import { getDatabase } from '../db';
 import { newUuid } from '../util/id';
 import { toDbDatetime, captureUtcOffsetMinutes } from '../util/datetime';
 import type { ActionPlan, PlanAction } from './actionPlan';
+import {
+  addScheduled,
+  deleteScheduled,
+  getReminders,
+  normalizeTimeOfDay,
+  setInactivity,
+  updateScheduled,
+} from '../data/reminders';
+import { syncReminders } from '../services/reminders/notifications';
 
 type Db = Awaited<ReturnType<typeof getDatabase>>;
 
@@ -96,6 +105,12 @@ async function ensureItem(db: Db, categoryId: string, name: string, description?
     description ?? null,
   ]);
   return { id, created: true };
+}
+
+/** Does a scheduled reminder with this id exist in device-local storage? */
+async function scheduledReminderExists(id: string): Promise<boolean> {
+  const state = await getReminders();
+  return state.scheduled.some((r) => r.id === id);
 }
 
 /** Find an item by name anywhere under a type (items live in categories under types). */
@@ -304,6 +319,42 @@ async function executeAction(db: Db, a: PlanAction): Promise<ActionResult> {
       return { ...base, status: missing.length ? 'partial' : 'created', detail };
     }
 
+    // --- Reminders (device-local; not SQL). Re-synced to notifee after the plan commits. ---
+
+    case 'reminders.setInactivity': {
+      const hours = num(data.intervalHours);
+      const off = hours == null || hours <= 0;
+      await setInactivity(off ? null : hours);
+      return { ...base, status: 'created', detail: off ? 'nudge off' : `nudge every ${Math.round(hours!)}h` };
+    }
+
+    case 'reminders.createScheduled': {
+      const timeOfDay = pick(data, 'timeOfDay', 'time');
+      if (!timeOfDay) return skip('missing timeOfDay (HH:MM)');
+      await addScheduled({ timeOfDay, label: str(data.label) });
+      return { ...base, status: 'created', detail: normalizeTimeOfDay(timeOfDay) };
+    }
+
+    case 'reminders.updateScheduled': {
+      const id = pick(data, 'id', 'reminderId');
+      if (!id) return skip('missing reminder id');
+      if (!(await scheduledReminderExists(id))) return skip(`reminder not found: ${id}`);
+      await updateScheduled(id, {
+        timeOfDay: pick(data, 'timeOfDay', 'time'),
+        label: data.label !== undefined ? String(data.label) : undefined,
+        enabled: typeof data.enabled === 'boolean' ? data.enabled : undefined,
+      });
+      return { ...base, status: 'created', detail: 'updated' };
+    }
+
+    case 'reminders.deleteScheduled': {
+      const id = pick(data, 'id', 'reminderId');
+      if (!id) return skip('missing reminder id');
+      if (!(await scheduledReminderExists(id))) return skip(`reminder not found: ${id}`);
+      await deleteScheduled(id);
+      return { ...base, status: 'created', detail: 'deleted' };
+    }
+
     default:
       return skip(`unknown action kind: ${a.kind}`);
   }
@@ -325,6 +376,10 @@ export async function executePlan(plan: ActionPlan, selectedIds: Set<string>): P
       results.push(await executeAction(db, a));
     }
     await db.exec('COMMIT');
+    // Reminder actions write device-local storage (outside SQL); re-schedule notifee.
+    if (actions.some((a) => a.kind.startsWith('reminders.'))) {
+      await syncReminders().catch(() => {});
+    }
     return { ok: true, results };
   } catch (e) {
     try {

@@ -43,6 +43,10 @@ executes only the approved actions.
 | `catalog.createQuantifier` | `type`, `category`, `item`, `name`, `minValue?`, `maxValue?`, `units?` |
 | `catalog.createBundle` | `type`, `name`, `members` (array of existing item — or bundle — names) |
 | `logs.createEntry` | `type`, `items` (array of existing item names), `timestampUtc?`, `comment?` |
+| `reminders.setInactivity` | `intervalHours` (1–12, or 0/`null` to turn off) |
+| `reminders.createScheduled` | `timeOfDay` ("HH:MM", 24h local), `label?` |
+| `reminders.updateScheduled` | `id`, and any of `timeOfDay?`, `label?`, `enabled?` |
+| `reminders.deleteScheduled` | `id` |
 
 Entities may be identified by **name or id** — either is accepted:
 `type`/`typeName` or `typeId`; `category`/`categoryName` or `categoryId`;
@@ -51,6 +55,10 @@ like `{ itemId, itemName }`. If you looked up ids with `db_query`, pass them; th
 app falls back to names if an id doesn't resolve. Missing parent type/category are
 created automatically. Prefer existing catalog entries — query first (see
 GUARDRAILS / TOOLS).
+
+For `reminders.updateScheduled`/`reminders.deleteScheduled`, the `id` must be one
+returned by `list_reminders` — call it first so you edit/remove existing reminders
+instead of duplicating them.
 
 ## Rules
 

@@ -28,6 +28,15 @@ Never claim a change is done; it runs only after the user approves.
 There is no write/`db.exec` tool. Approved plan actions are executed by the app
 itself, insert-only and idempotently (see **GUARDRAILS**).
 
+## `list_reminders` — read the device's reminders
+
+Returns the user's current reminders as JSON: the inactivity nudge
+(`{ enabled, intervalHours }`) and the list of scheduled reminders
+(`{ id, timeOfDay, label?, enabled }`). Reminders are device-local (not in the SQL
+schema), so `db_query` cannot see them — use this tool when the user asks about,
+adjusts, or wants to add reminders, so you propose changes against what already
+exists (and reuse existing reminder ids when modifying/deleting).
+
 ## `view_attachment` — re-view an earlier attachment
 
 A freshly attached image/PDF is shown to you inline on the turn it is sent. Older
@@ -48,11 +57,18 @@ creating entries that are genuinely missing.
 
 Just answer — name the screen and the minimal steps. No tool needed.
 
+## Reminders — propose changes as a plan
+
+Reminder changes go through `propose_plan` like any other change (approve-first),
+using the `reminders.*` action kinds (see **ACTION PLAN FORMAT**). Read current
+reminders with `list_reminders` first so you modify/delete by existing id and don't
+duplicate. Reminders are device-local; approving a reminder action updates on-device
+storage and re-schedules the notifications.
+
 ## Planned (NOT yet available — do not attempt or promise these)
 
 - `import.canonical` — import canonical YAML/JSON from an attachment/paste → plan.
 - `export.logs.csv` / `export.catalog` / `export.backup` — export data as files.
-- `reminders.set` — propose reminder changes as a plan.
 
 Until these exist: for an import, read the attached content yourself
 (`view_attachment`) and propose the equivalent create actions via `propose_plan`;
