@@ -10,7 +10,7 @@ interface Props {
   selected: Set<string>;
   onToggle: (actionId: string) => void;
   onDismiss: () => void;
-  /** Provided once execution is wired (D3). When absent, Approve is disabled. */
+  /** Executes the selected actions. Absent → Approve is disabled (read-only preview). */
   onApprove?: () => void;
   busy?: boolean;
 }
@@ -62,7 +62,7 @@ export default function ActionPlanCard({ plan, selected, onToggle, onDismiss, on
           ]}
         >
           <Text style={{ color: canApprove ? '#fff' : theme.textSecondary, fontWeight: '600' }}>
-            {onApprove ? `Approve (${selectedCount})` : 'Approve — coming soon'}
+            {`Approve (${selectedCount})`}
           </Text>
         </TouchableOpacity>
       </View>
