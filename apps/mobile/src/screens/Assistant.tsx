@@ -13,15 +13,16 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Buffer } from 'buffer';
 import { resolveModel, type CacheStore, type CapabilityKey } from '@serfab/ai-models';
 import { chat, type ModelMessage } from '@serfab/ai-models/chat';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { getEnabledApiKey } from '../data/apiKeys';
 import { buildSystemPrompt } from '../assistant/systemPrompt';
-import { assistantTools, PROPOSE_PLAN_TOOL } from '../assistant/tools';
+import { buildAssistantTools, PROPOSE_PLAN_TOOL } from '../assistant/tools';
 import { pickAttachment, captureFromCamera, type Attachment } from '../assistant/attachment';
+import { saveAttachment, clearAttachments } from '../assistant/attachmentStore';
+import { attachmentMarker, inlinePart, sanitizeForHistory } from '../assistant/attachmentContext';
 import { parseActionPlan, type ActionPlan } from '../assistant/actionPlan';
 import { executePlan, summarizeExecution } from '../assistant/executor';
 import ActionPlanCard from '../assistant/ActionPlanCard';
@@ -89,18 +90,11 @@ function planToolResult(toolCallId: string, value: Record<string, unknown>): Mod
   };
 }
 
-/** Build the user turn's ModelMessage, multimodal when an attachment is present. */
-function userModelMessage(text: string, att: Attachment | null): ModelMessage {
-  if (!att) return { role: 'user', content: text };
-  // Pass raw bytes, not a base64/data-URI string. The AI SDK treats any string as
-  // a URL and tries to fetch it — and RN's fetch can't handle data: URLs, so it
-  // fails with AI_DownloadError. A Uint8Array (Buffer) is used directly.
-  const bytes = Buffer.from(att.base64, 'base64');
-  const media =
-    att.kind === 'image'
-      ? { type: 'image' as const, image: bytes, mediaType: att.mediaType }
-      : { type: 'file' as const, data: bytes, mediaType: att.mediaType, filename: att.name };
-  return { role: 'user', content: text ? [{ type: 'text' as const, text }, media] : [media] };
+/** The user turn's ModelMessage — a plain string, or text + one content part. */
+function buildUserMessage(text: string, extra: object | null): ModelMessage {
+  if (!extra) return { role: 'user', content: text };
+  const parts = text ? [{ type: 'text' as const, text }, extra] : [extra];
+  return { role: 'user', content: parts } as ModelMessage;
 }
 
 export default function Assistant(props: AssistantProps) {
@@ -236,7 +230,6 @@ export default function Assistant(props: AssistantProps) {
       );
       setPendingPlan(null);
     }
-    history.push(userModelMessage(text, att));
 
     // Add user message (display)
     const userMessage: Message = {
@@ -274,18 +267,28 @@ export default function Assistant(props: AssistantProps) {
         setNotice(resolved.warning);
       }
 
+      // Persist the attachment's bytes to disk; history keeps only a marker.
+      const ref = att ? await saveAttachment(att) : null;
+      const storedUserMsg = buildUserMessage(text, ref ? attachmentMarker(ref) : null);
+      // Inline the current attachment's bytes for THIS request only (not history),
+      // so the model sees it now without re-sending it on every later turn.
+      const requestUserMsg = buildUserMessage(text, att ? inlinePart(att) : null);
+      const requestMessages = [...history, requestUserMsg];
+      history.push(storedUserMsg);
+
       const result = await chat({
         ...cred,
         modelId: resolved.id,
         system: buildSystemPrompt(sessionContext()),
-        messages: history,
-        tools: assistantTools,
+        messages: requestMessages,
+        tools: buildAssistantTools(cred.provider),
         // Allow: model → db_query → tool result → final answer (a few rounds).
         maxSteps: 6,
       });
 
-      // Thread the model's turn (text + tool calls + executed tool results) into history.
-      history.push(...result.response.messages);
+      // Thread the model's turn into history, stripping any re-fetched attachment
+      // bytes (view_attachment media) back to markers so they don't linger.
+      history.push(...sanitizeForHistory(result.response.messages));
 
       // Capture a proposed action plan, if the model called propose_plan.
       const planCall = result.toolCalls.find((c) => c.toolName === PROPOSE_PLAN_TOOL);
@@ -348,6 +351,7 @@ export default function Assistant(props: AssistantProps) {
     setNotice(null);
     setPendingPlan(null);
     clearConversation(); // truncates modelMessages in place (ref stays valid)
+    void clearAttachments(); // delete stored attachment blobs
   };
 
   const renderMessage = (message: Message) => {

@@ -12,7 +12,9 @@
  */
 import { getDatabase } from '../db';
 import { tool, jsonSchema, type ToolSet } from '@serfab/ai-models/chat';
+import type { Provider } from '@serfab/ai-models';
 import type { ActionPlan } from './actionPlan';
+import { loadAttachment } from './attachmentStore';
 
 /** Bind params for a positional query. Quereus SqlValue: string | number | null. */
 type QueryParam = string | number | null;
@@ -134,8 +136,50 @@ const proposePlan = tool({
 /** Wire name of the plan-proposal tool (matches the tool key below). */
 export const PROPOSE_PLAN_TOOL = 'propose_plan';
 
-/** Tools available to the assistant: read-only query + plan proposal. */
-export const assistantTools: ToolSet = {
-  db_query: dbQuery,
-  propose_plan: proposePlan,
-};
+/**
+ * View a previously attached file/image by id. Returns its bytes as a media tool
+ * result so the model can re-examine it, without keeping the bytes in history.
+ */
+const viewAttachment = tool({
+  description:
+    'View the contents of a previously attached file or image by its id. The id appears ' +
+    'in the conversation as [Attachment "..." id="..."]. Use this when the user refers to ' +
+    'an earlier attachment you need to look at again.',
+  inputSchema: jsonSchema<{ id: string }>({
+    type: 'object',
+    properties: { id: { type: 'string', description: 'The attachment id from its marker.' } },
+    required: ['id'],
+    additionalProperties: false,
+  }),
+  execute: async ({ id }) => {
+    const loaded = await loadAttachment(id);
+    if (!loaded) return { found: false as const };
+    return { found: true as const, base64: loaded.base64, mediaType: loaded.ref.mediaType };
+  },
+  toModelOutput: ({ output }) => {
+    const o = output as { found: boolean; base64?: string; mediaType?: string };
+    if (!o.found || !o.base64) {
+      return { type: 'error-text', value: 'Attachment not found (it may have been cleared).' };
+    }
+    return {
+      type: 'content',
+      value: [{ type: 'media', data: o.base64, mediaType: o.mediaType ?? 'application/octet-stream' }],
+    };
+  },
+});
+
+/** Providers whose tool results can carry media (images), enabling view_attachment. */
+const MEDIA_TOOL_RESULT_PROVIDERS = new Set<Provider>(['anthropic']);
+
+/**
+ * Build the toolset for a turn. `view_attachment` is only included on providers
+ * that accept media in tool results; elsewhere, a fresh attachment is still sent
+ * inline for its turn (that works everywhere) — only re-viewing is unavailable.
+ */
+export function buildAssistantTools(provider: Provider): ToolSet {
+  const tools: ToolSet = { db_query: dbQuery, propose_plan: proposePlan };
+  if (MEDIA_TOOL_RESULT_PROVIDERS.has(provider)) {
+    tools.view_attachment = viewAttachment;
+  }
+  return tools;
+}
