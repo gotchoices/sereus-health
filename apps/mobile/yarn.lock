@@ -3187,35 +3187,35 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@quereus/isolation@npm:^4.3.0":
-  version: 4.3.0
-  resolution: "@quereus/isolation@npm:4.3.0"
+"@quereus/isolation@npm:^4.3.1":
+  version: 4.3.1
+  resolution: "@quereus/isolation@npm:4.3.1"
   dependencies:
-    "@quereus/quereus": "npm:^4.3.0"
+    "@quereus/quereus": "npm:^4.3.1"
   peerDependencies:
-    "@quereus/quereus": ^4.3.0
-  checksum: 10c0/d1ef0518c0f6ad7a4f2d38809194c7fe66fc41d7ec70863fa7037f056f9fff2d970603110350070e75f643fd9c5f24137319cbf714c67234bc84ec8161bb6325
+    "@quereus/quereus": ^4.3.1
+  checksum: 10c0/2c83c17aa103fa94cb79f8cb2c060960ae7f40793d169cbd53c7b7c46142d077d34b8917247266a41599c53e6c2d6e18b56dc9c0b4ee82cdf9fb5e891b80baa7
   languageName: node
   linkType: hard
 
-"@quereus/plugin-react-native-leveldb@npm:^4.3.0":
-  version: 4.3.0
-  resolution: "@quereus/plugin-react-native-leveldb@npm:4.3.0"
+"@quereus/plugin-react-native-leveldb@npm:^4.3.1":
+  version: 4.3.1
+  resolution: "@quereus/plugin-react-native-leveldb@npm:4.3.1"
   dependencies:
-    "@quereus/quereus": "npm:^4.3.0"
-    "@quereus/store": "npm:^4.3.0"
+    "@quereus/quereus": "npm:^4.3.1"
+    "@quereus/store": "npm:^4.3.1"
   peerDependencies:
-    "@quereus/isolation": ^4.3.0
-    "@quereus/quereus": ^4.3.0
-    "@quereus/store": ^4.3.0
+    "@quereus/isolation": ^4.3.1
+    "@quereus/quereus": ^4.3.1
+    "@quereus/store": ^4.3.1
     rn-leveldb: ^3.11.0
-  checksum: 10c0/89260a4faecb9138cbcd2cd917cebecedae0b677221f6aca9989f59135bdee231096eb874a090586a41627c30358fc06df22e1e8f1b8326bed4e1fce6e9a1808
+  checksum: 10c0/2d74eed5ab00c2588e390489b3f29fffa44f32c0dd9c74055efe5b0b0aa54720c58a87159f4820424e9fd3dea6ab4d91538dcb78081ad256a00aded5708dfbc1
   languageName: node
   linkType: hard
 
-"@quereus/quereus@npm:^4.3.0":
-  version: 4.3.0
-  resolution: "@quereus/quereus@npm:4.3.0"
+"@quereus/quereus@npm:^4.3.1":
+  version: 4.3.1
+  resolution: "@quereus/quereus@npm:4.3.1"
   dependencies:
     debug: "npm:^4.4.3"
     fast-json-patch: "npm:^3.1.1"
@@ -3223,20 +3223,20 @@ __metadata:
     moat-maker: "npm:^2.2.0"
     temporal-polyfill: "npm:^0.3.0"
     uint8arrays: "npm:^6.1.1"
-  checksum: 10c0/d9ed52f1c8c85411fe6f040a1fc092092e9e03e3bed56c962ad92aefa767d41b4dc2c5b94a2113652f2ec2fbda035bff69983184ac5ed8bfc826b924d7287578
+  checksum: 10c0/76395602df68487a35bf587c453918c26fb865db6dcf2752df454d94ce60b794bfbef7e5a7cfc49f96d4c95f8bb38a29564fbf794ae9649ba9544cd068ffb767
   languageName: node
   linkType: hard
 
-"@quereus/store@npm:^4.3.0":
-  version: 4.3.0
-  resolution: "@quereus/store@npm:4.3.0"
+"@quereus/store@npm:^4.3.1":
+  version: 4.3.1
+  resolution: "@quereus/store@npm:4.3.1"
   dependencies:
-    "@quereus/isolation": "npm:^4.3.0"
-    "@quereus/quereus": "npm:^4.3.0"
+    "@quereus/isolation": "npm:^4.3.1"
+    "@quereus/quereus": "npm:^4.3.1"
   peerDependencies:
-    "@quereus/isolation": ^4.3.0
-    "@quereus/quereus": ^4.3.0
-  checksum: 10c0/032005749e25416f10f1ed0f66343e3a02c8612332959527189e764d30957fc41603d44d50d34d49b8958cf427b084435129f6417590bb42b4b1825693d897df
+    "@quereus/isolation": ^4.3.1
+    "@quereus/quereus": ^4.3.1
+  checksum: 10c0/dd23c98ee598b7012fde79adcb46891aec9738b5030d178deaa0c8bd0e64d33b77bd0f344d7f5ec53b7c63979aaa5703eb4da473241732bdb6d21364c95c7118
   languageName: node
   linkType: hard
 
@@ -8705,10 +8705,10 @@ __metadata:
     "@optimystic/db-p2p-storage-rn": "npm:^0.14.1"
     "@optimystic/quereus-plugin-crypto": "npm:^0.14.1"
     "@optimystic/quereus-plugin-optimystic": "npm:^0.14.1"
-    "@quereus/isolation": "npm:^4.3.0"
-    "@quereus/plugin-react-native-leveldb": "npm:^4.3.0"
-    "@quereus/quereus": "npm:^4.3.0"
-    "@quereus/store": "npm:^4.3.0"
+    "@quereus/isolation": "npm:^4.3.1"
+    "@quereus/plugin-react-native-leveldb": "npm:^4.3.1"
+    "@quereus/quereus": "npm:^4.3.1"
+    "@quereus/store": "npm:^4.3.1"
     "@react-native-async-storage/async-storage": "npm:^2.1.0"
     "@react-native-community/cli": "npm:20.0.0"
     "@react-native-community/cli-platform-android": "npm:20.0.0"

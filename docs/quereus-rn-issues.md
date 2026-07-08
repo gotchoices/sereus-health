@@ -227,7 +227,14 @@ TypeError: existingEntry.primaryKeys.add is not a function (it is undefined)
 
 ---
 
-## 6. Scanning `DELETE ... WHERE <predicate>` invalidates its own tree path (ACTIVE — worked around)
+## 6. Scanning `DELETE ... WHERE <predicate>` invalidates its own tree path (RESOLVED in 4.3.1)
+
+> **RESOLVED** — fixed upstream in **Quereus 4.3.1** (2026-07-08; commit `ticket(fix):
+> quereus-bug-delete-path-invalid-tree-mutation` + the "Halloween problem" cursor fix
+> `fix-halloween-predicate-dml-scan-cursor`). App upgraded to 4.3.1; the drain-then-point-delete
+> workarounds in `updateLogEntry`/`deleteLogEntry` (`src/db/logEntries.ts`) were reverted to plain
+> predicate `DELETE`, and the fix was verified by editing a log entry's time on the emulator (the exact
+> flow that used to throw). Details below are retained for history.
 
 **Version**: Quereus `4.3.0` (on an `@optimystic/db-core` 0.14 strand), RN 0.82.1 / Hermes.
 

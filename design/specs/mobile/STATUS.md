@@ -57,14 +57,16 @@ This checklist tracks spec review work for the **mobile** target. Treat it as th
 - [x] `@babel/runtime` ESM/CJS interop (`resolveRequest` forces CJS helpers)
 - [x] `CadreService` singleton created (`src/services/CadreService.ts`)
 
-### Known Quereus workarounds (revert when upstream fixes land)
+### Known Quereus workarounds
 
-- [ ] **Scanning `DELETE ... WHERE <fk> = ?` tree-mutation bug** (Quereus 4.3.0): child-row
-  replacement/cleanup currently uses drain-then-point-delete-by-PK loops instead of a plain predicate
-  `DELETE`, because a scanning delete that removes rows throws "Path is invalid due to mutation of the
-  tree". **Revert to plain `DELETE ... WHERE <fk> = ?`** once fixed, in `updateLogEntry` +
-  `deleteLogEntry` (`src/db/logEntries.ts`) and `upsertItem` + `upsertBundle` (`src/db/catalog.ts`).
-  Details: `docs/quereus-rn-issues.md` §6 and `apps/mobile/tmp/quereus-bug-delete-path-invalid-tree-mutation.md`.
+- [x] **Scanning `DELETE ... WHERE <fk> = ?` tree-mutation bug** — **RESOLVED in Quereus 4.3.1**
+  (upgraded 2026-07-08; the fix also closed the GROUP-BY duplicate-`id`-symbol bug). Reverted the
+  drain-then-point-delete workarounds back to plain predicate `DELETE` in `updateLogEntry` +
+  `deleteLogEntry` (`src/db/logEntries.ts`), and **verified end-to-end** by editing a log entry's time
+  on the emulator (the exact flow that used to throw "Path is invalid due to mutation of the tree").
+  Note: `upsertItem` (`src/db/catalog.ts`) uses point-delete-by-PK *reconciliation* (retire/update/insert),
+  not a scanning-delete workaround — left as-is; `getItemsForType` (`src/db/stats.ts`) keeps its
+  scalar-subquery form (clean, no revert needed). See `docs/quereus-rn-issues.md` §6.
 
 ### Step 1: Local-only node (app "just works")
 
