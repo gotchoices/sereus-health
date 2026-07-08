@@ -27,7 +27,7 @@ From stories:
 - **06-graphing.md**: Bob creates multiple graphs of various outputs and inputs. Each graph gets a short name. He can see all his graphs by name, move between them without losing any, and share them.
 
 From general.md:
-- **Graph persistence**: Graphs are **ephemeral** in MVP—they exist while the app is running and remain until explicitly closed or app terminates. They don't persist across app restarts.
+- **Graph persistence**: Graphs **fully persist** as **app-local data** (`AsyncStorage`, key `@sereus/graphs`) — **not** the health database (a graph is a saved *view*, not health data). They survive app restarts and remain until explicitly dismissed. See `data/graphs.ts` (`getGraphs`/`saveGraph`/`deleteGraph`).
 
 ## Layout & Information Architecture
 
@@ -69,8 +69,7 @@ From general.md:
    - Can share from there
 
 3. **Close/Delete Graph** ("×" on card):
-   - Removes graph from ephemeral list
-   - No confirmation needed (ephemeral nature)
+   - Removes graph from the persisted list (`deleteGraph` → AsyncStorage)
    - Story: "they do not go away until he explicitly closes/dismisses them"
 
 ### Navigation
@@ -79,7 +78,7 @@ From general.md:
 
 ## Data Model
 
-### Graph (ephemeral, in-memory)
+### Graph (persisted as app-local data)
 ```typescript
 interface Graph {
   id: string;                    // Generated UUID
@@ -147,10 +146,11 @@ graphs.dateRange: "{start} - {end}"
 
 ## Design Rationale
 
-### Why Ephemeral Graphs?
-- **MVP Simplicity**: Avoids database schema for graph storage
-- **Story Aligned**: Bob creates graphs for immediate analysis/sharing, doesn't necessarily need them to persist
-- **Easy Cleanup**: No stale data accumulation
+### Why app-local persistence (not the health DB)?
+- A graph is a saved **view** (which items + what range), not health data — so it lives in app-local
+  `AsyncStorage`, keeping the health database purely about logged facts.
+- **Fully persists** across restarts (story #8: graphs "do not go away until he explicitly dismisses them").
+- Avoids adding a `graphs` table / schema migration for what is presentation state.
 
 ### Why Card Layout?
 - **Scannable**: Quick visual distinction between graphs
@@ -167,7 +167,7 @@ graphs.dateRange: "{start} - {end}"
 - **Card Component**: Could share with LogHistory entry cards
 
 ## Open Questions / Future Enhancements
-- **Graph Persistence**: Post-MVP could add database storage for favorite graphs
+- **Correlation**: the separate computational function (statistical strength / lag), per `screens/graphs.md` — future.
 - **Graph Templates**: Save configuration without data for reuse
 - **Sorting/Filtering**: As graph count grows, may need organization
 

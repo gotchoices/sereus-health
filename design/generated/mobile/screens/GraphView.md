@@ -1,154 +1,70 @@
-# GraphView Screen Consolidation
-
 ---
 provides:
   - screen:mobile:GraphView
+needs:
+  - schema:logging
 dependsOn:
-  - design/stories/mobile/06-graphing.md
+  - design/stories/mobile/07-graphing.md
+  - design/specs/mobile/screens/graphs.md
   - design/specs/mobile/navigation.md
-  - design/specs/mobile/screens/index.md
   - design/specs/mobile/global/general.md
   - design/specs/mobile/global/ui.md
 ---
 
+# GraphView Screen Consolidation
+
 ## Purpose
-Display a generated graph showing selected items over time. Provides ability to share the graph as an image.
 
-## Screen Identity
-- **Route**: `GraphView` (push from Graphs or GraphCreate)
-- **Title**: "{Graph Name}" (dynamic)
-- **Deep Link**: `health://screen/GraphView?graphId={id}`
+Render a saved graph — the selected items overlaid over time, **each series scaled to its own range**
+so items with different units/magnitudes are visually comparable — and share it as a crisp image.
+(This is the **graphing** function; statistical **correlation** is a separate, later function per
+`screens/graphs.md`.)
 
-## User Journey Context
-From stories:
-- **06-graphing.md**: 
-  - "the app generates a graph which includes all dates (horizontal) and all quantifiers (vertical) each scaled according to their own ranges"
-  - "Each item is color coded and the graph includes a legend"
-  - "he shares each one in turn"
-  - "The share option allows him to attach the figures to text messages and/or email"
-  - "the graphs are crisp and clear, suitable for printing with excellent clarity"
+## Route
+- `GraphView` (push from Graphs/GraphCreate) · title = graph name.
 
-## Layout & Information Architecture
+## Chart (react-native-svg)
 
-### Header
-- **Back Button** (left): Returns to previous screen (Graphs or GraphCreate)
-- **Title**: Graph name (dynamic, centered)
-- **Share Button** (right): Share graph as image
+- **Shared horizontal time axis** across all series (`d3-scale` `scaleLinear` over [tMin, tMax];
+  a single-timestamp domain is padded ±1 day). Start/end dates labelled at the bottom corners.
+- **No numeric Y axis** — each series is **self-scaled** to [0,1] over its own min/max (constant series,
+  e.g. occurrences, map to mid-height). This matches the story's "each scaled according to their own
+  ranges" and keeps absolute magnitudes from dominating.
+- **Per-series rendering by kind:**
+  - `value` (a logged quantifier over time) → colored **polyline + dots**.
+  - `occurrence` (item logged without a quantifier, e.g. a food) → short colored **rug ticks** up from
+    the baseline at each event time (shows *when* it happened relative to the value lines).
+- Colors from a fixed palette, indexed by series order.
 
-### Main Content Area
+## Legend
+- One row **per series** (an item can yield several: one per quantifier, or an occurrence series),
+  with color swatch, label (`Item` or `Item · Quantifier`), and the series' value range (or "events").
 
-#### Graph Display
-- **Chart Area** (majority of screen):
-  - X-axis: Date range (horizontal)
-  - Y-axis: Values (vertical, multi-scale if needed)
-  - Data lines/points for each selected item
-  - Color-coded by item
+## Data (`data/graphSeries.ts`)
+`getGraphSeries(items, dateRange): { series, tMin, tMax }` — the **shared aggregation layer** (graphing
+renders it now; correlation will compute over it later). Per item:
+- one **value** series per quantifier with logged values in range (points = quantifier value over time), or
+- one **occurrence** series (value 1 at each log time) if the item has no logged quantifier values.
+Timestamps are the stored UTC instants → epoch ms; range filtered by `[start T00:00 … end T23:59:59]`.
 
-#### Legend
-- **Below or beside graph**:
-  - Item name + color indicator for each tracked item
-  - Shows what each line/series represents
+## Share (image)
+- `react-native-view-shot` `captureRef` snapshots the chart+legend (`ViewShot` wrapper) to a PNG, then
+  `react-native-share` `Share.open({ type: 'image/png' })`. Vector-rendered → crisp/print-quality
+  (story #12). Share **dismissal is not an error** (swallowed, mirrors backup export).
 
-#### Graph Metadata
-- **Date range**: "Nov 1 - Nov 30, 2025"
-- **Items count**: "3 items"
+## States
+- **loading** / **error** (`graphView.errorLoading`) / **no-data** in range (`graphView.noData`, share disabled).
 
-### For MVP (Placeholder Implementation)
-Since we haven't selected a charting library yet:
-- Display a placeholder graphic or message
-- Show graph metadata (name, items, date range)
-- Share button can share metadata as text for now
+## i18n
+`graphView.legend`, `graphView.dateRange`, `graphView.errorLoading`, `graphView.noData`,
+`graphView.kindOccurrence` ("events"), `graphView.selfScaledNote`. (Removed stale `visualization` /
+`chartPending`.)
 
-## Interaction Patterns
-
-### Primary Actions
-1. **Share Graph**:
-   - Opens native share sheet
-   - MVP: Shares text summary of graph
-   - Future: Shares graph as PNG/JPEG image
-   - Story: "suitable for printing with excellent clarity"
-
-2. **Navigate Back**:
-   - Returns to Graphs list (if came from there)
-   - Returns to Graphs list (if came from GraphCreate - graph now in list)
-
-### Navigation
-- **Back**: Previous screen in stack
-- **Deep Links**: `health://screen/GraphView?graphId={id}`
-
-## Data Model
-
-### Input (from navigation params)
-```typescript
-interface GraphViewParams {
-  graphId: string;
-  // Or full graph object passed directly
-  graph?: Graph;
-}
-```
-
-### Graph Object
-```typescript
-interface Graph {
-  id: string;
-  name: string;
-  createdAt: string;
-  items: Array<{ id: string; name: string; category: string }>;
-  dateRange: { start: string; end: string };
-}
-```
-
-## Theming & Accessibility
-- **Theme**: Follow system light/dark mode
-- **Colors**: 
-  - Background: `theme.background`
-  - Chart area: `theme.surface`
-  - Grid lines: `theme.border`
-  - Data colors: Distinct colors for each series (accessible palette)
-- **Typography**:
-  - Title: `typography.title`
-  - Legend items: `typography.small`
-  - Axis labels: `typography.small`
-- **Accessibility**: 
-  - Chart has accessible description
-  - Legend items readable by screen reader
-
-## i18n Keys
-```
-graphView.title: "Graph"  // fallback if name not available
-graphView.share: "Share"
-graphView.shareSuccess: "Graph shared successfully"
-graphView.shareError: "Failed to share graph"
-graphView.noData: "No data available for selected range"
-graphView.legend: "Legend"
-graphView.dateRange: "{start} - {end}"
-```
-
-## Design Rationale
-
-### Why Placeholder for MVP?
-- **Library Selection Needed**: STATUS.md notes we need to select a React Native charting library
-- **Functionality First**: Get navigation and data flow working before visualization
-- **Story Completion**: Share and view flows work even without actual chart
-
-### Why Native Share?
-- **Story Evidence**: "attach the figures to text messages and/or email"
-- **Platform Standard**: Uses OS share sheet for maximum compatibility
-- **No Account Required**: Works without sign-in to any service
-
-## Component Reuse
-- **Theme Hook**: `useTheme()` for current palette
-- **i18n Hook**: `useT()` for all UI strings
-- **Share API**: React Native's Share module
-
-## Open Questions / Future Enhancements
-- **Chart Library**: Select from react-native-charts-wrapper, victory-native, react-native-chart-kit
-- **Zoom/Pan**: Interactive chart exploration
-- **Export Formats**: PDF, CSV export options
-- **Print Support**: Direct print action
+## Mock variants
+- **happy**: multiple series (mixed value + occurrence) over the range.
+- **empty**: selected items have no logged data in range → no-data state.
+- **error**: series load failure.
 
 ---
-
-**Status**: Fresh consolidation (MVP placeholder)
-**Last Updated**: 2025-12-03
-
+**Status**: Regenerated — real self-scaled SVG overlay (value lines + occurrence rug), shared aggregation layer, image share via view-shot. Correlation remains a separate future function.
+**Last Updated**: 2026-07-08

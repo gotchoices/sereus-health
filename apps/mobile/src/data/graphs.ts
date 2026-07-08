@@ -1,4 +1,4 @@
-import { getVariant } from '../mock';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type GraphItem = { id: string; name: string; category: string };
 export type GraphDateRange = { start: string; end: string };
@@ -11,24 +11,40 @@ export type Graph = {
   dateRange: GraphDateRange;
 };
 
-type MockData = { graphs: Graph[] };
+// A saved graph is a *view* (which items, what range), stored as app-local data —
+// NOT in the health database (per design/specs/mobile/screens/graphs.md). Fully
+// persistent across app restarts.
+const STORAGE_KEY = '@sereus/graphs';
 
-function loadMock(variant: string): MockData {
-  switch (variant) {
-    case 'empty':
-      return require('../../mock/data/graphs.empty.json') as MockData;
-    case 'happy':
-    default:
-      return require('../../mock/data/graphs.happy.json') as MockData;
+export async function getGraphs(): Promise<Graph[]> {
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as Graph[]) : [];
+  } catch {
+    return [];
   }
 }
 
-export async function getGraphs(): Promise<Graph[]> {
-  const variant = getVariant();
-  if (variant === 'error') {
-    throw new Error('mock:error');
-  }
-  return loadMock(variant).graphs ?? [];
+async function writeGraphs(graphs: Graph[]): Promise<void> {
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(graphs));
+}
+
+/** Persist a new graph (newest first). Returns the updated list. */
+export async function saveGraph(graph: Graph): Promise<Graph[]> {
+  const graphs = await getGraphs();
+  const next = [graph, ...graphs.filter((g) => g.id !== graph.id)];
+  await writeGraphs(next);
+  return next;
+}
+
+/** Remove a graph by id. Returns the updated list. */
+export async function deleteGraph(id: string): Promise<Graph[]> {
+  const graphs = await getGraphs();
+  const next = graphs.filter((g) => g.id !== id);
+  await writeGraphs(next);
+  return next;
 }
 
 export function formatDateRange(start: string, end: string): string {
@@ -49,5 +65,3 @@ export function formatDateRange(start: string, end: string): string {
 export function generateGraphId(): string {
   return `graph-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
-
-

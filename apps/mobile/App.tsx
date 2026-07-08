@@ -12,7 +12,7 @@ import type { CatalogType } from './src/data/configureCatalog';
 import EditBundle from './src/screens/EditBundle';
 import Graphs from './src/screens/Graphs';
 import GraphCreate from './src/screens/GraphCreate';
-import { getGraphs, type Graph } from './src/data/graphs';
+import { getGraphs, saveGraph, deleteGraph, type Graph } from './src/data/graphs';
 import GraphView from './src/screens/GraphView';
 import Settings from './src/screens/Settings';
 import SereusConnections from './src/screens/SereusConnections';
@@ -88,7 +88,7 @@ function AppContent() {
   const [editBundleId, setEditBundleId] = useState<string | undefined>(undefined);
   const [editBundleType, setEditBundleType] = useState<CatalogType | undefined>(undefined);
 
-  // Ephemeral graphs store (legacy behavior): lives while app is running.
+  // Persistent graphs store (app-local via AsyncStorage; survives restarts).
   const [graphs, setGraphs] = useState<Graph[]>([]);
   const [graphsLoading, setGraphsLoading] = useState(false);
   const [graphsError, setGraphsError] = useState<string | null>(null);
@@ -337,7 +337,7 @@ function AppContent() {
         pushScreen('GraphView');
       }}
       onClose={(graphId) => {
-        setGraphs((prev) => prev.filter((g) => g.id !== graphId));
+        deleteGraph(graphId).then(setGraphs).catch(() => setGraphs((prev) => prev.filter((g) => g.id !== graphId)));
         if (currentGraphId === graphId) setCurrentGraphId(null);
       }}
       graphs={graphs}
@@ -349,7 +349,7 @@ function AppContent() {
       key={navKey}
       onBack={popScreen}
       onGraphCreated={(graph) => {
-        setGraphs((prev) => [graph, ...prev]);
+        saveGraph(graph).then(setGraphs).catch(() => setGraphs((prev) => [graph, ...prev]));
         setCurrentGraphId(graph.id);
         pushScreen('GraphView');
       }}
@@ -366,7 +366,7 @@ function AppContent() {
           setCurrentGraphId(graphId);
           pushScreen('GraphView');
         }}
-        onClose={(graphId) => setGraphs((prev) => prev.filter((g) => g.id !== graphId))}
+        onClose={(graphId) => deleteGraph(graphId).then(setGraphs).catch(() => setGraphs((prev) => prev.filter((g) => g.id !== graphId)))}
         graphs={graphs}
         loading={graphsLoading}
         error={graphsError}

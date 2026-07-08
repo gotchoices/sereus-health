@@ -19,8 +19,9 @@ Two **distinct** functions — keep them separate:
 - Series are **overlaid on a shared time axis**, each **scaled to its own range** (so items with very
   different units/magnitudes are comparable at a glance).
 - Each series is color-coded, with a **legend**.
-- Graphs are **named** and **persist**: they remain in a list the user can switch between, survive
-  navigating away, and go away only when explicitly dismissed.
+- Graphs are **named** and **fully persist** (across app restarts). They remain in a list the user can
+  switch between, survive navigating away, and go away only when explicitly dismissed. Persistence is
+  **app-local data (device storage), not the health database** — a graph is a saved *view*, not health data.
 - A graph can be **shared as an image**, crisp enough to print.
 
 ## Correlation — deferred
