@@ -44,10 +44,13 @@ executes only the approved actions.
 | `catalog.createBundle` | `type`, `name`, `members` (array of existing item — or bundle — names) |
 | `logs.createEntry` | `type`, `items` (array of existing item names), `timestampUtc?`, `comment?` |
 
-Names may be given as `type`/`typeName`, `category`/`categoryName`,
-`item`/`itemName`; `members`/`items` may be names or `{ itemName }` objects.
-Missing parent type/category are created automatically. Prefer existing catalog
-entries — query first (see GUARDRAILS / TOOLS).
+Entities may be identified by **name or id** — either is accepted:
+`type`/`typeName` or `typeId`; `category`/`categoryName` or `categoryId`;
+`item`/`itemName` or `itemId`. `members`/`items` may be plain names or objects
+like `{ itemId, itemName }`. If you looked up ids with `db_query`, pass them; the
+app falls back to names if an id doesn't resolve. Missing parent type/category are
+created automatically. Prefer existing catalog entries — query first (see
+GUARDRAILS / TOOLS).
 
 ## Rules
 

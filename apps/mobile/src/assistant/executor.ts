@@ -47,20 +47,21 @@ function pick(data: Record<string, unknown>, ...keys: string[]): string | undefi
 }
 
 /**
- * Normalize a members/items array to names. The model may emit plain strings or
- * objects like `{ itemId, itemName }` / `{ name }` / `{ bundleName }` (it often
- * enriches with ids from db_query). We resolve by name for correctness.
+ * Normalize a members/items array to id/name references. The model may emit plain
+ * strings (names) or objects like `{ itemId, itemName }` — it often enriches with
+ * ids from db_query. We keep both and resolve id-first, name-fallback.
  */
-function namesOf(v: unknown): string[] {
+function itemRefsOf(v: unknown): Array<{ id?: string; name?: string }> {
   if (!Array.isArray(v)) return [];
-  const out: string[] = [];
+  const out: Array<{ id?: string; name?: string }> = [];
   for (const el of v) {
     if (typeof el === 'string') {
       const s = el.trim();
-      if (s) out.push(s);
+      if (s) out.push({ name: s });
     } else if (isRecord(el)) {
-      const s = pick(el, 'itemName', 'name', 'bundleName', 'memberName');
-      if (s) out.push(s);
+      const id = str(el.itemId) ?? str(el.id) ?? str(el.memberBundleId) ?? str(el.bundleId);
+      const name = pick(el, 'itemName', 'name', 'bundleName', 'memberName');
+      if (id || name) out.push({ id, name });
     }
   }
   return out;
@@ -111,6 +112,38 @@ async function findBundleInType(db: Db, typeId: string, name: string): Promise<s
   return row ? (row.id as string) : null;
 }
 
+/** True if a row with this id exists in the given table. */
+async function idExists(db: Db, table: 'types' | 'categories' | 'items', id: string): Promise<boolean> {
+  const row = await db.get(`SELECT id FROM ${table} WHERE id = ?`, [id]);
+  return !!row;
+}
+
+/**
+ * Resolve a type from a provided `typeId` (preferred, when it exists) or by name
+ * (`type`/`typeName`, created if missing). The model frequently supplies the real
+ * id from db_query — accept it — but never trust an id blindly (FK-safe).
+ */
+async function resolveType(db: Db, data: Record<string, unknown>) {
+  const id = str(data.typeId);
+  if (id && (await idExists(db, 'types', id))) return { id, created: false };
+  const name = pick(data, 'type', 'typeName');
+  return name ? ensureType(db, name) : null;
+}
+
+/** Resolve a category from `categoryId` (valid) or `category`/`categoryName` under typeId. */
+async function resolveCategory(db: Db, typeId: string, data: Record<string, unknown>) {
+  const id = str(data.categoryId);
+  if (id && (await idExists(db, 'categories', id))) return { id, created: false };
+  const name = pick(data, 'category', 'categoryName');
+  return name ? ensureCategory(db, typeId, name) : null;
+}
+
+/** Resolve an item reference (id-first, name-fallback) to an existing item id under a type. */
+async function resolveItemId(db: Db, typeId: string, ref: { id?: string; name?: string }): Promise<string | null> {
+  if (ref.id && (await idExists(db, 'items', ref.id))) return ref.id;
+  return ref.name ? findItemInType(db, typeId, ref.name) : null;
+}
+
 // --- per-action execution ---
 
 async function executeAction(db: Db, a: PlanAction): Promise<ActionResult> {
@@ -132,53 +165,55 @@ async function executeAction(db: Db, a: PlanAction): Promise<ActionResult> {
     }
 
     case 'catalog.createCategory': {
-      const typeName = pick(data, 'type', 'typeName');
+      const type = await resolveType(db, data);
+      if (!type) return skip('missing type (type/typeName or typeId)');
       const name = pick(data, 'name', 'category', 'categoryName');
-      if (!typeName || !name) return skip('missing type or category name');
-      const type = await ensureType(db, typeName);
+      if (!name) return skip('missing category name');
       const { created } = await ensureCategory(db, type.id, name);
       return { ...base, status: created ? 'created' : 'exists' };
     }
 
     case 'catalog.createItem': {
-      const typeName = pick(data, 'type', 'typeName');
-      const categoryName = pick(data, 'category', 'categoryName');
+      const type = await resolveType(db, data);
+      if (!type) return skip('missing type (type/typeName or typeId)');
+      const category = await resolveCategory(db, type.id, data);
+      if (!category) return skip('missing category (category/categoryName or categoryId)');
       const name = pick(data, 'name', 'item', 'itemName');
-      if (!typeName || !categoryName || !name) return skip('missing type, category, or item name');
-      const type = await ensureType(db, typeName);
-      const category = await ensureCategory(db, type.id, categoryName);
+      if (!name) return skip('missing item name');
       const { created } = await ensureItem(db, category.id, name, str(data.description) ?? null);
       return { ...base, status: created ? 'created' : 'exists' };
     }
 
     case 'catalog.createQuantifier': {
-      const typeName = pick(data, 'type', 'typeName');
-      const categoryName = pick(data, 'category', 'categoryName');
-      const itemName = pick(data, 'item', 'itemName');
+      const type = await resolveType(db, data);
+      if (!type) return skip('missing type (type/typeName or typeId)');
       const name = pick(data, 'name', 'quantifierName');
-      if (!typeName || !categoryName || !itemName || !name) {
-        return skip('missing type/category/item/quantifier name');
+      if (!name) return skip('missing quantifier name');
+      // Resolve the item by id (valid) or by name under the type; else ensure under category.
+      let itemId = await resolveItemId(db, type.id, { id: str(data.itemId), name: pick(data, 'item', 'itemName') });
+      if (!itemId) {
+        const category = await resolveCategory(db, type.id, data);
+        const itemName = pick(data, 'item', 'itemName');
+        if (!category || !itemName) return skip('missing item (item/itemName or a valid itemId, plus category)');
+        itemId = (await ensureItem(db, category.id, itemName)).id;
       }
-      const type = await ensureType(db, typeName);
-      const category = await ensureCategory(db, type.id, categoryName);
-      const item = await ensureItem(db, category.id, itemName);
       const existing = await db.get('SELECT id FROM item_quantifiers WHERE item_id = ? AND name = ?', [
-        item.id,
+        itemId,
         name,
       ]);
       if (existing) return { ...base, status: 'exists' };
       await db.exec(
         'INSERT INTO item_quantifiers (id, item_id, name, min_value, max_value, units) VALUES (?, ?, ?, ?, ?, ?)',
-        [newUuid(), item.id, name, num(data.minValue), num(data.maxValue), str(data.units) ?? null],
+        [newUuid(), itemId, name, num(data.minValue), num(data.maxValue), str(data.units) ?? null],
       );
       return { ...base, status: 'created' };
     }
 
     case 'catalog.createBundle': {
-      const typeName = pick(data, 'type', 'typeName');
+      const type = await resolveType(db, data);
+      if (!type) return skip('missing type (type/typeName or typeId)');
       const name = pick(data, 'name', 'bundle', 'bundleName');
-      if (!typeName || !name) return skip('missing type or bundle name');
-      const type = await ensureType(db, typeName);
+      if (!name) return skip('missing bundle name');
 
       let bundleId = await findBundleInType(db, type.id, name);
       const bundleCreated = !bundleId;
@@ -189,8 +224,9 @@ async function executeAction(db: Db, a: PlanAction): Promise<ActionResult> {
 
       const missing: string[] = [];
       let order = 0;
-      for (const memberName of namesOf(data.members)) {
-        const itemId = await findItemInType(db, type.id, memberName);
+      for (const ref of itemRefsOf(data.members)) {
+        const memberName = ref.name ?? ref.id ?? '?';
+        const itemId = await resolveItemId(db, type.id, ref);
         if (itemId) {
           const has = await db.get(
             'SELECT 1 AS x FROM bundle_members WHERE bundle_id = ? AND item_id = ?',
@@ -233,9 +269,8 @@ async function executeAction(db: Db, a: PlanAction): Promise<ActionResult> {
     }
 
     case 'logs.createEntry': {
-      const typeName = pick(data, 'type', 'typeName');
-      if (!typeName) return skip('missing type');
-      const type = await ensureType(db, typeName);
+      const type = await resolveType(db, data);
+      if (!type) return skip('missing type (type/typeName or typeId)');
       const iso = pick(data, 'timestampUtc', 'timestamp') ?? new Date().toISOString();
       const comment = str(data.comment) ?? null;
 
@@ -246,10 +281,10 @@ async function executeAction(db: Db, a: PlanAction): Promise<ActionResult> {
       );
 
       const missing: string[] = [];
-      for (const itemName of namesOf(data.items)) {
-        const itemId = await findItemInType(db, type.id, itemName);
+      for (const ref of itemRefsOf(data.items)) {
+        const itemId = await resolveItemId(db, type.id, ref);
         if (!itemId) {
-          missing.push(itemName);
+          missing.push(ref.name ?? ref.id ?? '?');
           continue;
         }
         const has = await db.get('SELECT 1 AS x FROM log_entry_items WHERE entry_id = ? AND item_id = ?', [
