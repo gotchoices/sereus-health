@@ -1,5 +1,12 @@
 # User Story: Log Data Import/Export
 
+> **Status — DEFERRED (assistant-mediated import/export + spreadsheet/CSV ingestion).**
+> Not implemented, and intentionally on hold. In practice the assistant already
+> adds items/categories on demand well enough that bulk foreign-format import
+> hasn't proven necessary. Revisit if/when it's clearly worth it. The story is
+> kept as the spec for that future work; it is not a gap to "fix" before then.
+> (Direct canonical YAML/JSON backup + restore already exist in Backup & Restore.)
+
 ## Story Overview
 I want to share my log data with healthcare professionals, analyze it externally, and import existing data I've tracked elsewhere.
 

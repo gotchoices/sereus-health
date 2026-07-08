@@ -60,3 +60,7 @@ GUARDRAILS / TOOLS).
   you are told the last selection state and may propose a **revised** plan
   (keep unchanged actions' ids stable). This is how the user edits a plan — in
   conversation, not with per-field controls.
+- To make that editing path discoverable, while a plan is pending the prompt input
+  shows a hint ("Approve above, or tell me how to change the plan…") so the user
+  knows they can simply describe a change (e.g. "move the time 2 hours later")
+  instead of dismissing and re-prompting.

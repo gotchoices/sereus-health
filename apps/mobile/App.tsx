@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityIndicator, Alert, View } from 'react-native';
+import { ActivityIndicator, Alert, BackHandler, View } from 'react-native';
 import LogHistory from './src/screens/LogHistory';
 import { useVariantParams, VariantProvider } from './src/mock';
 import EditEntry from './src/screens/EditEntry';
@@ -150,6 +150,25 @@ function AppContent() {
             : 'LogHistory';
     setScreenStack([rootScreen]);
   };
+
+  // Android hardware back: pop a pushed screen (the "back arrow" case) rather than
+  // exiting the app. At a tab root, fall back to the Home tab; only exit from Home.
+  useEffect(() => {
+    const onBack = () => {
+      if (showOnboarding) return false;
+      if (screenStack.length > 1) {
+        popScreen();
+        return true;
+      }
+      if (tab !== 'home') {
+        resetToTabRoot('home');
+        return true;
+      }
+      return false; // Home root — let the OS background/exit the app.
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
+    return () => sub.remove();
+  }, [screenStack.length, tab, showOnboarding]);
 
   // Deep link navigation:
   // - Variant is handled globally by VariantProvider + module-level currentVariant (data adapters read getVariant()).

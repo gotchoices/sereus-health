@@ -69,9 +69,24 @@ function sessionContext() {
   } catch {
     // Intl may be unavailable/partial on some Hermes builds — omit gracefully.
   }
+  // Local wall-clock time, built from Date's local getters (no Intl needed, so it's
+  // reliable on Hermes). This is what "today"/"this morning"/"breakfast" refer to —
+  // giving the model the local date avoids it reading the UTC date, which can be the
+  // next day late in the evening for western-hemisphere users.
+  const now = new Date();
+  const p = (n: number) => String(n).padStart(2, '0');
+  const offMin = -now.getTimezoneOffset();
+  const offset = `${offMin >= 0 ? '+' : '-'}${p(Math.floor(Math.abs(offMin) / 60))}:${p(
+    Math.abs(offMin) % 60,
+  )}`;
+  const nowLocal =
+    `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())} ` +
+    `${p(now.getHours())}:${p(now.getMinutes())}`;
   return {
     screen: 'Assistant',
-    nowUtc: new Date().toISOString(),
+    nowUtc: now.toISOString(),
+    nowLocal,
+    utcOffset: offset,
     locale,
     timeZone,
   };
@@ -463,11 +478,7 @@ export default function Assistant(props: AssistantProps) {
         // Configured state - conversation UI
         <KeyboardAvoidingView
           style={styles.conversationContainer}
-          // Give Android an explicit behavior: modern Android (edge-to-edge)
-          // ignores windowSoftInputMode=adjustResize, so relying on it lets the
-          // keyboard overlay the input. 'height' resizes this view above the keyboard.
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={0}
         >
           {/* Conversation area */}
           <ScrollView
@@ -543,7 +554,11 @@ export default function Assistant(props: AssistantProps) {
               <TextInput
                 value={inputText}
                 onChangeText={setInputText}
-                placeholder={t('assistant.inputPlaceholder')}
+                placeholder={
+                  pendingPlan
+                    ? 'Approve above, or tell me how to change the plan…'
+                    : t('assistant.inputPlaceholder')
+                }
                 placeholderTextColor={theme.textSecondary}
                 style={[styles.input, { color: theme.textPrimary, backgroundColor: theme.background }]}
                 multiline
