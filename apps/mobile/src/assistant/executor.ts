@@ -116,7 +116,12 @@ async function findBundleInType(db: Db, typeId: string, name: string): Promise<s
 async function executeAction(db: Db, a: PlanAction): Promise<ActionResult> {
   const base = { actionId: a.actionId, kind: a.kind, title: a.title };
   const data = a.data ?? {};
-  const skip = (detail: string): ActionResult => ({ ...base, status: 'skipped', detail });
+  // Include the fields the model actually sent, so a "missing X" skip is diagnosable.
+  const skip = (detail: string): ActionResult => ({
+    ...base,
+    status: 'skipped',
+    detail: `${detail} — received fields: [${Object.keys(data).join(', ') || 'none'}]`,
+  });
 
   switch (a.kind) {
     case 'catalog.createType': {

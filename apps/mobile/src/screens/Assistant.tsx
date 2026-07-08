@@ -25,16 +25,14 @@ import { pickAttachment, captureFromCamera, type Attachment } from '../assistant
 import { parseActionPlan, type ActionPlan } from '../assistant/actionPlan';
 import { executePlan, summarizeExecution } from '../assistant/executor';
 import ActionPlanCard from '../assistant/ActionPlanCard';
+import {
+  conversationStore,
+  clearConversation,
+  type Message,
+  type PendingPlan,
+} from '../assistant/conversationStore';
 
 type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  /** Name of a file attached to this (user) message, shown as a chip. */
-  attachmentName?: string;
-}
 
 interface AssistantProps {
   onNavigateTab: (tab: Tab) => void;
@@ -111,20 +109,26 @@ export default function Assistant(props: AssistantProps) {
   const scrollViewRef = useRef<ScrollView>(null);
   // The real conversation sent to the model — includes tool calls/results so the
   // model remembers prior plans (enables conversational revision). The display
-  // `messages` list is a separate, human-facing projection.
-  const modelMessagesRef = useRef<ModelMessage[]>([]);
+  // `messages` list is a separate, human-facing projection. Both live in a module
+  // store so they survive this screen unmounting on a tab switch.
+  const modelMessagesRef = useRef<ModelMessage[]>(conversationStore.modelMessages);
 
   const [inputText, setInputText] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => conversationStore.messages);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [pendingPlan, setPendingPlan] = useState<{
-    plan: ActionPlan;
-    selected: Set<string>;
-    /** The open propose_plan tool call this plan answers — must be resolved before the next turn. */
-    toolCallId: string;
-  } | null>(null);
+  const [pendingPlan, setPendingPlan] = useState<PendingPlan | null>(
+    () => conversationStore.pendingPlan,
+  );
+
+  // Mirror the display state back into the store so it persists across tab switches.
+  useEffect(() => {
+    conversationStore.messages = messages;
+  }, [messages]);
+  useEffect(() => {
+    conversationStore.pendingPlan = pendingPlan;
+  }, [pendingPlan]);
 
   const [planBusy, setPlanBusy] = useState(false);
   const [attachment, setAttachment] = useState<Attachment | null>(null);
@@ -343,7 +347,7 @@ export default function Assistant(props: AssistantProps) {
     setError(null);
     setNotice(null);
     setPendingPlan(null);
-    modelMessagesRef.current = [];
+    clearConversation(); // truncates modelMessages in place (ref stays valid)
   };
 
   const renderMessage = (message: Message) => {
