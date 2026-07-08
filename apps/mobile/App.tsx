@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { ActivityIndicator, Alert, AppState, BackHandler, View } from 'react-native';
 import LogHistory from './src/screens/LogHistory';
 import { useVariantParams, VariantProvider } from './src/mock';
@@ -56,14 +57,16 @@ type Screen =
 export default function App() {
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
+      <KeyboardProvider>
+        <ThemeProvider>
         <VariantProvider>
           <SafeAreaView style={{ flex: 1 }}>
             <AppContent />
             <GlobalActivityIndicator />
           </SafeAreaView>
         </VariantProvider>
-      </ThemeProvider>
+        </ThemeProvider>
+      </KeyboardProvider>
     </SafeAreaProvider>
   );
 }

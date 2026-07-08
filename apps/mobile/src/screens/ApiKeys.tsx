@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -9,26 +11,21 @@ import {
   View,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { listAvailableModels } from '@serfab/ai-models';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { getContextLimitTokens, setContextLimitTokens } from '../data/assistantSettings';
-
-// TODO: Replace AsyncStorage with react-native-keychain for secure storage
-const STORAGE_KEY = '@sereus/api-keys';
-
-type Provider = 'openai' | 'anthropic' | 'google';
-
-interface ApiKeyEntry {
-  id: string;
-  provider: Provider;
-  model: string;
-  apiKey: string;
-  enabled: boolean;
-}
+import { getApiKeys, saveApiKeys, type ApiKeyEntry, type Provider } from '../data/apiKeys';
 
 interface ApiKeysProps {
   onBack: () => void;
+}
+
+/** Per-row state for the "choose from available models" fetch. */
+interface ModelPickerState {
+  loading: boolean;
+  models?: Array<{ id: string; vision: boolean; tools: boolean }>;
+  error?: string;
 }
 
 const PROVIDERS: { value: Provider; label: string }[] = [
@@ -44,6 +41,7 @@ export default function ApiKeys(props: ApiKeysProps) {
   const [loading, setLoading] = useState(true);
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
   const [contextLimit, setContextLimit] = useState('');
+  const [modelPickers, setModelPickers] = useState<Record<string, ModelPickerState>>({});
 
   useEffect(() => {
     getContextLimitTokens().then((n) => setContextLimit(n ? String(n) : ''));
@@ -77,34 +75,49 @@ export default function ApiKeys(props: ApiKeysProps) {
     </View>
   );
 
-  // Load keys from storage
+  // Load keys from the device keychain (migrates off legacy AsyncStorage on first read).
   useEffect(() => {
     let alive = true;
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((raw) => {
-        if (!alive) return;
-        if (raw) {
-          try {
-            setKeys(JSON.parse(raw));
-          } catch {
-            setKeys([]);
-          }
-        }
+    getApiKeys()
+      .then((stored) => {
+        if (alive) setKeys(stored);
       })
       .finally(() => {
-        if (!alive) return;
-        setLoading(false);
+        if (alive) setLoading(false);
       });
     return () => {
       alive = false;
     };
   }, []);
 
-  // Save keys to storage
+  // Persist keys to the keychain.
   const saveKeys = useCallback(async (newKeys: ApiKeyEntry[]) => {
     setKeys(newKeys);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newKeys));
+    await saveApiKeys(newKeys);
   }, []);
+
+  // Fetch the models the provider actually offers for this key, to pick from.
+  const loadModels = useCallback(async (item: ApiKeyEntry) => {
+    if (!item.apiKey.trim()) {
+      setModelPickers((p) => ({ ...p, [item.id]: { loading: false, error: t('apiKeys.modelsNeedKey') } }));
+      return;
+    }
+    setModelPickers((p) => ({ ...p, [item.id]: { loading: true } }));
+    try {
+      const res = await listAvailableModels({ provider: item.provider, apiKey: item.apiKey.trim() });
+      const models = res.models.map((m) => ({
+        id: m.id,
+        vision: !!m.capabilities.vision,
+        tools: !!m.capabilities.tools,
+      }));
+      setModelPickers((p) => ({ ...p, [item.id]: { loading: false, models, error: res.warning } }));
+    } catch (e) {
+      setModelPickers((p) => ({
+        ...p,
+        [item.id]: { loading: false, error: (e as Error).message || 'Failed to list models' },
+      }));
+    }
+  }, [t]);
 
   const handleAdd = () => {
     const newEntry: ApiKeyEntry = {
@@ -224,18 +237,76 @@ export default function ApiKeys(props: ApiKeysProps) {
           </View>
         </View>
 
-        {/* Model input */}
+        {/* Model input + "choose from available" picker */}
         <View style={styles.fieldRow}>
-          <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>
-            {t('apiKeys.model')}
-          </Text>
+          <View style={styles.modelLabelRow}>
+            <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>
+              {t('apiKeys.model')}
+            </Text>
+            <TouchableOpacity onPress={() => loadModels(item)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={[styles.linkText, { color: theme.accentPrimary }]}>
+                {modelPickers[item.id]?.models ? t('apiKeys.refreshModels') : t('apiKeys.chooseModel')}
+              </Text>
+            </TouchableOpacity>
+          </View>
           <TextInput
             value={item.model}
             onChangeText={(text) => handleUpdateModel(item.id, text)}
-            placeholder="e.g., gpt-4o"
+            placeholder={t('apiKeys.modelPlaceholder')}
             placeholderTextColor={theme.textSecondary}
             style={[styles.input, { color: theme.textPrimary, borderColor: theme.border }]}
           />
+
+          {modelPickers[item.id]?.loading ? (
+            <View style={styles.modelStatusRow}>
+              <ActivityIndicator size="small" color={theme.textSecondary} />
+              <Text style={[styles.modelStatus, { color: theme.textSecondary }]}>
+                {t('apiKeys.loadingModels')}
+              </Text>
+            </View>
+          ) : null}
+
+          {modelPickers[item.id]?.error ? (
+            <Text style={[styles.modelStatus, { color: theme.error }]}>
+              {modelPickers[item.id]?.error}
+            </Text>
+          ) : null}
+
+          {modelPickers[item.id]?.models && modelPickers[item.id]!.models!.length > 0 ? (
+            <ScrollView
+              style={[styles.modelList, { borderColor: theme.border }]}
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+            >
+              {modelPickers[item.id]!.models!.map((m) => {
+                const selected = m.id === item.model;
+                return (
+                  <TouchableOpacity
+                    key={m.id}
+                    style={[styles.modelOption, { borderBottomColor: theme.border }]}
+                    onPress={() => handleUpdateModel(item.id, m.id)}
+                  >
+                    <Text
+                      style={{
+                        color: selected ? theme.accentPrimary : theme.textPrimary,
+                        fontWeight: selected ? '700' : '400',
+                        flex: 1,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {m.id}
+                    </Text>
+                    <Text style={[styles.modelCaps, { color: theme.textSecondary }]}>
+                      {[m.vision ? '👁' : '', m.tools ? '🔧' : ''].join(' ').trim()}
+                    </Text>
+                    {selected ? (
+                      <Ionicons name="checkmark" size={16} color={theme.accentPrimary} />
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          ) : null}
         </View>
 
         {/* API key input */}
@@ -407,6 +478,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[2],
     paddingVertical: spacing[1],
   },
+  modelLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  linkText: { ...typography.small, fontWeight: '600' },
+  modelStatusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[1], marginTop: spacing[1] },
+  modelStatus: { ...typography.small },
+  modelList: {
+    marginTop: spacing[1],
+    borderWidth: 1,
+    borderRadius: 8,
+    maxHeight: 200,
+  },
+  modelOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[2],
+    borderBottomWidth: 1,
+  },
+  modelCaps: { ...typography.small },
   apiKeyInputRow: {
     flexDirection: 'row',
     alignItems: 'center',

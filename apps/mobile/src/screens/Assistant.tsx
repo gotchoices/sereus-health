@@ -2,8 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +9,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {
+  AndroidSoftInputModes,
+  KeyboardController,
+  KeyboardEvents,
+} from 'react-native-keyboard-controller';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { resolveModel, type CacheStore, type CapabilityKey } from '@serfab/ai-models';
@@ -137,6 +140,25 @@ export default function Assistant(props: AssistantProps) {
   const [pendingPlan, setPendingPlan] = useState<PendingPlan | null>(
     () => conversationStore.pendingPlan,
   );
+
+  // Keyboard handling via react-native-keyboard-controller. While this screen is
+  // mounted we force ADJUST_NOTHING so the OS never resizes/pans the window; the
+  // controller's native WindowInsets give us the true keyboard height (correct even
+  // under Android edge-to-edge, where RN's own Keyboard height is wrong), and we pad
+  // the conversation by exactly that. One deterministic compensation, every device.
+  const [kbHeight, setKbHeight] = useState(0);
+  useEffect(() => {
+    KeyboardController.setInputMode(AndroidSoftInputModes.SOFT_INPUT_ADJUST_NOTHING);
+    const show = KeyboardEvents.addListener('keyboardDidShow', (e) => setKbHeight(e.height));
+    const hide = KeyboardEvents.addListener('keyboardDidHide', () => setKbHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+      setKbHeight(0);
+      KeyboardController.setDefaultMode();
+    };
+  }, []);
+  const keyboardOpen = kbHeight > 0;
 
   // Don't persist until hydration has run — otherwise the mount-time mirror
   // effects would write the initial empty state over the saved conversation.
@@ -476,10 +498,8 @@ export default function Assistant(props: AssistantProps) {
         </View>
       ) : (
         // Configured state - conversation UI
-        <KeyboardAvoidingView
-          style={styles.conversationContainer}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
+        <View style={[styles.conversationContainer, { paddingBottom: kbHeight }]}>
+
           {/* Conversation area */}
           <ScrollView
             ref={scrollViewRef}
@@ -573,10 +593,11 @@ export default function Assistant(props: AssistantProps) {
               </TouchableOpacity>
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       )}
 
-      {/* Bottom tab bar (4 tabs per navigation.md: Home, Assistant, Catalog, Settings) */}
+      {/* Bottom tab bar — hidden while typing so the input sits right above the keyboard. */}
+      {!keyboardOpen && (
       <View style={[styles.tabBar, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
         <TouchableOpacity style={styles.tab} onPress={() => props.onNavigateTab('home')}>
           <Ionicons
@@ -622,6 +643,7 @@ export default function Assistant(props: AssistantProps) {
           </Text>
         </TouchableOpacity>
       </View>
+      )}
     </View>
   );
 }
