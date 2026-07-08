@@ -1,45 +1,43 @@
-# Building the Assistant Prompt Pack
+# Building the Assistant Prompt Pack (local build note)
 
-This file is **for app developers**. It describes how to build the prompt pack that is transmitted to the in-app assistant each turn.
+For app developers. How the prompt pack is bundled and assembled.
 
 ## Key constraint
 
-The in-app assistant **cannot read the repo filesystem**. Any “reference docs” it needs must be **bundled** into the app and sent as part of the agent context.
+The in-app assistant cannot read the repo filesystem, so every doc it needs is
+compiled into the app.
 
-## What to include in the prompt pack
+## How it's built
 
-### Type 2 prompt pack docs (this folder)
+`scripts/build-assistant-pack.js` reads the docs below and emits
+`src/assistant/pack.generated.ts` (runs on `prestart`, or `yarn pack:build`).
+`src/assistant/pack.ts` re-exports `PACK_DOCS` + `DOMAIN_DOCS` from it.
 
-Include the full text of:
+> We use codegen, NOT a metro `.md` importer: adding `.md` to `sourceExts` makes
+> Metro index every markdown file in the monorepo (~18k) and pegs the packager.
 
-- `overview.md`
-- `protocol.md`
-- `tools.md`
-- `guardrails.md`
-- `action-plan.md`
+Bundled docs:
 
-### Domain truth excerpts (inject as named resources)
+- Prompt-pack (`PACK_DOCS`): `overview.md`, `protocol.md`, `tools.md`,
+  `guardrails.md`, `action-plan.md`, `attachments.md`.
+- Domain truth (`DOMAIN_DOCS`, named resources): `SCHEMA_QSQL` (schema.qsql),
+  `TAXONOMY_DOC`, `BUNDLES_DOC`, `LOGGING_DOC`, `IMPORT_EXPORT_DOC`.
 
-Include (or excerpt) and inject as named resources:
+## How the system prompt is assembled
 
-- `SCHEMA_QSQL`: from `design/specs/domain/schema.qsql`
-- `TAXONOMY_DOC`: from `design/specs/domain/taxonomy.md`
-- `BUNDLES_DOC`: from `design/specs/domain/bundles.md`
-- `LOGGING_DOC`: from `design/specs/domain/logging.md`
-- `IMPORT_EXPORT_DOC`: from `design/specs/domain/import-export.md`
+`src/assistant/systemPrompt.ts` composes each turn's system prompt from the
+bundled docs, in order: `overview` → domain docs → `protocol` → `action-plan` →
+`guardrails` → `tools` → `attachments` → per-turn **session context** (current
+screen, locale, timezone, current UTC time). The docs are the single source of
+truth — the composer only orders them and appends session context.
 
-If token budget is limited, prefer: `IMPORT_EXPORT_DOC` + `TAXONOMY_DOC` + a schema excerpt that contains table/entity names and key identity constraints.
+## Per-turn conversation context (handled outside the system prompt)
 
-## Per-turn app context (dynamic)
-
-At each agent turn, also transmit:
-
-- current screen/route (e.g., `Assistant`, `LogHistory`, `ConfigureCatalog`)
-- locale + timezone
-- current timestamp (UTC)
-- any attachments metadata (type, filename, byte size) and access handles
-- if an action plan is pending:
-  - the current action plan JSON
-  - the user selection state by `actionId`
-
-
+- The running conversation (user/assistant turns + tool calls/results) is threaded
+  as messages, so the model sees the whole thread. See `conversationStore.ts`.
+- Attachments are **not** inlined in history: a fresh attachment is sent inline for
+  its turn only; older ones appear as reference markers and are re-fetched on
+  demand via the `view_attachment` tool. See `attachmentStore.ts` /
+  `attachmentContext.ts`.
+- A pending action plan + its selection state are fed back to the model as the
+  `propose_plan` tool result when the user sends a new prompt or approves/dismisses.

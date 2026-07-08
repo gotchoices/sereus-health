@@ -2,7 +2,7 @@
 
 ## Rule: propose actions, require approval
 
-Do not directly mutate app data. Propose an **action plan** for preview/approval. Only execute after explicit user approval.
+Do not directly mutate app data. Propose an **action plan** (via the `propose_plan` tool — see TOOLS / ACTION PLAN FORMAT) for preview/approval. Only execute after explicit user approval.
 
 ## Action plan requirements
 

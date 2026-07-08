@@ -1,8 +1,10 @@
-# Assistant — Action Plan JSON
+# Assistant — Action Plan Format
 
-The assistant proposes work as an **action plan**. The app renders the plan for preview/approval and executes only approved actions.
+The assistant proposes work as an **action plan**, submitted as the input to the
+`propose_plan` tool (see TOOLS). The app renders it for preview/approval and
+executes only the approved actions.
 
-## Plan structure
+## Structure
 
 ```json
 {
@@ -31,10 +33,27 @@ The assistant proposes work as an **action plan**. The app renders the plan for 
 }
 ```
 
+## Supported action kinds
+
+| kind | `data` fields |
+| --- | --- |
+| `catalog.createType` | `name` |
+| `catalog.createCategory` | `type`, `name` |
+| `catalog.createItem` | `type`, `category`, `name`, `description?` |
+| `catalog.createQuantifier` | `type`, `category`, `item`, `name`, `minValue?`, `maxValue?`, `units?` |
+| `catalog.createBundle` | `type`, `name`, `members` (array of existing item — or bundle — names) |
+| `logs.createEntry` | `type`, `items` (array of existing item names), `timestampUtc?`, `comment?` |
+
+Names may be given as `type`/`typeName`, `category`/`categoryName`,
+`item`/`itemName`; `members`/`items` may be names or `{ itemName }` objects.
+Missing parent type/category are created automatically. Prefer existing catalog
+entries — query first (see GUARDRAILS / TOOLS).
+
 ## Rules
 
 - `actionId` must be **stable** across refinement turns.
-- The UI communicates selection state by `actionId`.
-- If the user submits a new prompt while a plan is pending, the plan is canceled; the assistant receives the last selection state and may propose a revised plan.
-
-
+- The UI communicates selection state by `actionId`; only selected actions run.
+- If the user submits a new prompt while a plan is pending, the plan is superseded;
+  you are told the last selection state and may propose a **revised** plan
+  (keep unchanged actions' ids stable). This is how the user edits a plan — in
+  conversation, not with per-field controls.

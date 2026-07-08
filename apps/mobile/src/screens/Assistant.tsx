@@ -32,6 +32,11 @@ import {
   type Message,
   type PendingPlan,
 } from '../assistant/conversationStore';
+import {
+  hydrateConversation,
+  persistConversation,
+  clearPersistedConversation,
+} from '../assistant/conversationPersistence';
 
 type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
 
@@ -116,13 +121,31 @@ export default function Assistant(props: AssistantProps) {
     () => conversationStore.pendingPlan,
   );
 
-  // Mirror the display state back into the store so it persists across tab switches.
+  // Mirror the display state into the store (survives tab switches) and persist
+  // it (survives app restarts). modelMessages is already updated in place by the
+  // time these run, so persisting here captures the whole conversation.
   useEffect(() => {
     conversationStore.messages = messages;
+    void persistConversation();
   }, [messages]);
   useEffect(() => {
     conversationStore.pendingPlan = pendingPlan;
+    void persistConversation();
   }, [pendingPlan]);
+
+  // On first mount of an app run, rehydrate the persisted conversation.
+  useEffect(() => {
+    let alive = true;
+    hydrateConversation().then((loaded) => {
+      if (alive && loaded) {
+        setMessages(conversationStore.messages);
+        setPendingPlan(conversationStore.pendingPlan);
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const [planBusy, setPlanBusy] = useState(false);
   const [attachment, setAttachment] = useState<Attachment | null>(null);
@@ -352,6 +375,7 @@ export default function Assistant(props: AssistantProps) {
     setPendingPlan(null);
     clearConversation(); // truncates modelMessages in place (ref stays valid)
     void clearAttachments(); // delete stored attachment blobs
+    void clearPersistedConversation(); // drop the saved conversation
   };
 
   const renderMessage = (message: Message) => {

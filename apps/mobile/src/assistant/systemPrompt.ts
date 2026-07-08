@@ -1,11 +1,10 @@
 /**
- * Builds the assistant system prompt for a turn: the bundled prompt pack plus
- * per-turn dynamic context (screen, locale, timezone, current time).
+ * Builds the assistant system prompt for a turn from the bundled prompt-pack docs
+ * plus per-turn dynamic session context (screen, locale, timezone, current time).
  *
- * Chunk C scope: conversation + app guidance only. The action-plan protocol,
- * tools, and guardrails docs are bundled (see pack.ts) but NOT yet included here,
- * because the tools/approval machinery isn't wired — including them would invite
- * the model to claim it took actions it can't. They get added in the tools chunk.
+ * The docs are the single source of truth (see design/specs/mobile/global/
+ * assistant/*.md and pack.md). This composer only orders them and appends the
+ * session context — it holds no prompt text of its own.
  */
 import { DOMAIN_DOCS, PACK_DOCS } from './pack';
 
@@ -30,49 +29,12 @@ export function buildSystemPrompt(ctx: AssistantContext = {}): string {
     parts.push(section(name, doc));
   }
 
-  // Action-plan protocol, format, and guardrails (the operating manual for writes).
+  // Operating manual: protocol, plan format, guardrails, tools, attachments.
   parts.push(section('ACTION PLAN PROTOCOL', PACK_DOCS.protocol));
   parts.push(section('ACTION PLAN FORMAT', PACK_DOCS.actionPlan));
   parts.push(section('GUARDRAILS', PACK_DOCS.guardrails));
-
-  // How the abstract protocol maps onto the concrete tools available now.
-  parts.push(
-    section(
-      'Tools and current capabilities',
-      [
-        'You have exactly two tools:',
-        '(1) db_query — run read-only SQL (SELECT/WITH only) using SCHEMA_QSQL for',
-        'table/column names. Query whenever it helps accuracy (counts, checking for',
-        'existing catalog entries before proposing duplicates), but not gratuitously.',
-        '(2) propose_plan — submit an action plan for the user to review and approve.',
-        '',
-        'CRITICAL — how to propose changes: To create/import/set ANYTHING, you MUST',
-        'invoke the propose_plan tool (an actual tool/function call). Do NOT write the',
-        'plan as text, markdown, or a JSON code block in your reply. The app can only',
-        'render and execute plans submitted THROUGH the propose_plan tool; a plan',
-        'merely described in prose does nothing and is a failure. The "ACTION PLAN',
-        'FORMAT" section defines that tool\'s input structure — it is not text to type',
-        'out. After you call propose_plan, add at most one short sentence like',
-        '"I\'ve proposed a plan below — review and approve it." Never claim a change',
-        'has been made; it runs only after the user approves.',
-        'For pure "how do I…?" questions, just answer (name the screen and steps) —',
-        'no tool needed.',
-        '',
-        'REUSE, do not recreate: before proposing to create any type, category, or',
-        'item, use db_query to check whether it already exists by name, and prefer',
-        'the existing entry. When the user names items without specifying a',
-        'type/category, search the catalog for those item names and reuse the ones',
-        'that already exist rather than creating a new type/category. Only propose',
-        'creating catalog entries that are genuinely missing.',
-        '',
-        'ATTACHMENTS: the user may attach an image or PDF. For a meal/food photo,',
-        'identify the foods and propose catalog items (if missing) and/or a log',
-        'entry for them. For a recipe, propose the items and a bundle. For a',
-        'document/spreadsheet of records, propose the corresponding imports. Always',
-        'go through propose_plan, and query first to reuse existing catalog entries.',
-      ].join(' '),
-    ),
-  );
+  parts.push(section('TOOLS', PACK_DOCS.tools));
+  parts.push(section('ATTACHMENTS', PACK_DOCS.attachments));
 
   // Per-turn dynamic context.
   const dyn: string[] = [];

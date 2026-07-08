@@ -23,6 +23,7 @@ const PACK_DOCS = {
   tools: 'specs/mobile/global/assistant/tools.md',
   guardrails: 'specs/mobile/global/assistant/guardrails.md',
   actionPlan: 'specs/mobile/global/assistant/action-plan.md',
+  attachments: 'specs/mobile/global/assistant/attachments.md',
 };
 
 // Domain-truth docs, injected as named resources.

@@ -1,29 +1,38 @@
-# Vercel AI SDK in Bare React Native (Local)
+# Model & Chat Integration (local build note)
 
-Plan: use the Vercel AI SDK in bare React Native (no server) with **BYO API keys**.
+For app developers. How the app talks to LLM providers, in bare React Native with
+**bring-your-own API keys** (no server).
 
-## Packages
+## Through `@serfab/ai-models`
 
-- Core: `ai` (v6.x)
-- Provider modules as needed (examples): `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`
+The app does not instantiate provider clients directly. Everything goes through the
+`@serfab/ai-models` package (`health/packages/ai-models`):
 
-## How it works in bare RN
+- **Model selection** — `resolveModel({ provider, apiKey }, { require, cache })`
+  queries the provider's `/models` endpoint (what the key can actually call) and
+  intersects it with models.dev capability metadata. It auto-picks a valid model
+  and can require capabilities (`tools`, `vision`, `pdf`). No hardcoded model ids.
+- **Chat** — `@serfab/ai-models/chat` wraps the Vercel AI SDK (`generateText`).
+  This is the ONLY place `@ai-sdk/*` is imported; a provider/SDK swap touches only
+  that seam.
 
-- Use **non-streaming** calls only.
-- Call `generateText({ model, messages|prompt })` and `await` the full result.
-- This is async (Promise-based): show loading state; the UI should not freeze.
+## What we use
 
-## Provider switching (runtime)
-
-- Store one or more provider API keys in app preferences (secure storage preferred).
-- When the user selects a provider, instantiate the corresponding provider client + model at runtime (OpenAI, Anthropic, Gemini, etc.).
-- Always call the same `generateText()` API regardless of provider.
+- **Non-streaming** `chat()` (await the full result). Bare-RN `fetch` lacks
+  reliable `ReadableStream`, so streaming UI is avoided.
+- **Tool calling** (`tools` + multi-step loop): `db_query`, `propose_plan`,
+  `view_attachment` (see TOOLS). Requires a tools-capable model (gated via
+  `resolveModel({ require: ['tools'] })`).
+- **Multimodal input**: images/PDFs are passed as content-part **bytes**
+  (`Uint8Array`), not base64 strings — a bare base64/`data:` string makes the SDK
+  try to `fetch` it (RN can't), failing with `AI_DownloadError`. Attachment vision
+  needs a `vision`/`pdf`-capable model.
+- **Media tool results**: `view_attachment` returns image bytes via a tool
+  `toModelOutput` content result. Supported by Anthropic; gated per provider.
 
 ## Gotchas
 
-- Don’t use `useChat` / streaming UI: bare RN `fetch` commonly lacks `ReadableStream` support (`response.body.getReader()`), so streaming is unreliable.
-- AI Gateway mode isn’t the fit here: it expects a gateway credential and/or centrally-managed provider keys; we call providers directly with user keys.
-- Provider capabilities differ (tool calling, JSON modes, message role quirks). Start with plain text chat for maximum portability.
-- BYO keys means no bundled secret, but still store keys securely (Keychain/Keystore preferred).
-
-
+- Don't use `useChat`/streaming.
+- Provider capabilities differ — always gate via `resolveModel`.
+- BYO keys: no bundled secret; store keys securely (Keychain/Keystore — TODO,
+  currently AsyncStorage).

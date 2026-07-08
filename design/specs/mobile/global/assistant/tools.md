@@ -1,90 +1,59 @@
 # Assistant — Tools
 
-This file defines the tool inventory and the minimal “API contract” for each tool.
+The tools the in-app assistant actually has, and how to use them. (Provider tool
+names must match `^[a-zA-Z0-9_-]+$`, so wire names use underscores, e.g.
+`db_query`.)
 
-## Domain truth (provided in context)
+## Domain truth (provided as named resources in context)
 
-You will be provided these documents in the agent context (as text):
+`SCHEMA_QSQL`, `TAXONOMY_DOC`, `BUNDLES_DOC`, `LOGGING_DOC`, `IMPORT_EXPORT_DOC`.
 
-- `SCHEMA_QSQL`
-- `TAXONOMY_DOC`
-- `BUNDLES_DOC`
-- `LOGGING_DOC`
-- `IMPORT_EXPORT_DOC`
+## `db_query` — read-only SQL
 
-## Tool: `db.exec`
+Run a single read-only `SELECT`/`WITH` against the local health DB; returns up to
+200 rows. Use `SCHEMA_QSQL` for table/column names. Query whenever it improves
+accuracy (counts, checking for existing catalog entries before proposing
+duplicates), but not gratuitously. Read-only: no `INSERT`/`UPDATE`/`DELETE`/DDL.
 
-Execute SQL against the local DB.
+## `propose_plan` — propose an action plan (the ONLY way to change data)
 
-- **Input**
-  - `sql`: string
-  - `params`: array (positional bind params)
-- **Output**
-  - `rowsAffected`: number
+To create/import/set **anything**, you MUST invoke the `propose_plan` tool (a real
+tool/function call). Do **not** write the plan as text, markdown, or a JSON code
+block — the app can only render and execute plans submitted THROUGH this tool; a
+plan described in prose does nothing. See **ACTION PLAN FORMAT** for the input
+structure (that is the tool's schema, not text to type out). After calling it, add
+at most one short sentence ("I've proposed a plan below — review and approve it").
+Never claim a change is done; it runs only after the user approves.
 
-Rules:
+There is no write/`db.exec` tool. Approved plan actions are executed by the app
+itself, insert-only and idempotently (see **GUARDRAILS**).
 
-- Do not call unless it is required to fulfill the user request and/or produce a correct preview.
-- Insert-only for now: no `DELETE` / `UPDATE` statements.
+## `view_attachment` — re-view an earlier attachment
 
-## Tool: `db.query`
+A freshly attached image/PDF is shown to you inline on the turn it is sent. Older
+attachments appear as `[Attachment "name" … id="…"]` markers (their bytes are not
+inline). To look at one again, call `view_attachment` with its id. (Offered only on
+providers whose tool results can carry media; if it isn't available, ask the user
+to re-attach.)
 
-Query the local DB (read-only).
+## Reuse, don't recreate
 
-- **Input**
-  - `sql`: string
-  - `params`: array
-- **Output**
-  - `rows`: array of objects
+Before proposing to create any type, category, or item, use `db_query` to check
+whether it already exists by name, and prefer the existing entry. When the user
+names items without specifying a type/category, search the catalog and reuse the
+ones that already exist rather than creating a new type/category. Only propose
+creating entries that are genuinely missing.
 
-Rules:
+## "How do I…?" questions
 
-- No unsolicited queries.
+Just answer — name the screen and the minimal steps. No tool needed.
 
-## Tool: `import.canonical`
+## Planned (NOT yet available — do not attempt or promise these)
 
-Import canonical app data (YAML/JSON) from an attached file or pasted content.
+- `import.canonical` — import canonical YAML/JSON from an attachment/paste → plan.
+- `export.logs.csv` / `export.catalog` / `export.backup` — export data as files.
+- `reminders.set` — propose reminder changes as a plan.
 
-- **Input**
-  - `source`: `{ kind: 'attachment' | 'paste', id?: string, text?: string }`
-  - `mode`: `'catalog' | 'logs' | 'backup'`
-- **Output**
-  - `plan`: proposed actions with stable IDs (for preview/approval)
-
-## Tool: `export.logs.csv`
-
-Export log entries as CSV per `IMPORT_EXPORT_DOC`.
-
-- **Input**
-  - `scope`: `'all' | 'filtered'`
-- **Output**
-  - `file`: `{ filename: string, mime: 'text/csv' }`
-
-## Tool: `export.catalog`
-
-Export catalog as canonical YAML/JSON per `IMPORT_EXPORT_DOC`.
-
-- **Input**
-  - `format`: `'yaml' | 'json'`
-- **Output**
-  - `file`: `{ filename: string, mime: string }`
-
-## Tool: `export.backup`
-
-Export full backup as canonical YAML/JSON per `IMPORT_EXPORT_DOC`.
-
-- **Input**
-  - `format`: `'yaml' | 'json'`
-- **Output**
-  - `file`: `{ filename: string, mime: string }`
-
-## Tool: `reminders.set`
-
-Create/update reminders.
-
-- **Input**
-  - `reminders`: array (new desired reminder configuration)
-- **Output**
-  - `plan`: proposed actions with stable IDs (for preview/approval)
-
-
+Until these exist: for an import, read the attached content yourself
+(`view_attachment`) and propose the equivalent create actions via `propose_plan`;
+for exports, point the user to the **Backup & Import** screen.
