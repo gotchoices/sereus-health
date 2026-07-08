@@ -12,6 +12,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
+import { getContextLimitTokens, setContextLimitTokens } from '../data/assistantSettings';
 
 // TODO: Replace AsyncStorage with react-native-keychain for secure storage
 const STORAGE_KEY = '@sereus/api-keys';
@@ -42,6 +43,39 @@ export default function ApiKeys(props: ApiKeysProps) {
   const [keys, setKeys] = useState<ApiKeyEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
+  const [contextLimit, setContextLimit] = useState('');
+
+  useEffect(() => {
+    getContextLimitTokens().then((n) => setContextLimit(n ? String(n) : ''));
+  }, []);
+
+  const handleContextLimitChange = useCallback((text: string) => {
+    const digits = text.replace(/[^0-9]/g, '');
+    setContextLimit(digits);
+    void setContextLimitTokens(digits ? Number(digits) : 0);
+  }, []);
+
+  const contextLimitFooter = (
+    <View style={[styles.keyRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+      <View style={styles.fieldsContainer}>
+        <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>
+          Conversation context limit (approx tokens)
+        </Text>
+        <TextInput
+          value={contextLimit}
+          onChangeText={handleContextLimitChange}
+          placeholder="Blank = unlimited"
+          placeholderTextColor={theme.textSecondary}
+          keyboardType="number-pad"
+          style={[styles.input, { color: theme.textPrimary, borderColor: theme.border }]}
+        />
+        <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: spacing[1] }}>
+          When the conversation exceeds this, the oldest exchanges are dropped from
+          what the assistant sees. Your on-screen transcript is unaffected.
+        </Text>
+      </View>
+    </View>
+  );
 
   // Load keys from storage
   useEffect(() => {
@@ -280,6 +314,7 @@ export default function ApiKeys(props: ApiKeysProps) {
           keyExtractor={(k) => k.id}
           renderItem={renderKeyRow}
           contentContainerStyle={{ padding: spacing[3] }}
+          ListFooterComponent={contextLimitFooter}
         />
       )}
     </View>

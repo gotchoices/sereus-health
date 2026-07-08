@@ -23,6 +23,8 @@ import { buildAssistantTools, PROPOSE_PLAN_TOOL } from '../assistant/tools';
 import { pickAttachment, captureFromCamera, type Attachment } from '../assistant/attachment';
 import { saveAttachment, clearAttachments } from '../assistant/attachmentStore';
 import { attachmentMarker, inlinePart, sanitizeForHistory } from '../assistant/attachmentContext';
+import { pruneToTokenBudget } from '../assistant/prune';
+import { getContextLimitTokens } from '../data/assistantSettings';
 import { parseActionPlan, type ActionPlan } from '../assistant/actionPlan';
 import { executePlan, summarizeExecution } from '../assistant/executor';
 import ActionPlanCard from '../assistant/ActionPlanCard';
@@ -121,26 +123,33 @@ export default function Assistant(props: AssistantProps) {
     () => conversationStore.pendingPlan,
   );
 
+  // Don't persist until hydration has run — otherwise the mount-time mirror
+  // effects would write the initial empty state over the saved conversation.
+  const persistReady = useRef(false);
+
   // Mirror the display state into the store (survives tab switches) and persist
   // it (survives app restarts). modelMessages is already updated in place by the
   // time these run, so persisting here captures the whole conversation.
   useEffect(() => {
     conversationStore.messages = messages;
-    void persistConversation();
+    if (persistReady.current) void persistConversation();
   }, [messages]);
   useEffect(() => {
     conversationStore.pendingPlan = pendingPlan;
-    void persistConversation();
+    if (persistReady.current) void persistConversation();
   }, [pendingPlan]);
 
-  // On first mount of an app run, rehydrate the persisted conversation.
+  // On first mount of an app run, rehydrate the persisted conversation, then
+  // allow persistence.
   useEffect(() => {
     let alive = true;
     hydrateConversation().then((loaded) => {
-      if (alive && loaded) {
+      if (!alive) return;
+      if (loaded) {
         setMessages(conversationStore.messages);
         setPendingPlan(conversationStore.pendingPlan);
       }
+      persistReady.current = true;
     });
     return () => {
       alive = false;
@@ -289,6 +298,10 @@ export default function Assistant(props: AssistantProps) {
       if (resolved.warning) {
         setNotice(resolved.warning);
       }
+
+      // Keep the model's context within the user's configured budget (0 = unlimited).
+      // Prunes the oldest prior turns in place; the current turn is always included.
+      pruneToTokenBudget(history, await getContextLimitTokens());
 
       // Persist the attachment's bytes to disk; history keeps only a marker.
       const ref = att ? await saveAttachment(att) : null;
@@ -450,8 +463,11 @@ export default function Assistant(props: AssistantProps) {
         // Configured state - conversation UI
         <KeyboardAvoidingView
           style={styles.conversationContainer}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={100}
+          // Give Android an explicit behavior: modern Android (edge-to-edge)
+          // ignores windowSoftInputMode=adjustResize, so relying on it lets the
+          // keyboard overlay the input. 'height' resizes this view above the keyboard.
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}
         >
           {/* Conversation area */}
           <ScrollView
