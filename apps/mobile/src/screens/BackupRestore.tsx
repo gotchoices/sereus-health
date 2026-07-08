@@ -50,28 +50,41 @@ export default function BackupRestore(props: BackupRestoreProps) {
       await RNFS.writeFile(downloadsPath, yamlContent, 'utf8');
       logger.info('Backup saved to:', downloadsPath);
 
-      // Also offer to share
-      await Share.open({
-        title: 'Export Backup',
-        message: 'Sereus Health Backup',
-        url: Platform.OS === 'android' ? `file://${downloadsPath}` : downloadsPath,
-        type: 'text/yaml',
-        filename,
-        saveToFiles: true, // iOS: show "Save to Files" option
-      });
-
-      // Show success message with file location
+      // Saving to the device IS the export. Sharing is a separate, optional step:
+      // a dismissed share sheet (and on Android, its unreliable post-share result)
+      // must never turn a successful save into an "Export Failed" error.
       Alert.alert(
         'Backup Exported',
         Platform.OS === 'android'
           ? `Saved to Downloads:\n${filename}`
-          : `Saved to app Documents folder:\n${filename}`
+          : `Saved to app Documents folder:\n${filename}`,
+        [
+          { text: 'Done', style: 'cancel' },
+          { text: 'Share…', onPress: () => shareBackupFile(downloadsPath, filename) },
+        ],
       );
     } catch (err) {
       logger.error('Export backup failed:', err);
       Alert.alert('Export Failed', String(err));
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  // Optional share — kept separate so cancelling it is never treated as failure.
+  const shareBackupFile = async (path: string, filename: string) => {
+    try {
+      await Share.open({
+        title: 'Sereus Health Backup',
+        url: Platform.OS === 'android' ? `file://${path}` : path,
+        type: 'text/yaml',
+        filename,
+        saveToFiles: true,
+      });
+    } catch (err) {
+      // react-native-share rejects on dismissal ("User did not share") and, on
+      // Android, sometimes even after a successful share. Neither is an error.
+      logger.debug('Share dismissed or unavailable:', err);
     }
   };
 
@@ -152,11 +165,20 @@ export default function BackupRestore(props: BackupRestoreProps) {
       message,
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Import (Merge)',
-          onPress: () => performImport(backupData, 'merge'),
-        },
-        // TODO: Add "Import (Replace)" option when clear DB is implemented
+        { text: 'Merge', onPress: () => performImport(backupData, 'merge') },
+        { text: 'Replace…', style: 'destructive', onPress: () => confirmReplace(backupData) },
+      ]
+    );
+  };
+
+  // Replace = clear all local data first, then import. Double-confirm (destructive).
+  const confirmReplace = (backupData: BackupData) => {
+    Alert.alert(
+      'Replace all data?',
+      'This clears ALL current data on this device, then imports the backup. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Clear & Import', style: 'destructive', onPress: () => performImport(backupData, 'replace') },
       ]
     );
   };

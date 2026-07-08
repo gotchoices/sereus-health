@@ -37,6 +37,12 @@ export interface CreateLogEntryInput {
   timestamp: string;
   typeId: string;
   comment: string | null;
+  /**
+   * Originating-zone offset (minutes; local = UTC + offset). Normally omitted so
+   * it's captured from this device's zone at `timestamp`. Backup **restore**
+   * passes the value from the backup so the original zone survives a device move.
+   */
+  eventUtcOffsetMinutes?: number | null;
   items: Array<{
     itemId: string;
     sourceBundleId: string | null;
@@ -55,7 +61,9 @@ export async function createLogEntry(input: CreateLogEntryInput): Promise<string
       toDbDatetime(input.timestamp),
       input.typeId,
       input.comment,
-      captureUtcOffsetMinutes(input.timestamp),
+      input.eventUtcOffsetMinutes !== undefined
+        ? input.eventUtcOffsetMinutes
+        : captureUtcOffsetMinutes(input.timestamp),
     ]);
 
     for (const item of input.items) {

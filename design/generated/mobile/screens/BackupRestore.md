@@ -3,10 +3,14 @@ provides:
   - screen:mobile:BackupRestore
 needs:
   - api:importExport
+  - schema:taxonomy
+  - schema:logging
 dependsOn:
   - design/stories/mobile/09-backup.md
+  - design/stories/mobile/06-imp-exp.md
   - design/specs/mobile/screens/backup-restore.md
   - design/specs/domain/import-export.md
+  - design/specs/domain/rules.md
   - design/specs/mobile/navigation.md
   - design/specs/mobile/global/general.md
   - design/specs/mobile/global/ui.md
@@ -16,133 +20,100 @@ dependsOn:
 
 ## Purpose
 
-Allow the user to export a full backup of their data and import it later (e.g., when switching phones or after device reset).
+Export a full, **lossless-enough** backup of the user's data and import it later — the
+device-migration and disaster-recovery path (story 09). Import is idempotent and preview-first, and
+supports both **Merge** and **Replace** intents.
 
-## Screen Identity
+## Route
+- **Route**: `BackupRestore` (push from `Settings`) · **Title**: "Backup & Import"
 
-- **Route**: `BackupRestore` (push from `Settings`)
-- **Title**: "Backup & Import"
-- **Deep Link**: `health://screen/BackupRestore?variant={happy|empty|error}`
-
-## User Journey Context
-
-From stories:
-- **09-backup.md**: Bob exports a full backup to keep it safe in cloud storage. Later, when he gets a new phone, he imports his backup file and all his data is back.
-
-## Layout & Information Architecture
+## Layout
 
 ### Header
-- **Title**: "Backup & Import"
-- **Back Button**: Returns to `Settings`
+- Back (→ `Settings`) · title "Backup & Import".
 
-### Main Content Area
+### Status (recommended — currently static)
+- "Last backup" (timestamp / "Never") and "Modified since last backup". **Shipped as static
+  placeholders** (`Never` / `Unknown`); wiring real values (persist `lastBackupAt`, compare a data
+  hash/mtime) is an open follow-up. When modified-since is known-true, nudge an export before any
+  destructive action (Clear, Replace).
 
-#### Status Section (recommended)
+### Export
+- **Export backup** (primary CTA).
+- Flow (order matters — matches `import-export.md` "Sharing"):
+  1. Serialize `exportBackup()` → YAML (`js-yaml`).
+  2. **Write to user storage** — Downloads (Android) / Documents (iOS), filename
+     `sereus-health-backup-<ISO>.yaml`. **This is the export.**
+  3. Show confirmation with the file location, offering an **optional "Share…"** action.
+- **Sharing is decoupled and never fails the export.** `react-native-share` rejects when the sheet is
+  dismissed ("User did not share") and, on Android, sometimes even after a *successful* share — so the
+  share call lives in its own handler (`shareBackupFile`) whose rejection is swallowed (logged at
+  debug). A saved-but-not-shared backup is a success, not an error. (This corrects a prior bug where
+  the forced inline share turned every non-share into "Export Failed".)
 
-Display basic backup status:
-- **Last backup**: timestamp (formatted to locale) or "Never"
-- **Modified since last backup**: yes/no indicator
-  - If "yes", show a gentle reminder to export before performing destructive actions (clear, replace-mode import)
+### Import
+- **Import backup** (secondary CTA) → OS file picker (YAML/JSON; `plainText`/`text/yaml`/`allFiles`).
+- **Preview-before-commit (required)**: parse → `importBackup(data, { dryRun: true })` → Alert with
+  **add / update / skip** counts and warning/error count. Then choose:
+  - **Merge** (default) — idempotent import into existing data.
+  - **Replace…** — **double-confirmed** ("Replace all data? … cannot be undone") → clears all local
+    data, then imports.
+  - **Cancel**.
+- Errors present in the dry-run block the commit and are shown.
 
-#### Export Section
+### Danger zone (`__DEV__` only)
+- **Clear Local Data** → `resetDatabaseForDev()`: a **full nuke** of the optimystic LevelDB stores
+  (incl. node identity); requires an app relaunch to re-bootstrap. This is distinct from Replace-mode's
+  in-session clear (below) and remains dev-gated.
 
-**Export Backup**
-- Button: prominent, primary style
-- Action: exports a full YAML backup file per `design/specs/domain/import-export.md`
-- After export:
-  1. Save to user-accessible storage (Downloads on Android, Documents on iOS)
-  2. Offer system share sheet (cloud providers, email, etc.)
-  3. Show confirmation with file location
-- Rationale: Story 09 shows Bob exporting and saving to cloud storage
+## What a backup contains (format)
 
-#### Import Section
+Canonical YAML per `import-export.md` (`data/backup.ts` `BackupData`):
 
-**Import Backup**
-- Button: secondary style
-- Action: opens system file picker to select a backup file (YAML/CSV/JSON)
-- **Preview-before-commit flow**:
-  1. Parse file and detect format
-  2. Show preview: counts (add/update/skip), any errors/warnings
-  3. Offer import mode choice for full backups:
-     - **Merge (default)**: idempotent import into existing data (safe)
-     - **Replace**: clear local data first, then import (stronger guarantee of matching backup state)
-  4. User confirms or cancels
-  5. If confirmed, apply import
-  6. Show summary (added/updated/skipped + any failures)
-- Must be idempotent per `design/specs/domain/import-export.md`
-- Rationale: Story 09 shows Alice importing Bob's catalog without duplicates, and Bob re-importing on a new phone
+- `version`, `exportedAtUtc`
+- `catalog.types[]` — authoritative (from the `types` table)
+- `catalog.categories[]` `{typeName, name}` — **queried directly, so empty categories survive**
+- `catalog.items[]` `{typeName, categoryName, name, description?, quantifiers[]}` — includes quantifier **definitions** (name/min/max/units)
+- `catalog.bundles[]` `{typeName, name, itemNames[]}`
+- `logs[]` `{timestampUtc, eventUtcOffsetMinutes?, typeName, items[{categoryName, itemName, quantifiers[{name,value,units?}]}], comment?}` — **originating-zone offset preserved** (per `rules.md` Time) so a restored entry still reads in the zone it was logged in
+- `settings` — `{}` for now
 
-#### Danger Zone (dev-only or explicit user action)
+**Not yet captured (documented gaps, not blockers):**
+- **`retiredAt`** on any entity — retired/hidden items/categories/bundles restore as **active**. (Round-trips the data, loses the hidden flag.)
+- **Nested bundles** (`member_bundle_id`) — bundles export as flat `itemNames`.
+- **`settings`** — theme + reminders not persisted here yet. **API keys are deliberately excluded** (they live in device secure storage; writing them into a shareable plaintext file would be a security regression).
 
-**Clear Local Data** (destructive)
-- Button: danger/destructive style (red border/text)
-- Action: deletes all local database files (not just "reset to defaults", but fully wipe)
-- Confirmation: "This will delete all your data. Continue?"
-- Before allowing: if DB is modified since last backup, strongly encourage export first
-- After clear: "Done. Fully close and relaunch the app to re-seed."
-- Placement: Separated visually (danger zone section), not on Settings root
-- Note: This replaces "Reset DB (dev)" and becomes a real user-facing feature if desired (or keep dev-only with `__DEV__` gate)
+## Import behavior (`data/backup.ts` `importBackup`)
 
-### Bottom Navigation (Tab Bar)
+- **Catalog** reuses the tested **`importCanonicalCatalog`** (idempotent by name identity; creates
+  types/categories/items/quantifiers/bundles). Existing rows are skipped (not updated) — safe/idempotent.
+- **Logs** imported here:
+  - Idempotency key **`(timestampUtc, typeName, set(itemNames))`** (per `import-export.md`); existing → **skip** (value/comment update-on-match is a future refinement).
+  - Resolves ids by name: type by name, item by `(type, categoryName, itemName)`, quantifier by `(item, name)`. Unresolved item/quantifier → warning (row/value skipped), never a hard crash.
+  - Inserts via `createLogEntry`, passing the backup's `eventUtcOffsetMinutes` so the original zone is retained (not recomputed from the importing device).
+- **Replace** (`mode:'replace'`, non-dry-run) calls **`clearAllData()`** first — a **session-safe**
+  table-level clear (`db/clear.ts`; child→parent `DELETE FROM` in one transaction, safe on Quereus
+  ≥4.3.1), leaving the strand/session alive so the import runs immediately. (Contrast the dev-only nuke.)
+- **Partial backups** are allowed — only what's present is applied.
+- **Ordering**: catalog before logs, so log item references resolve.
 
-No bottom tabs on this screen (it's a pushed screen, not a tab root).
+## Data functions
+`exportBackup(): BackupData` · `importBackup(data, { mode:'merge'|'replace', dryRun? }): ImportPreview`
+(`{catalogItems,bundles,logs}×{Add,Update,Skip}`, `warnings[]`, `errors[]`) · `clearAllData()` (db/clear.ts).
 
-## Navigation
+## Idempotency (per import-export.md)
+- Catalog item: `(typeName, categoryName, itemName)` · Quantifier: `(item, name)` · Bundle: `(typeName, bundleName)` · Log: `(timestampUtc, typeName, set(items))`.
 
-- **Back to**: `Settings` (pop)
-- **No forward navigation** (terminal screen in this stack)
+## Variants (mock)
+- **happy**: export writes + confirms (share optional); import preview shows add/update/skip, Merge and Replace both offered.
+- **empty**: nothing to export; import into empty DB adds everything.
+- **error**: invalid/parse failure → error alert, no write.
 
-## Data Shaping Notes
+## i18n
+Existing `backupRestore.*` keys cover the screen. Export/import **Alert** copy (Backup Exported, Share…,
+Done, Import Preview, Merge, Replace…, Replace-confirm, Export/Import Failed) is inline English in the
+screen, consistent with the file's existing alert style — no new keys required.
 
-BackupRestore interacts with:
-- **Backup status metadata** (app config or separate table):
-  - `lastBackupAt` (timestamp or null)
-  - `modifiedSinceBackup` (boolean)
-- **Export/import logic**:
-  - See `design/specs/domain/import-export.md` for YAML contracts and idempotency rules
-  - Import must detect format (CSV/YAML/JSON) and parse accordingly
-  - Import preview requires a "dry-run" pass over the data
-
-## Required i18n Keys
-
-- `backupRestore.title` — "Backup & Import"
-- `backupRestore.statusTitle` — "Status"
-- `backupRestore.statusLastBackupNever` — "Last backup: Never"
-- `backupRestore.statusLastBackupAt` — "Last backup: {date}"
-- `backupRestore.statusModifiedYes` — "Modified since last backup: Yes"
-- `backupRestore.statusModifiedNo` — "Modified since last backup: No"
-- `backupRestore.statusModifiedUnknown` — "Modified since last backup: Unknown"
-- `backupRestore.export` — "Export Backup"
-- `backupRestore.import` — "Import Backup"
-- `backupRestore.importModeTitle` — "Import Mode"
-- `backupRestore.importModeMerge` — "Merge (safe)"
-- `backupRestore.importModeReplace` — "Replace (clear first)"
-- `backupRestore.previewTitle` — "Import Preview"
-- `backupRestore.previewAdd` — "Add: {count}"
-- `backupRestore.previewUpdate` — "Update: {count}"
-- `backupRestore.previewSkip` — "Skip: {count}"
-- `backupRestore.previewConfirm` — "Confirm Import"
-- `backupRestore.dangerZone` — "Danger zone"
-- `backupRestore.clearData` — "Clear Local Data"
-- `backupRestore.clearDataTitle` — "Clear Local Data"
-- `backupRestore.clearDataConfirm` — "This will delete all your data. Continue?"
-- `backupRestore.clearDataAction` — "Clear"
-- `backupRestore.clearDataDone` — "Done. Fully close and relaunch the app."
-- `backupRestore.clearDataFailed` — "Failed. See logs for details."
-- `common.cancel` — "Cancel"
-- `common.notImplementedTitle` — "Not Implemented"
-- `common.notImplementedBody` — "This feature is coming soon."
-
-## UI Notes
-
-- Status section uses faded/secondary text for metadata
-- Export/Import buttons are full-width or prominent CTAs
-- "Clear Local Data" is visually separated (danger zone), with destructive styling (red border/text)
-- Import preview dialog/modal shows counts and errors before user commits
-- Confirmation dialogs follow platform conventions (Alert on RN)
-
-## Variants (mock data)
-
-- **happy** (default): Status shows "Last backup: 2 days ago", modified=no; import succeeds with preview
-- **empty**: Status shows "Last backup: Never", modified=unknown; import works but no existing data to merge
-- **error**: Import fails with parse error or invalid format
+---
+**Status**: Regenerated — functional restore (logs + bundles + quantifiers), Merge/Replace with session-safe clear, offset-preserving + empty-category export, share decoupled from save. Known gaps: retiredAt, nested bundles, settings, live status.
+**Last Updated**: 2026-07-08
