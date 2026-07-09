@@ -109,6 +109,25 @@ h2 {
   transform: translateY(-2px);
 }
 
+.apk-btn {
+  display: inline-block;
+  margin: 0.5rem 0 1rem;
+  padding: 0.8rem 1.5rem;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: var(--radius);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.apk-btn:hover {
+  background: var(--accent-dark);
+  transform: translateY(-2px);
+}
+
+@media (prefers-color-scheme: dark) { .apk-btn { color: #0f1512; } }
+
 .cat-name { font-weight: 700; font-size: 1.1rem; }
 .cat-desc { color: var(--muted); font-size: 0.95rem; flex: 1; }
 .cat-meta { color: var(--muted); font-size: 0.82rem; }
