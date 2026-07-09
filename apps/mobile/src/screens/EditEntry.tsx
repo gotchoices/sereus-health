@@ -3,13 +3,13 @@ import {
   Alert,
   Modal,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { spacing, typography, useTheme } from '../theme/useTheme';
@@ -254,7 +254,7 @@ export default function EditEntry(props: { mode: EditEntryMode; entryId?: string
       {loading ? (
         <View style={styles.center}><Text style={{ color: theme.textSecondary }}>{t('common.loading')}</Text></View>
       ) : (
-        <ScrollView contentContainerStyle={{ padding: spacing[3], gap: spacing[3] }} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScrollView contentContainerStyle={{ padding: spacing[3], gap: spacing[3] }} keyboardShouldPersistTaps="handled" bottomOffset={24}>
           {error ? <View style={[styles.banner, { backgroundColor: theme.bannerError }]}><Text style={{ color: theme.textPrimary }}>{error}</Text></View> : null}
 
           {/* Type */}
@@ -392,7 +392,7 @@ export default function EditEntry(props: { mode: EditEntryMode; entryId?: string
           <TouchableOpacity onPress={onPressSave} disabled={!canSave} style={[styles.primaryButton, { backgroundColor: canSave ? theme.accentPrimary : theme.border }]}>
             <Text style={styles.primaryButtonText}>{primaryLabel}</Text>
           </TouchableOpacity>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       )}
 
       {showDatePicker ? <DateTimePicker value={timestampDate} mode="date" display="default" onChange={onDateTimeChange} /> : null}

@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
-  ScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -9,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { spacing, typography, useTheme } from '../theme/useTheme';
@@ -140,7 +140,7 @@ export default function Reminders(props: { onBack: () => void }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
+      <KeyboardAwareScrollView style={styles.content} keyboardShouldPersistTaps="handled" bottomOffset={24}>
         {!hasPermission ? (
           <View style={[styles.permBanner, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={[styles.permTitle, { color: theme.textPrimary }]}>{t('reminders.permTitle')}</Text>
@@ -202,7 +202,7 @@ export default function Reminders(props: { onBack: () => void }) {
             </View>
           ))}
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {pickerReminder ? (
         <DateTimePicker

@@ -3,13 +3,13 @@ import {
   Alert,
   FlatList,
   Modal,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
@@ -209,7 +209,7 @@ export default function EditBundle(props: { bundleId?: string; type?: CatalogTyp
           <Text style={{ color: theme.textSecondary }}>{t('common.loading')}</Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={{ padding: spacing[3], gap: spacing[3] }} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScrollView contentContainerStyle={{ padding: spacing[3], gap: spacing[3] }} keyboardShouldPersistTaps="handled" bottomOffset={24}>
           {error ? (
             <View style={[styles.banner, { backgroundColor: theme.bannerError }]}>
               <Text style={{ color: theme.textPrimary }}>{error}</Text>
@@ -388,7 +388,7 @@ export default function EditBundle(props: { bundleId?: string; type?: CatalogTyp
               </View>
             ) : null}
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       )}
 
       {/* Picker modal */}
