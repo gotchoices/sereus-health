@@ -9,6 +9,7 @@ import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { resetDatabaseForDev } from '../db/reset';
 import { createLogger } from '../util/logger';
+import { track } from '../util/activity';
 import { exportBackup, importBackup, type BackupData, type ImportPreview } from '../data/backup';
 
 const logger = createLogger('BackupRestore');
@@ -29,7 +30,7 @@ export default function BackupRestore(props: BackupRestoreProps) {
 
     try {
       // Export data
-      const backupData = await exportBackup();
+      const backupData = await track(exportBackup());
 
       // Convert to YAML
       const yamlContent = yaml.dump(backupData, {
@@ -122,7 +123,7 @@ export default function BackupRestore(props: BackupRestoreProps) {
       }
 
       // Get import preview (dry run)
-      const preview = await importBackup(backupData, { mode: 'merge', dryRun: true });
+      const preview = await track(importBackup(backupData, { mode: 'merge', dryRun: true }));
 
       // Show preview and ask for confirmation
       showImportPreview(preview, backupData);
@@ -185,7 +186,7 @@ export default function BackupRestore(props: BackupRestoreProps) {
 
   const performImport = async (backupData: BackupData, mode: 'merge' | 'replace') => {
     try {
-      const result = await importBackup(backupData, { mode, dryRun: false });
+      const result = await track(importBackup(backupData, { mode, dryRun: false }));
       
       const totalAdd = result.catalogItemsAdd + result.bundlesAdd + result.logsAdd;
       const totalUpdate = result.catalogItemsUpdate + result.bundlesUpdate + result.logsUpdate;
@@ -211,7 +212,7 @@ export default function BackupRestore(props: BackupRestoreProps) {
           style: 'destructive',
           onPress: async () => {
             try {
-              await resetDatabaseForDev();
+              await track(resetDatabaseForDev());
               Alert.alert(t('backupRestore.clearDataTitle'), t('backupRestore.clearDataDone'));
             } catch (e) {
               logger.error('Clear data failed:', e);
