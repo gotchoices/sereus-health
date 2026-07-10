@@ -116,16 +116,33 @@ export async function getEditEntry(mode: EditEntryMode, entryId?: string): Promi
   const e = await dbLogEntries.getLogEntryById(entryId);
   if (!e) throw new Error('not found');
 
-  const items: HydratedItem[] = e.items.map((it) => ({
-    id: it.id,
-    name: it.name,
-    categoryName: it.categoryName ?? null,
-    isBundle: false,
-    sourceBundleId: it.sourceBundleId ?? null,
-    quantifiers: (it.quantifiers ?? []).map((q) => ({
-      id: q.id, name: q.name, minValue: q.minValue ?? null, maxValue: q.maxValue ?? null, units: q.units ?? null, value: q.value,
-    })),
-  }));
+  // Hydrate each item's FULL quantifier *definitions* (so quantifiers with no
+  // recorded value still appear as adjustable inputs on edit/clone — matching the
+  // fresh item-add path), overlaid with any values logged on this entry. The
+  // entry's own quantifiers (`it.quantifiers`) only carry the ones that had a value.
+  const items: HydratedItem[] = await Promise.all(
+    e.items.map(async (it) => {
+      const loggedValue = new Map((it.quantifiers ?? []).map((q) => [q.id, q.value]));
+      const defs = await getItemQuantifiers(it.id);
+      const quantifiers =
+        defs.length > 0
+          ? defs.map((d) => ({
+              id: d.id, name: d.name, minValue: d.minValue, maxValue: d.maxValue, units: d.units,
+              value: loggedValue.get(d.id),
+            }))
+          : (it.quantifiers ?? []).map((q) => ({
+              id: q.id, name: q.name, minValue: q.minValue ?? null, maxValue: q.maxValue ?? null, units: q.units ?? null, value: q.value,
+            }));
+      return {
+        id: it.id,
+        name: it.name,
+        categoryName: it.categoryName ?? null,
+        isBundle: false,
+        sourceBundleId: it.sourceBundleId ?? null,
+        quantifiers,
+      };
+    }),
+  );
 
   return {
     id: e.id,
