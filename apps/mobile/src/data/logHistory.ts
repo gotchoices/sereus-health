@@ -1,7 +1,16 @@
 import { USE_QUEREUS } from '../db/config';
 import { ensureDatabaseInitialized } from '../db/init';
-import { getAllLogEntries } from '../db/logEntries';
+import { getAllLogEntries, getLogEntriesPage, type LogEntry as DbLogEntry, type LogCursor } from '../db/logEntries';
 import { getVariant } from '../mock';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// History fetch page size — how many entries the Home list loads per batch as
+// you scroll (infinite scroll). Tweak here. Larger = fewer fetches but slower
+// each; smaller = snappier fetches, more of them. ~30 fills a few screens.
+export const HISTORY_PAGE_SIZE = 30;
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type { LogCursor } from '../db/logEntries';
 
 export interface LogEntry {
   id: string;
@@ -10,6 +19,20 @@ export interface LogEntry {
   items: string[];
   bundles?: string[];
   comment?: string;
+}
+
+/** Map a DB log entry to the flat shape the History list renders. */
+function toDataEntry(e: DbLogEntry): LogEntry {
+  const bundleNames = new Set<string>();
+  for (const it of e.items) if (it.sourceBundleName) bundleNames.add(it.sourceBundleName);
+  return {
+    id: e.id,
+    timestamp: e.timestamp,
+    type: e.typeName,
+    items: e.items.map((it) => it.name),
+    bundles: bundleNames.size ? Array.from(bundleNames) : undefined,
+    comment: e.comment ?? undefined,
+  };
 }
 
 type MockItem = { id: string; name: string; category: string };
@@ -58,23 +81,26 @@ export async function getLogHistory(): Promise<LogEntry[]> {
   }
 
   await ensureDatabaseInitialized();
-  const dbEntries = await getAllLogEntries();
+  return (await getAllLogEntries()).map(toDataEntry);
+}
 
-  return dbEntries.map((e) => {
-    const itemNames = e.items.map((it) => it.name);
-    const bundleNames = new Set<string>();
-    for (const it of e.items) {
-      if (it.sourceBundleName) bundleNames.add(it.sourceBundleName);
-    }
-    return {
-      id: e.id,
-      timestamp: e.timestamp,
-      type: e.typeName,
-      items: itemNames,
-      bundles: bundleNames.size ? Array.from(bundleNames) : undefined,
-      comment: e.comment ?? undefined,
-    };
-  });
+/**
+ * One page of history, newest first, for infinite scroll. `cursor` is the opaque
+ * `nextCursor` from the previous page (null = first page). `nextCursor` is null
+ * when there are no more entries.
+ */
+export async function getLogHistoryPage(
+  cursor: LogCursor | null = null,
+  limit: number = HISTORY_PAGE_SIZE,
+): Promise<{ entries: LogEntry[]; nextCursor: LogCursor | null }> {
+  if (!USE_QUEREUS) {
+    // Mock has no real pagination: first page returns everything, then it's done.
+    if (cursor) return { entries: [], nextCursor: null };
+    return { entries: await getLogHistory(), nextCursor: null };
+  }
+  await ensureDatabaseInitialized();
+  const { entries, nextCursor } = await getLogEntriesPage(cursor, limit);
+  return { entries: entries.map(toDataEntry), nextCursor };
 }
 
 

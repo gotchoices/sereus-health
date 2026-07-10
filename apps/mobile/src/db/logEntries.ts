@@ -233,6 +233,116 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
   return out;
 }
 
+export type LogCursor = { ts: string; id: string };
+
+/**
+ * Keyset-paginated log entries, newest first. `cursor` is the opaque position
+ * from the previous page's `nextCursor` (null = first page). Same local-nested
+ * shape as getAllLogEntries, but bounded: a `LIMIT`ed entries page, then its
+ * items/quantifiers via `entry_id IN (...)`. `nextCursor` is null when exhausted.
+ */
+export async function getLogEntriesPage(
+  cursor: LogCursor | null,
+  limit: number,
+): Promise<{ entries: LogEntry[]; nextCursor: LogCursor | null }> {
+  const db = await getDatabase();
+  const fetchN = Math.max(1, limit) + 1; // peek one extra to detect a further page
+
+  // 1) Entries page — keyset by (timestamp, id) DESC (id breaks timestamp ties).
+  const where = cursor ? 'WHERE (e.timestamp < ? OR (e.timestamp = ? AND e.id < ?))' : '';
+  const params = cursor ? [cursor.ts, cursor.ts, cursor.id] : [];
+  const raw: any[] = [];
+  for await (const er of db.eval(
+    `SELECT e.id, e.timestamp, e.type_id AS typeId, t.name AS typeName, e.comment,
+            e.event_utc_offset_minutes AS eventUtcOffsetMinutes
+     FROM log_entries e JOIN types t ON t.id = e.type_id
+     ${where}
+     ORDER BY e.timestamp DESC, e.id DESC
+     LIMIT ${fetchN}`,
+    params,
+  )) {
+    raw.push(er);
+  }
+
+  const hasMore = raw.length > limit;
+  const pageRows = hasMore ? raw.slice(0, limit) : raw;
+  if (pageRows.length === 0) return { entries: [], nextCursor: null };
+
+  const out: LogEntry[] = [];
+  const byId = new Map<string, LogEntry>();
+  for (const er of pageRows) {
+    const entry: LogEntry = {
+      id: er.id as string,
+      timestamp: fromDbDatetime(er.timestamp as string),
+      eventUtcOffsetMinutes: (er.eventUtcOffsetMinutes as number) ?? null,
+      typeId: er.typeId as string,
+      typeName: er.typeName as string,
+      comment: (er.comment as string) ?? null,
+      items: [],
+    };
+    out.push(entry);
+    byId.set(entry.id, entry);
+  }
+  const lastRow = pageRows[pageRows.length - 1];
+  const nextCursor: LogCursor | null = hasMore ? { ts: lastRow.timestamp as string, id: lastRow.id as string } : null;
+
+  // 2) Items + 3) quantifier values for just this page.
+  const ids = out.map((e) => e.id);
+  const ph = ids.map(() => '?').join(',');
+
+  const itemByKey = new Map<string, LogEntryItem>();
+  for await (const ir of db.eval(
+    `SELECT lei.entry_id AS entryId, i.id AS itemId, i.name AS name,
+            c.id AS categoryId, c.name AS categoryName,
+            lei.source_bundle_id AS sourceBundleId, b.name AS sourceBundleName
+     FROM log_entry_items lei
+     JOIN items i ON i.id = lei.item_id
+     JOIN categories c ON c.id = i.category_id
+     LEFT JOIN bundles b ON b.id = lei.source_bundle_id
+     WHERE lei.entry_id IN (${ph})
+     ORDER BY i.name ASC`,
+    ids,
+  )) {
+    const entry = byId.get(ir.entryId as string);
+    if (!entry) continue;
+    const item: LogEntryItem = {
+      id: ir.itemId as string,
+      name: ir.name as string,
+      categoryId: ir.categoryId as string,
+      categoryName: ir.categoryName as string,
+      sourceBundleId: (ir.sourceBundleId as string) ?? null,
+      sourceBundleName: (ir.sourceBundleName as string) ?? null,
+      quantifiers: [],
+    };
+    entry.items.push(item);
+    itemByKey.set(`${ir.entryId as string}\0${ir.itemId as string}`, item);
+  }
+
+  for await (const qr of db.eval(
+    `SELECT qv.entry_id AS entryId, qv.item_id AS itemId,
+            q.id AS id, q.name AS name, qv.value AS value,
+            q.units AS units, q.min_value AS minValue, q.max_value AS maxValue
+     FROM log_entry_quantifier_values qv
+     JOIN item_quantifiers q ON q.id = qv.quantifier_id
+     WHERE qv.entry_id IN (${ph})
+     ORDER BY q.name ASC`,
+    ids,
+  )) {
+    const item = itemByKey.get(`${qr.entryId as string}\0${qr.itemId as string}`);
+    if (!item) continue;
+    item.quantifiers.push({
+      id: qr.id as string,
+      name: qr.name as string,
+      value: qr.value as number,
+      units: (qr.units as string) ?? null,
+      minValue: (qr.minValue as number) ?? null,
+      maxValue: (qr.maxValue as number) ?? null,
+    });
+  }
+
+  return { entries: out, nextCursor };
+}
+
 export async function getLogEntryById(entryId: string): Promise<LogEntry | null> {
   const db = await getDatabase();
 

@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   Image,
   StyleSheet,
@@ -9,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { getLogHistory, type LogEntry } from '../data/logHistory';
+import { getLogHistoryPage, type LogEntry, type LogCursor } from '../data/logHistory';
 import { getTypeCount } from '../data/catalogImport';
 import { track } from '../util/activity';
 import { spacing, typography, useTheme } from '../theme/useTheme';
@@ -29,19 +30,25 @@ export default function LogHistory(props: {
   const theme = useTheme();
   const t = useT();
   const [entries, setEntries] = useState<LogEntry[]>([]);
+  const [cursor, setCursor] = useState<LogCursor | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [catalogEmpty, setCatalogEmpty] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterVisible, setFilterVisible] = useState(false);
   const [filterText, setFilterText] = useState('');
 
+  // Initial load: first page (global spinner) + catalog-empty check.
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    track(Promise.all([getLogHistory(), getTypeCount()]))
-      .then(([data, typeCount]) => {
+    track(Promise.all([getLogHistoryPage(null), getTypeCount()]))
+      .then(([page, typeCount]) => {
         if (!alive) return;
-        setEntries(data);
+        setEntries(page.entries);
+        setCursor(page.nextCursor);
+        setHasMore(page.nextCursor !== null);
         setCatalogEmpty(typeCount === 0);
         setError(null);
       })
@@ -59,6 +66,24 @@ export default function LogHistory(props: {
       alive = false;
     };
   }, [t]);
+
+  // Infinite scroll: pull the next page as the user nears the bottom. Not
+  // track()ed — a small footer spinner is less intrusive than the global one.
+  const loadMore = useCallback(() => {
+    if (loading || loadingMore || !hasMore || !cursor) return;
+    setLoadingMore(true);
+    getLogHistoryPage(cursor)
+      .then((page) => {
+        setEntries((prev) => [...prev, ...page.entries]);
+        setCursor(page.nextCursor);
+        setHasMore(page.nextCursor !== null);
+      })
+      .catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error('[LogHistory] Failed to load more', err);
+      })
+      .finally(() => setLoadingMore(false));
+  }, [cursor, hasMore, loading, loadingMore]);
 
   const filtered = useMemo(() => {
     // Global filter rule: when filter UI is hidden, retain the text but do not filter the list.
@@ -231,6 +256,15 @@ export default function LogHistory(props: {
           keyExtractor={(e) => e.id}
           renderItem={renderEntry}
           contentContainerStyle={{ padding: spacing[2] }}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={{ paddingVertical: spacing[3] }}>
+                <ActivityIndicator color={theme.textSecondary} />
+              </View>
+            ) : null
+          }
         />
       )}
 
