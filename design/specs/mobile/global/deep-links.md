@@ -70,6 +70,25 @@ Apple Developer Team ID:
 2. Xcode → target `mobile` → Signing & Capabilities → **+ Associated Domains** →
    add `applinks:health.sereus.org` (creates/updates `mobile.entitlements`).
 
+### Files in this repo (`health/web/.well-known/`)
+
+- **`assetlinks.json`** — committed and **functional for debug-signed builds**: it lists
+  the debug keystore SHA-256 (`FA:C6:17:…:9C`), which signs the current test APK. Before
+  a Play/release build, **add the release keystore's fingerprint** to the
+  `sha256_cert_fingerprints` array (both can coexist). Get it with the release env vars
+  set: `SEREUS_STORE_FILE=… SEREUS_STORE_PASSWORD=… ./gradlew signingReport`.
+- **`apple-app-site-association`** — committed as a **template**: replace `TEAMID` with
+  your Apple Developer Team ID. Not functional until then.
+
+### Publishing (host requirement)
+
+App Links are **host-scoped**: they are only read from `https://health.sereus.org/.well-known/…`.
+`health/web` currently publishes to `sereus.org/health` (path-based), where these files are
+inert. To make a publish light them up, **serve `health/web` at `health.sereus.org`** — i.e.
+point `web/publish.sh`'s `DEST` at the `health.sereus.org` docroot (and set up the subdomain
+with HTTPS). The `apple-app-site-association` file must be served with
+`Content-Type: application/json`, no extension, no redirect.
+
 ### Verification
 - Android: reinstall, then `adb shell pm get-app-links org.sereus.health` (expect
   `verified` for the host once assetlinks.json is served). Force a re-verify with
