@@ -3,6 +3,8 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { spacing, typography, useTheme, useThemeContext } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
+import { track } from '../util/activity';
+import { runQueryBenchmarks, formatBenchResults } from '../db/bench';
 
 type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
 
@@ -45,7 +47,24 @@ export default function Settings(props: SettingsProps) {
   };
 
   const handleDebug = () => {
-    Alert.alert('Debug', 'Disabled (used only for temporary debugging sessions).');
+    Alert.alert(
+      'Log-history query benchmark',
+      'Times three fetch shapes on your current data:\n\nA · Current (N+1)\nB · DB-nested (json_group_array)\nC · Local-nested (3 flat queries + JS)\n\nMay take a while (A is the slow one).',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Run',
+          onPress: async () => {
+            try {
+              const results = await track(runQueryBenchmarks());
+              Alert.alert('Benchmark results', formatBenchResults(results));
+            } catch (e) {
+              Alert.alert('Benchmark failed', String(e));
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
