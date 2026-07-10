@@ -101,6 +101,11 @@ Canonical YAML per `import-export.md` (`data/backup.ts` `BackupData`):
 `exportBackup(): BackupData` · `importBackup(data, { mode:'merge'|'replace', dryRun? }): ImportPreview`
 (`{catalogItems,bundles,logs}×{Add,Update,Skip}`, `warnings[]`, `errors[]`) · `clearAllData()` (db/clear.ts).
 
+## Async / activity
+Export, import (preview + commit), and clear are `track()`ed per `global/async-activity.md`, so the global
+non-blocking indicator shows during them — export especially (it's the slowest op in the app). The local
+`isExporting`/`isImporting` flags remain for button label + double-tap guard.
+
 ## Idempotency (per import-export.md)
 - Catalog item: `(typeName, categoryName, itemName)` · Quantifier: `(item, name)` · Bundle: `(typeName, bundleName)` · Log: `(timestampUtc, typeName, set(items))`.
 

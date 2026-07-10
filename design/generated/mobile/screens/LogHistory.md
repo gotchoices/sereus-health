@@ -90,15 +90,29 @@ Per `navigation.md`, pinned: Home (`home`), Catalog (`list`), Assistant (`sparkl
 
 ## Data shaping
 
-Per-entry summary (from `db/logEntries.ts` `getAllLogEntries`):
+Per-entry summary (from `data/logHistory.ts`):
 
 - `id: string`
 - `timestamp: string` — ISO-8601 UTC instant (stored as `datetime`; the boundary converts)
 - `eventUtcOffsetMinutes?: number | null` — originating-zone offset for display
 - `type: string` · `items: string[]` · `bundles?: string[]` (source-bundle names) · `comment?: string`
 
+### Fetching — keyset pagination + infinite scroll
+- Loads via **`getLogHistoryPage(cursor, limit)`**, not the full `getAllLogEntries`. Each page is a
+  bounded keyset query (`WHERE (timestamp,id) < cursor ORDER BY timestamp DESC, id DESC LIMIT n`) plus
+  its items/quantifiers via `entry_id IN (...)` — the local-nested shape (see `db/bench.ts`; ~40× faster
+  than the former per-entry N+1).
+- **Page size** is the tweakable constant `HISTORY_PAGE_SIZE` in `data/logHistory.ts` (default 30).
+- **Infinite scroll**: FlatList `onEndReached` calls `loadMore`, which appends the next page and updates
+  the cursor; a small footer `ActivityIndicator` shows while fetching. `nextCursor === null` means the
+  end is reached. The user sees no pagination controls — only an occasional brief footer spinner.
+- Initial page load is `track()`ed (global spinner); subsequent `loadMore` uses the footer spinner only.
+- **Filter caveat**: the filter is client-side over *loaded* pages. Scrolling loads more (which
+  progressively widens the search); searching entries not yet loaded requires scrolling to them. A
+  server-side filter is a future refinement.
+
 ## Screen state
-`entries` · `filterText` · `filterVisible` · `loading` · `error?`
+`entries` · `cursor` · `hasMore` · `loadingMore` · `filterText` · `filterVisible` · `loading` · `error?`
 
 ## Export / import (data portability)
 - **Export logs** action (header/menu): filtered subset (if filtering) or all; **CSV** per `import-export.md`
