@@ -50,13 +50,12 @@ function loadMock(variant: string): SereusConnectionsData {
 // ---------------------------------------------------------------------------
 
 /**
- * Ensure the CadreNode is started.  Idempotent; swallows errors so the UI
- * can fall back to empty state rather than crashing.
+ * Ensure the CadreNode is started.  `ensureStarted()` is idempotent (it shares
+ * one in-flight promise and returns immediately once the strand is up), so we
+ * call it unconditionally; DB init usually started it already.
  */
 async function ensureCadreStarted(): Promise<void> {
-  if (!cadreService.isRunning) {
-    await cadreService.start();
-  }
+  await cadreService.ensureStarted();
 }
 
 /**

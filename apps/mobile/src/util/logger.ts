@@ -1,6 +1,7 @@
 export type Logger = {
   info: (...args: unknown[]) => void;
   debug: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
   error: (...args: unknown[]) => void;
   sql: (query: string, params?: unknown[]) => void;
 };
@@ -19,6 +20,7 @@ export function createLogger(scope: string): Logger {
   return {
     info: (...args) => console.log(ts(), prefix, ...args),
     debug: (...args) => console.debug(ts(), prefix, ...args),
+    warn: (...args) => console.warn(ts(), prefix, ...args),
     error: (...args) => console.error(ts(), prefix, ...args),
     sql: (query, params) => console.debug(ts(), prefix, 'SQL:', query.trim(), params ?? []),
   };

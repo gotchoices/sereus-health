@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Clipboard,
   ScrollView,
@@ -16,8 +17,12 @@ import {
   type AuthorityKey,
   type SereusNode,
 } from '../data/sereusConnections';
+import { cadreService } from '../services/CadreService';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
+
+/** A generated secret (node seed / guest invitation) to show for copy + transport. */
+type SecretResult = { title: string; body: string; value: string };
 
 export default function SereusConnections(props: { onBack: () => void }) {
   const theme = useTheme();
@@ -29,33 +34,47 @@ export default function SereusConnections(props: { onBack: () => void }) {
   const [keys, setKeys] = useState<AuthorityKey[]>([]);
   const [cadre, setCadre] = useState<SereusNode[]>([]);
   const [guests, setGuests] = useState<SereusNode[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [secret, setSecret] = useState<SecretResult | null>(null);
 
-  const hasKeys = keys.length > 0;
+  const reload = useCallback(async () => {
+    const data = await getSereusConnections();
+    setPartyId(data.partyId);
+    setKeys(data.keys ?? []);
+    setCadre(data.cadreNodes ?? []);
+    setGuests(data.guestNodes ?? []);
+  }, []);
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
     setError(null);
-    getSereusConnections()
-      .then((data) => {
-        if (!alive) return;
-        setPartyId(data.partyId);
-        setKeys(data.keys ?? []);
-        setCadre(data.cadreNodes ?? []);
-        setGuests(data.guestNodes ?? []);
-      })
+    reload()
       .catch(() => {
-        if (!alive) return;
-        setError(t('sereus.errorLoading'));
+        if (alive) setError(t('sereus.errorLoading'));
       })
       .finally(() => {
-        if (!alive) return;
-        setLoading(false);
+        if (alive) setLoading(false);
       });
     return () => {
       alive = false;
     };
-  }, [t]);
+  }, [t, reload]);
+
+  /** Run a cadre mutation with a busy spinner + honest error surfacing. */
+  const runAction = useCallback(
+    async (fn: () => Promise<void>) => {
+      setBusy(true);
+      try {
+        await fn();
+      } catch (err) {
+        Alert.alert(t('sereus.actionFailed'), err instanceof Error ? err.message : String(err));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [t],
+  );
 
   // -----------------------------------------------------------------------
   // Handlers
@@ -74,62 +93,48 @@ export default function SereusConnections(props: { onBack: () => void }) {
   };
 
   const handleAddKey = () => {
-    Alert.alert(
-      t('sereus.addKey'),
-      undefined,
-      [
-        {
-          text: t('sereus.keyVault'),
-          onPress: () => {
-            // Phase 2: generate Ed25519 keypair, insert via ControlDatabase.insertAuthorityKey(),
-            // store private key in device secure storage (Keychain/Keystore).
-            Alert.alert(t('common.notImplementedTitle'), t('sereus.addKeyStub'));
-          },
-        },
-        {
-          text: t('sereus.keyExternal'),
-          onPress: () => {
-            Alert.alert(t('common.notImplementedTitle'), t('sereus.addKeyStub'));
-          },
-        },
-        {
-          text: `${t('sereus.keyDongle')} (${t('sereus.dongleFuture')})`,
-          // Disabled — dongle support is future.  iOS Alert buttons don't have
-          // a "disabled" style, so we use 'cancel' to visually de-emphasize.
-          style: 'cancel',
-        },
-        { text: t('common.cancel'), style: 'cancel' },
-      ],
-    );
+    // cadre-core 0.8 single-key model: the authority key IS the node identity,
+    // so "create" just runs (idempotent) genesis to arm seed/invite flows.
+    void runAction(async () => {
+      await cadreService.createAuthorityKey();
+      await reload();
+      Alert.alert(t('sereus.keyCreated'));
+    });
   };
 
   const handleAddNode = () => {
-    Alert.alert(
-      t('sereus.addNode'),
-      undefined,
-      [
-        {
-          text: t('sereus.addNodeDrone'),
-          onPress: () => {
-            // Phase 3: createSeed() → send via provider API → deliverSeed()
-            Alert.alert(t('common.notImplementedTitle'), t('sereus.addNodeStub'));
-          },
-        },
-        {
-          text: t('sereus.addNodeServer'),
-          onPress: () => {
-            // Phase 3: scan QR/link → parse CadreInvite → dialInvite()
-            Alert.alert(t('common.notImplementedTitle'), t('sereus.addNodeStub'));
-          },
-        },
-        { text: t('common.cancel'), style: 'cancel' },
-      ],
-    );
+    Alert.alert(t('sereus.addNode'), undefined, [
+      {
+        // The primary, working path: generate a seed to hand to a drone/server
+        // (via cadre-cli). Self-arms the authority key if needed.
+        text: t('sereus.addNodeDrone'),
+        onPress: () =>
+          void runAction(async () => {
+            const seed = await cadreService.createDroneSeed();
+            setSecret({ title: t('sereus.seedTitle'), body: t('sereus.seedBody'), value: seed });
+            await reload();
+          }),
+      },
+      {
+        // Scan-a-server-QR (inbound dial) still needs the QR/scan + dialInvite
+        // wiring; keep it explicit rather than pretending.
+        text: t('sereus.addNodeServer'),
+        onPress: () => Alert.alert(t('common.notImplementedTitle'), t('sereus.addNodeStub')),
+      },
+      { text: t('common.cancel'), style: 'cancel' },
+    ]);
   };
 
   const handleAddGuest = () => {
-    // Phase 4: createOpenInvitation(sAppId) → share via QR/link
-    Alert.alert(t('common.notImplementedTitle'), t('sereus.addGuestStub'));
+    void runAction(async () => {
+      const invite = await cadreService.createGuestInvitation();
+      setSecret({
+        title: t('sereus.inviteTitle'),
+        body: t('sereus.inviteBody'),
+        value: invite.token,
+      });
+      await reload();
+    });
   };
 
   const handleRemoveNode = (node: SereusNode) => {
@@ -143,10 +148,11 @@ export default function SereusConnections(props: { onBack: () => void }) {
           text: t('common.delete'),
           style: 'destructive',
           onPress: () => {
-            // Phase 3+: remove from CadrePeer table or revoke strand membership.
-            // For now, update local state.
+            // Full removal needs the cadre control-mutation API (not yet exposed);
+            // for now drop it from this view and say so honestly.
             if (isCadre) setCadre((prev) => prev.filter((n) => n.id !== node.id));
             else setGuests((prev) => prev.filter((n) => n.id !== node.id));
+            Alert.alert(t('sereus.removeLocalNote'));
           },
         },
       ],
@@ -343,7 +349,7 @@ export default function SereusConnections(props: { onBack: () => void }) {
           )}
 
           {/* My Nodes */}
-          {renderSectionHeader(t('sereus.myNodes'), cadre.length, handleAddNode, !hasKeys)}
+          {renderSectionHeader(t('sereus.myNodes'), cadre.length, handleAddNode)}
           {cadre.length === 0 ? (
             <View style={[styles.emptySection, { borderColor: theme.border }]}>
               <Text style={{ color: theme.textSecondary, textAlign: 'center' }}>
@@ -355,12 +361,7 @@ export default function SereusConnections(props: { onBack: () => void }) {
           )}
 
           {/* Strand Guests */}
-          {renderSectionHeader(
-            t('sereus.strandGuests'),
-            guests.length,
-            handleAddGuest,
-            !hasKeys,
-          )}
+          {renderSectionHeader(t('sereus.strandGuests'), guests.length, handleAddGuest)}
           {guests.length === 0 ? (
             <View style={[styles.emptySection, { borderColor: theme.border }]}>
               <Text style={{ color: theme.textSecondary, textAlign: 'center' }}>
@@ -372,6 +373,51 @@ export default function SereusConnections(props: { onBack: () => void }) {
           )}
         </ScrollView>
       )}
+
+      {/* Generated-secret modal (node seed / guest invitation) */}
+      {secret ? (
+        <View style={styles.overlay}>
+          <View style={[styles.modal, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{secret.title}</Text>
+            <Text style={{ color: theme.textSecondary, ...typography.small }}>{secret.body}</Text>
+            <ScrollView
+              style={[styles.secretBox, { borderColor: theme.border, backgroundColor: theme.background }]}
+              nestedScrollEnabled
+            >
+              <Text selectable style={{ color: theme.textPrimary, ...typography.small, fontFamily: 'monospace' }}>
+                {secret.value}
+              </Text>
+            </ScrollView>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                onPress={() => {
+                  Clipboard.setString(secret.value);
+                  Alert.alert(t('sereus.copied'));
+                }}
+                style={[styles.modalBtn, { backgroundColor: theme.accentPrimary }]}
+              >
+                <Text style={styles.modalBtnText}>{t('sereus.copy')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setSecret(null)}
+                style={[styles.modalBtn, { backgroundColor: theme.border }]}
+              >
+                <Text style={[styles.modalBtnText, { color: theme.textPrimary }]}>{t('sereus.close')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      {/* Busy overlay for cadre mutations */}
+      {busy ? (
+        <View style={styles.overlay}>
+          <View style={[styles.busyBox, { backgroundColor: theme.surface }]}>
+            <ActivityIndicator color={theme.accentPrimary} />
+            <Text style={{ color: theme.textPrimary, marginTop: spacing[2] }}>{t('sereus.generating')}</Text>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -422,4 +468,39 @@ const styles = StyleSheet.create({
   },
   name: { ...typography.body, fontWeight: '600' },
   dot: { width: 8, height: 8, borderRadius: 4 },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing[3],
+  },
+  modal: {
+    width: '100%',
+    maxWidth: 480,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: spacing[3],
+    gap: spacing[2],
+  },
+  modalTitle: { ...typography.title, fontWeight: '700' },
+  secretBox: {
+    maxHeight: 160,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: spacing[2],
+  },
+  modalActions: { flexDirection: 'row', gap: spacing[2], marginTop: spacing[1] },
+  modalBtn: {
+    flex: 1,
+    paddingVertical: spacing[2],
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalBtnText: { ...typography.body, color: '#fff', fontWeight: '600' },
+  busyBox: {
+    padding: spacing[4],
+    borderRadius: 12,
+    alignItems: 'center',
+  },
 });

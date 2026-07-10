@@ -15,11 +15,17 @@
 
 import {
   CadreNode,
+  ControlFormationUsageRecorder,
   type CadreNodeConfig,
   type CadreNodeEvents,
   type ControlDatabase,
   type StrandInstance,
 } from '@serfab/cadre-core';
+import {
+  AUTHORITY_GENESIS_TIMEOUT_MS,
+  CONTROL_OP_TIMEOUT_MS,
+  withTimeout,
+} from './cadreAsync';
 import { webSockets } from '@libp2p/websockets';
 import {
   LevelDBRawStorage,
@@ -45,6 +51,8 @@ const SAPP_VERSION = '1.1';
 const PARTY_ID_KEY = '@sereus/partyId';
 const STRAND_ID_KEY = '@sereus/healthStrandId';
 const BOOTSTRAP_NODES: string[] = [];
+/** Guest invitation validity window (24h) — long enough for a doctor visit. */
+const INVITE_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * LevelDB directory naming for optimystic stores.
@@ -93,6 +101,8 @@ class CadreServiceImpl {
   private node: CadreNode | null = null;
   private healthStrand: StrandInstance | null = null;
   private _partyId: string | null = null;
+  private _strandId: string | null = null;
+  private _authorityPublicKey: string | null = null;
   private _startError: string | null = null;
   private _startPromise: Promise<void> | null = null;
   /**
@@ -121,6 +131,16 @@ class CadreServiceImpl {
   /** Last startup error, if any. */
   get startError(): string | null {
     return this._startError;
+  }
+
+  /** True once authority genesis has run and seed/invite flows are armed. */
+  get hasAuthorityKey(): boolean {
+    return this._authorityPublicKey !== null;
+  }
+
+  /** The cadre authority public key (base64url), or null before genesis. */
+  get authorityPublicKey(): string | null {
+    return this._authorityPublicKey;
   }
 
   // -----------------------------------------------------------------------
@@ -208,6 +228,7 @@ class CadreServiceImpl {
       // the strand in `'networked'` mode; the StrandMode is fixed for the
       // lifetime of a StrandDatabase instance.
       const strandId = await this.getOrCreateValue(STRAND_ID_KEY);
+      this._strandId = strandId;
       logger.info('Adding health strand:', strandId);
 
       this.healthStrand = await this.node.addStrand({
@@ -225,6 +246,12 @@ class CadreServiceImpl {
         },
       });
       logger.info('Health strand ready. Database available:', !!this.healthStrand?.database);
+
+      // Arm authority genesis + the formation responder OFF the boot path.
+      // Both touch the control network, whose consistent reads block on a solo
+      // node (no cohort → no quorum). Awaiting them here would hang boot; the
+      // health strand already works locally (bootstrap mode) without them.
+      this.armCadreServicesInBackground();
     } catch (err) {
       this._startError = err instanceof Error ? err.message : String(err);
       logger.error('doStart failed:', this._startError);
@@ -232,9 +259,178 @@ class CadreServiceImpl {
     }
   }
 
+  // -----------------------------------------------------------------------
+  // Authority key + seed + invitation flows
+  // -----------------------------------------------------------------------
+
+  /**
+   * Run authority genesis. Idempotent, safe on every start.
+   *
+   * cadre-core 0.8 uses a SINGLE-KEY model: the cadre authority key is *derived
+   * from the node identity* (not an independent keypair). `createSeed`,
+   * `publishStrand`, and `publishFormationInvite` all sign with the identity key
+   * and refuse unless its public half matches the control node's PeerId — so we
+   * must NOT mint a separate random authority key. `ensureAuthorityKey` inserts
+   * the derived key only when the table is empty.
+   */
+  private async runAuthorityGenesis(): Promise<string> {
+    if (!this.node) throw new Error('CadreNode not running');
+    const { privateKeyB64, publicKeyB64 } = this.node.getIdentityAuthorityKey();
+
+    const controlDb = this.node.getControlDatabase();
+    if (!controlDb) throw new Error('Control database not available');
+
+    const inserted = await controlDb.ensureAuthorityKey(publicKeyB64);
+    this.node.initializeSeedBootstrap(privateKeyB64);
+    this._authorityPublicKey = publicKeyB64;
+
+    logger.info(
+      inserted
+        ? '✓ authority genesis: inserted founding key, seed flows enabled'
+        : '✓ authority key already present, seed flows enabled',
+    );
+    return publicKeyB64;
+  }
+
+  /**
+   * Best-effort background bring-up of control-network services that must NOT
+   * gate boot. Fired (not awaited) from doStart. Authority genesis is time-boxed
+   * because its control-DB read never returns on a solo node.
+   */
+  private armCadreServicesInBackground(): void {
+    void (async () => {
+      try {
+        await withTimeout(
+          this.runAuthorityGenesis(),
+          AUTHORITY_GENESIS_TIMEOUT_MS,
+          'authority genesis',
+        );
+      } catch (err) {
+        logger.warn(
+          'authority genesis deferred (solo node / no control cohort yet):',
+          err instanceof Error ? err.message : err,
+        );
+      }
+      try {
+        this.initializeFormationResponder();
+      } catch (err) {
+        logger.warn('formation responder init failed:', err);
+      }
+    })();
+  }
+
+  /**
+   * Install the strand-formation responder, backed by the control DB's
+   * FormationInvite / FormationUsage tables, so guest-invitation tokens are
+   * actually validated on redemption. Synchronous (no control-DB read).
+   */
+  private initializeFormationResponder(): void {
+    if (!this.node) throw new Error('CadreNode not running');
+    const controlDb = this.node.getControlDatabase();
+    if (!controlDb) throw new Error('Control database not available');
+    this.node.initializeStrandSolicitation({
+      formationUsageRecorder: new ControlFormationUsageRecorder(controlDb),
+    });
+    logger.info('✓ formation responder installed (invitation tokens enforced)');
+  }
+
+  /**
+   * Ensure the authority key exists. Under the 0.8 single-key model there's
+   * nothing to "create" — the key is the node identity — so this just runs
+   * genesis (idempotent), time-boxed so the UI never hangs on a solo node.
+   */
+  async createAuthorityKey(): Promise<{ publicKey: string }> {
+    await this.ensureStarted();
+    const publicKey = await withTimeout(
+      this.runAuthorityGenesis(),
+      CONTROL_OP_TIMEOUT_MS,
+      'authority genesis',
+    );
+    return { publicKey };
+  }
+
+  /**
+   * Reveal the authority private key for offline backup. Because authority ==
+   * node identity, this IS the device's identity secret — only ever call from an
+   * explicit, user-confirmed "export for recovery" affordance, and never log it.
+   */
+  async exportAuthorityPrivateKey(): Promise<string | null> {
+    await this.ensureStarted();
+    if (!this.node) return null;
+    try {
+      return this.node.getIdentityAuthorityKey().privateKeyB64;
+    } catch (err) {
+      logger.warn('exportAuthorityPrivateKey failed:', err);
+      return null;
+    }
+  }
+
+  /**
+   * Generate a base64url seed for transporting cadre membership to a new node —
+   * typically a drone/server consumed via cadre-cli. This is the primary way the
+   * phone enrolls its own additional nodes. Requires the authority key; if
+   * genesis is still pending (solo node), we attempt it once, time-boxed, and
+   * surface an honest precondition error rather than hanging.
+   */
+  async createDroneSeed(): Promise<string> {
+    await this.ensureStarted();
+    if (!this.node) throw new Error('CadreNode not running');
+    if (!this._authorityPublicKey) {
+      await this.createAuthorityKey(); // time-boxed; throws with a clear message on a solo node
+    }
+    const seed = await this.node.createSeed();
+    return this.node.encodeSeed(seed);
+  }
+
+  /**
+   * Mint a one-directional guest invitation to the health strand (e.g. for a
+   * doctor to read the record). Outbound only — health never redeems invitations.
+   *
+   * Precondition: this device must have a dialable address, which a phone only
+   * gets via a relay reservation from a node in its cadre. On a solo phone
+   * `getMultiaddrs()` is empty and we fail fast with a clear message — add a
+   * drone/server first. Mirrors chat's createInvitation (same solo limitation).
+   */
+  async createGuestInvitation(): Promise<{
+    token: string;
+    strandId: string;
+    expiresAt: string;
+  }> {
+    await this.ensureStarted();
+    if (!this.node) throw new Error('CadreNode not running');
+    if (!this._strandId) throw new Error('Health strand not initialized');
+
+    if (this.node.getMultiaddrs().length === 0) {
+      throw new Error(
+        'This device has no reachable address yet. Add a node to your cadre (a drone or ' +
+          'server) so a guest has somewhere to connect, then try again.',
+      );
+    }
+    if (!this._authorityPublicKey) {
+      await this.createAuthorityKey();
+    }
+
+    const invitation = await this.node.createOpenInvitation(SAPP_ID, INVITE_EXPIRY_MS);
+    await withTimeout(
+      this.node.publishFormationInvite(invitation.token, SAPP_ID, {
+        expiresAtMs: invitation.expiration.getTime(),
+        strandId: this._strandId,
+      }),
+      CONTROL_OP_TIMEOUT_MS,
+      'publishFormationInvite',
+    );
+    return {
+      token: this.node.encodeInvitation(invitation),
+      strandId: this._strandId,
+      expiresAt: invitation.expiration.toISOString(),
+    };
+  }
+
   /** Stop the CadreNode gracefully.  Idempotent. */
   async stop(): Promise<void> {
     this.healthStrand = null;
+    this._authorityPublicKey = null;
+    this._strandId = null;
     if (this.node) {
       await this.node.stop();
       this.node = null;
