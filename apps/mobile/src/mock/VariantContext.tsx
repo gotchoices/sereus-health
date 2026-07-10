@@ -19,20 +19,21 @@ function parseDeepLink(url: string | null): { route: string | null; params: Reco
   if (!url) return { route: null, params: {} };
 
   // Avoid URL/URLSearchParams (DOM lib) to keep TS config simple in RN projects.
-  // Supported formats (custom scheme + Universal/App Links on health.sereus.org):
+  // Supported formats (custom scheme + path-based App/Universal Links on sereus.org):
   // - health://screen/LogHistory?variant=empty
   // - health://LogHistory?variant=empty
-  // - https://health.sereus.org/screen/LogHistory?variant=empty
+  // - https://sereus.org/health/invite/<token>
+  // - https://sereus.org/health/screen/LogHistory?variant=empty
   try {
     const params: Record<string, string> = {};
 
     const [beforeHash] = url.split('#');
     const [pathPart, queryPart] = beforeHash.split('?');
 
-    // Strip either the custom scheme or the https App-Link host prefix.
+    // Strip either the custom scheme or the https App-Link host+/health prefix.
     const withoutScheme = pathPart
       .replace(/^health:\/\//, '')
-      .replace(/^https?:\/\/health\.sereus\.org\/?/, '');
+      .replace(/^https?:\/\/sereus\.org\/health\/?/, '');
     const segments = withoutScheme.split('/').filter(Boolean);
 
     // .../screen/LogHistory -> ["screen","LogHistory"] -> route "LogHistory"

@@ -42,15 +42,16 @@
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="health" />
         </intent-filter>
-        <!-- Verified Android App Links: https://health.sereus.org/... opens the app
-             once /.well-known/assetlinks.json (with this app's signing SHA-256) is
-             served from that host. autoVerify is inert until then (links just open in
-             the browser) — safe to ship ahead of the server side. -->
+        <!-- Verified Android App Links (path-based on the shared sereus.org host,
+             mirroring chat's /chat/invite). Scoped to /health/invite so the app claims
+             only guest-invite links, NOT the /health landing/download page. Requires the
+             merged apex https://sereus.org/.well-known/assetlinks.json (see web/publish.sh);
+             autoVerify is inert until that's served, so it's safe to ship now. -->
         <intent-filter android:autoVerify="true">
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.DEFAULT" />
             <category android:name="android.intent.category.BROWSABLE" />
-            <data android:scheme="https" android:host="health.sereus.org" />
+            <data android:scheme="https" android:host="sereus.org" android:pathPrefix="/health/invite" />
         </intent-filter>
       </activity>
     </application>

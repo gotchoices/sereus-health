@@ -13,89 +13,58 @@ custom scheme, so it is *not* used for trusted web links.
 - Parsed in `src/mock/VariantContext.tsx`, routed in `App.tsx` (allow-list of screens).
 - Used by: scenario/screenshot tooling and reminder-notification taps.
 
-## 2. Universal / App Links — host `health.sereus.org` (app-side ready; server + iOS pending)
+## 2. Universal / App Links — path-based on `sereus.org` (app-side ready; server + iOS pending)
 
-The **standard for trusted web→app links** (e.g. a shared guest-invite link, or the
-APK download page linking into the app). Verified against a file the host serves, so
-only this app opens them.
+The **standard for trusted web→app links** (e.g. a shared guest-invite link). This
+mirrors `chat/apps/mobile` exactly: pages are **path-based** under the shared
+`sereus.org` host, while the association files live at the **host root** and are
+**merged** across apps.
 
-- Canonical host: **`health.sereus.org`** (a subdomain; distinct from the download page
-  at `sereus.org/health`).
-- Path convention mirrors the scheme: `https://health.sereus.org/screen/<Route>?...`.
-- The parser (`parseDeepLink`) already strips both `health://` and
-  `https://health.sereus.org/`, so the same routing handles both.
+- Host: **`sereus.org`** (shared). Health's landing page stays at `sereus.org/health`.
+- The app claims only **`/health/invite/*`** (guest-invite links) — deliberately NOT the
+  `/health` landing/download page, so tapping the download link doesn't force-open the app
+  (mirrors chat's `/chat/invite`).
+- Link form: `https://sereus.org/health/invite/<token>`. The parser
+  (`parseDeepLink`) strips both `health://` and `https://sereus.org/health/`, so the same
+  routing handles both surfaces.
 
 ### App-side status
-- **Android** — App Links intent-filter added with `android:autoVerify="true"` for
-  `https` + host `health.sereus.org`. Inert (links open in browser) until the server
-  file below is live, so it is safe to ship now.
-- **iOS** — still needs the **Associated Domains** capability (see below).
+- **Android** — App Links intent-filter with `autoVerify`, `host="sereus.org"`,
+  `pathPrefix="/health/invite"`. Inert (opens the browser) until the merged apex file
+  below is served, so it is safe to ship now.
+- **iOS** — still needs the **Associated Domains** capability: `applinks:sereus.org`
+  (Xcode → Signing & Capabilities; enable the capability in the Developer portal). Do NOT
+  hand-edit `project.pbxproj`.
 
-### Server files to deploy (host root, once the subdomain is live)
+### Association files: single-app in this repo, MERGED into the apex on deploy
 
-**Android** — `https://health.sereus.org/.well-known/assetlinks.json`
-(`Content-Type: application/json`). Get the signing cert SHA-256 with
-`cd android && ./gradlew signingReport` (use the **release** keystore's fingerprint for
-published builds; the debug fingerprint only verifies debug installs):
+App Links / Universal Links are read only from the **host root**
+(`https://sereus.org/.well-known/…`), which is shared with chat and any other Sereus app.
+`web/publish.sh` therefore:
+1. publishes page content to `sereus.org/health` (`--delete` scoped to that dir), and
+2. **merges** `web/.well-known/{assetlinks.json, apple-app-site-association}` into the apex
+   `sereus.org/.well-known/…` by key (`package_name` / `appID`) — never clobbering chat's
+   entries. (Same python merge as chat's publish script.)
 
-```json
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "org.sereus.health",
-    "sha256_cert_fingerprints": ["<AA:BB:CC:… release signing SHA-256>"]
-  }
-}]
-```
+Files in `health/web/.well-known/`:
+- **`assetlinks.json`** — health's single Android statement. **Functional for debug-signed
+  builds** (carries the shared debug keystore SHA-256 `FA:C6:17:…:9C`, same keystore chat
+  uses). **Before a release/Play build, add the release keystore fingerprint** to the array
+  (`SEREUS_STORE_FILE=… SEREUS_STORE_PASSWORD=… ./gradlew signingReport`).
+- **`apple-app-site-association`** — health's single iOS detail, `paths: ["/health/invite/*"]`.
+  Replace `TEAMID` with the Apple Developer Team ID (nothing in the repo has it yet).
 
-**iOS** — `https://health.sereus.org/.well-known/apple-app-site-association`
-(no file extension, `Content-Type: application/json`, no redirects). `<TEAMID>` is the
-Apple Developer Team ID:
-
-```json
-{
-  "applinks": {
-    "apps": [],
-    "details": [{
-      "appID": "<TEAMID>.org.sereus.health",
-      "paths": ["/screen/*", "/invite/*"]
-    }]
-  }
-}
-```
-
-### iOS app-side step (do in Xcode — do not hand-edit project.pbxproj)
-1. Enable **Associated Domains** for `org.sereus.health` in the Apple Developer portal.
-2. Xcode → target `mobile` → Signing & Capabilities → **+ Associated Domains** →
-   add `applinks:health.sereus.org` (creates/updates `mobile.entitlements`).
-
-### Files in this repo (`health/web/.well-known/`)
-
-- **`assetlinks.json`** — committed and **functional for debug-signed builds**: it lists
-  the debug keystore SHA-256 (`FA:C6:17:…:9C`), which signs the current test APK. Before
-  a Play/release build, **add the release keystore's fingerprint** to the
-  `sha256_cert_fingerprints` array (both can coexist). Get it with the release env vars
-  set: `SEREUS_STORE_FILE=… SEREUS_STORE_PASSWORD=… ./gradlew signingReport`.
-- **`apple-app-site-association`** — committed as a **template**: replace `TEAMID` with
-  your Apple Developer Team ID. Not functional until then.
-
-### Publishing (host requirement)
-
-App Links are **host-scoped**: they are only read from `https://health.sereus.org/.well-known/…`.
-`health/web` currently publishes to `sereus.org/health` (path-based), where these files are
-inert. To make a publish light them up, **serve `health/web` at `health.sereus.org`** — i.e.
-point `web/publish.sh`'s `DEST` at the `health.sereus.org` docroot (and set up the subdomain
-with HTTPS). The `apple-app-site-association` file must be served with
-`Content-Type: application/json`, no extension, no redirect.
+After a health publish and a chat publish, the apex `assetlinks.json` holds both
+`org.sereus.health` and `org.sereus.chat` statements, and the apex AASA holds both details.
 
 ### Verification
 - Android: reinstall, then `adb shell pm get-app-links org.sereus.health` (expect
-  `verified` for the host once assetlinks.json is served). Force a re-verify with
+  `verified` for `sereus.org` once assetlinks.json is served). Re-verify with
   `adb shell pm verify-app-links --re-verify org.sereus.health`.
-- iOS: Apple's AASA validator, then tap an `https://health.sereus.org/screen/...` link.
+- Apex must return **200, valid JSON, no redirect**; AASA served as
+  `Content-Type: application/json` with no extension.
 
 ### Notes
-- `health.sereus.org` must serve **HTTPS** with a valid cert and the two `.well-known`
-  files at the host root — not under `/health`.
-- Bundle id stays `org.sereus.health`; the link *host* is `health.sereus.org`.
+- Bundle id stays `org.sereus.health`; the link host is `sereus.org`, path `/health/…`.
+- `/health/invite/*` needs an invite landing page + host rewrite when inbound guest-invite
+  redemption is wired (not implemented yet — see the networking story).
