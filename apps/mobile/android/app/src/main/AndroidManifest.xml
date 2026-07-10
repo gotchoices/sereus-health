@@ -33,12 +33,24 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
-        <!-- Appeus scenarios/screenshots use scheme://screen/Route?variant=... -->
+        <!-- Custom scheme: in-app / notification / scenario deep links
+             (health://screen/Route?variant=...). Any app can claim this, so it's
+             for app-to-app + notifications, not trusted web links. -->
         <intent-filter>
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.DEFAULT" />
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="health" />
+        </intent-filter>
+        <!-- Verified Android App Links: https://health.sereus.org/... opens the app
+             once /.well-known/assetlinks.json (with this app's signing SHA-256) is
+             served from that host. autoVerify is inert until then (links just open in
+             the browser) — safe to ship ahead of the server side. -->
+        <intent-filter android:autoVerify="true">
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" android:host="health.sereus.org" />
         </intent-filter>
       </activity>
     </application>
