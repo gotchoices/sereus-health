@@ -27,10 +27,10 @@ async function timeIt(
   }
 }
 
-/** Baseline: the current N+1 (×M) approach — 1 entries query + 1 items query per
- *  entry + 1 quantifiers query per item. */
+/** The live app path: whatever `getAllLogEntries` currently does (as of this
+ *  change, the local-nested form — so this should now track shape C). */
 export async function benchCurrentNPlus1(): Promise<BenchResult> {
-  return timeIt('A · Current (N+1 per-entry/per-item)', async () => {
+  return timeIt('A · getAllLogEntries() [live path]', async () => {
     const entries = await getAllLogEntries();
     let items = 0;
     let quants = 0;

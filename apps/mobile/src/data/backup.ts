@@ -1,9 +1,7 @@
 import { USE_QUEREUS } from '../db/config';
 import { ensureDatabaseInitialized } from '../db/init';
 import {
-  getAllCatalogItems,
   getAllCatalogBundles,
-  getItemDetail,
   importCanonicalCatalog,
   type CanonicalCatalog,
 } from '../db/catalog';
@@ -89,34 +87,55 @@ export async function exportBackup(): Promise<BackupData> {
     categories.push({ typeName: r.typeName as string, name: r.categoryName as string });
   }
 
-  // Items with full details (quantifier definitions).
-  const itemsList = await getAllCatalogItems();
-  const itemsWithDetails = await Promise.all(
-    itemsList.map(async (item) => {
-      const detail = await getItemDetail(item.id);
-      return detail ?? { ...item, description: null, quantifiers: [] };
-    }),
-  );
+  // Items + quantifier definitions, batched (2 flat queries + JS assembly) rather
+  // than getItemDetail per item (which was the same N+1 that made export slow).
+  type ItemDef = {
+    id: string;
+    typeName: string;
+    categoryName: string;
+    name: string;
+    description?: string;
+    quantifiers: Array<{ name: string; minValue?: number; maxValue?: number; units?: string }>;
+  };
+  const itemDefs = new Map<string, ItemDef>();
+  for await (const r of db.eval(`
+    SELECT i.id AS id, i.name AS name, i.description AS description, t.name AS typeName, c.name AS categoryName
+    FROM items i JOIN categories c ON c.id = i.category_id JOIN types t ON t.id = c.type_id
+    ORDER BY t.display_order, c.name, i.name
+  `)) {
+    itemDefs.set(r.id as string, {
+      id: r.id as string,
+      typeName: r.typeName as string,
+      categoryName: r.categoryName as string,
+      name: r.name as string,
+      description: (r.description as string) ?? undefined,
+      quantifiers: [],
+    });
+  }
+  for await (const r of db.eval(`
+    SELECT item_id AS itemId, name AS name, min_value AS minValue, max_value AS maxValue, units AS units
+    FROM item_quantifiers ORDER BY name ASC
+  `)) {
+    const def = itemDefs.get(r.itemId as string);
+    if (def) def.quantifiers.push({
+      name: r.name as string,
+      minValue: (r.minValue as number) ?? undefined,
+      maxValue: (r.maxValue as number) ?? undefined,
+      units: (r.units as string) ?? undefined,
+    });
+  }
 
-  const items = itemsWithDetails.map((item) => ({
-    typeName: item.type,
-    categoryName: item.category,
-    name: item.name,
-    description: item.description ?? undefined,
-    quantifiers:
-      item.quantifiers.length > 0
-        ? item.quantifiers.map((q) => ({
-            name: q.name,
-            minValue: q.minValue ?? undefined,
-            maxValue: q.maxValue ?? undefined,
-            units: q.units ?? undefined,
-          }))
-        : undefined,
+  const items = Array.from(itemDefs.values()).map((d) => ({
+    typeName: d.typeName,
+    categoryName: d.categoryName,
+    name: d.name,
+    description: d.description,
+    quantifiers: d.quantifiers.length > 0 ? d.quantifiers : undefined,
   }));
 
   // Bundles as member item names.
   const bundlesList = await getAllCatalogBundles();
-  const itemIdToName = new Map(itemsList.map((it) => [it.id, it.name]));
+  const itemIdToName = new Map(Array.from(itemDefs.values()).map((d) => [d.id, d.name]));
   const bundles = bundlesList.map((bundle) => ({
     typeName: bundle.type,
     name: bundle.name,
