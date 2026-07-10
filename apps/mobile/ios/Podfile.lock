@@ -2579,7 +2579,7 @@ PODS:
     - React-perflogger (= 0.82.1)
     - React-utils (= 0.82.1)
     - SocketRocket
-  - rn-leveldb (3.11.0):
+  - rn-leveldb (3.11.1):
     - React-Core
   - RNCAsyncStorage (2.2.0):
     - boost
@@ -3333,7 +3333,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: cc2795efe30a023c3a505676b9c748b664b9c0a1
   ReactCodegen: 897bad2d2f722ff4dc46fc144f9cc018db0e2ce4
   ReactCommon: c5803af00bd3737dc1631749b1f1da5beba5b049
-  rn-leveldb: 11953676a7ef8bf8cf1eed54e22536b573e71a60
+  rn-leveldb: bd115d71b28c8cebaed883dc92236a7a9700b59a
   RNCAsyncStorage: 302f2fac014fd450046c120567ca364632da682b
   RNDateTimePicker: 9d0df1bcce5eabbb670b0b0177fd43d0211bd86a
   RNFS: 4ac0f0ea233904cb798630b3c077808c06931688

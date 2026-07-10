@@ -8952,7 +8952,7 @@ __metadata:
     react-native-view-shot: "npm:^5.1.1"
     react-native-worklets: "npm:0.8.3"
     react-test-renderer: "npm:19.1.1"
-    rn-leveldb: "npm:^3.11.0"
+    rn-leveldb: "npm:^3.11.1"
     typescript: "npm:^5.8.3"
     web-streams-polyfill: "npm:^4.2.0"
     zod: "npm:^4.3.5"
@@ -10283,13 +10283,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rn-leveldb@npm:^3.11.0":
-  version: 3.11.0
-  resolution: "rn-leveldb@npm:3.11.0"
+"rn-leveldb@npm:^3.11.1":
+  version: 3.11.1
+  resolution: "rn-leveldb@npm:3.11.1"
   peerDependencies:
     react: "*"
     react-native: "*"
-  checksum: 10c0/120ec7db0af7591b256f400295f18055a14f490b392ea183b62d16b833019001b246a90e210f8e842d090e005f91230fdd6cf46ea80b634566dc3d798add9bb8
+  checksum: 10c0/cae970200a065ff16b93200362cd7fdec2ea91776f5d006e7c3c2a07057cbece11e8f919bbf0f1b1fd0891c5b3c1b360d9c18c767cc953c365400cd15700bb66
   languageName: node
   linkType: hard
 
