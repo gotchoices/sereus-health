@@ -160,7 +160,9 @@ export async function syncReminders(opts?: {
 export async function noteLogActivity(): Promise<void> {
   const state = await safe(() => getReminders(), 'getReminders(activity)');
   if (!state || !state.inactivity.enabled) return;
-  await safe(() => notifee.cancelTriggerNotification(INACTIVITY_ID), 'cancel inactivity');
+  // cancelNotification clears BOTH the pending trigger AND an already-delivered
+  // nudge in the tray (cancelTriggerNotification alone leaves a fired one showing).
+  await safe(() => notifee.cancelNotification(INACTIVITY_ID), 'clear inactivity');
   await createReminder(
     INACTIVITY_ID,
     "Haven't logged in a while",
@@ -168,6 +170,24 @@ export async function noteLogActivity(): Promise<void> {
     Date.now() + state.inactivity.intervalHours * 60 * 60 * 1000,
     false,
   );
+}
+
+/**
+ * Remove any *delivered* reminder notifications from the tray. Call whenever the
+ * app is entered (cold start or returning to foreground): the user is present, so
+ * a lingering "haven't logged" / scheduled nudge is moot. This does NOT re-arm or
+ * reschedule anything (entering the app is not "logging") — it only clears the
+ * stale visual; the next inactivity trigger is re-armed on the next log entry.
+ */
+export async function clearDeliveredReminders(): Promise<void> {
+  const displayed = await safe(() => notifee.getDisplayedNotifications(), 'getDisplayedNotifications');
+  if (!displayed) return;
+  for (const d of displayed) {
+    const id = d.id ?? d.notification?.id;
+    if (id && isReminderNotification(d.notification?.data)) {
+      await safe(() => notifee.cancelDisplayedNotification(id), 'clear delivered reminder');
+    }
+  }
 }
 
 /** If the app was cold-started by tapping a reminder, returns its route; else null. */

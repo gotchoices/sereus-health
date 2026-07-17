@@ -25,6 +25,7 @@ import GettingStarted from './src/screens/GettingStarted';
 import { getTypeCount } from './src/data/catalogImport';
 import { ensureDatabaseInitialized } from './src/db/init';
 import {
+  clearDeliveredReminders,
   getInitialReminderRoute,
   initReminders,
   onReminderPress,
@@ -176,13 +177,18 @@ function AppContent() {
     (async () => {
       await initReminders();
       await syncReminders();
+      // Entering the app clears any lingering reminder nudge from the tray.
+      await clearDeliveredReminders();
       const initial = await getInitialReminderRoute();
       if (mounted && initial) openNewEntry();
     })();
 
     const unsubPress = onReminderPress(() => openNewEntry());
     const appStateSub = AppState.addEventListener('change', (s) => {
-      if (s === 'active') syncReminders();
+      if (s === 'active') {
+        syncReminders();
+        clearDeliveredReminders();
+      }
     });
     return () => {
       mounted = false;
