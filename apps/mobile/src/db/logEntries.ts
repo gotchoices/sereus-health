@@ -151,49 +151,50 @@ export async function deleteLogEntry(entryId: string): Promise<void> {
   }
 }
 
-export async function getAllLogEntries(): Promise<LogEntry[]> {
-  const db = await getDatabase();
+/** Build the shell LogEntry (no items yet) from an entries-query row. */
+function mkEntry(er: any): LogEntry {
+  return {
+    id: er.id as string,
+    timestamp: fromDbDatetime(er.timestamp as string),
+    eventUtcOffsetMinutes: (er.eventUtcOffsetMinutes as number) ?? null,
+    typeId: er.typeId as string,
+    typeName: er.typeName as string,
+    comment: (er.comment as string) ?? null,
+    items: [],
+  };
+}
 
-  // Local-nested fetch: three flat, set-based queries assembled in JS — replaces
-  // the former per-entry/per-item N+1, which benchmarked ~40× slower on 42 entries
-  // (see db/bench.ts). Ordering is preserved: entries by timestamp DESC, and each
-  // entry's items/quantifiers by name (the flat scans are globally name-ordered).
+/**
+ * Fill entries' items + quantifiers with two flat, set-based scans assembled in
+ * JS — the shared engine behind getAllLogEntries / getLogEntriesPage /
+ * getLogEntryById (replaces the old per-entry/per-item N+1, ~40× slower; see
+ * db/bench.ts). Pass `entryIds` to scope the scans via `entry_id IN (...)` (a page
+ * or a single entry); omit it to scan every row ("fetch everything"). Mutates the
+ * entries held in `byId` in place. Items/quantifiers come back name-ordered.
+ */
+async function hydrateEntries(
+  db: Awaited<ReturnType<typeof getDatabase>>,
+  byId: Map<string, LogEntry>,
+  entryIds?: string[],
+): Promise<void> {
+  if (byId.size === 0) return;
+  const scoped = entryIds !== undefined;
+  const ph = scoped ? entryIds!.map(() => '?').join(',') : '';
+  const params = scoped ? entryIds! : [];
 
-  // 1) Entries (newest first).
-  const out: LogEntry[] = [];
-  const byId = new Map<string, LogEntry>();
-  for await (const er of db.eval(`
-    SELECT e.id, e.timestamp, e.type_id AS typeId, t.name AS typeName, e.comment,
-           e.event_utc_offset_minutes AS eventUtcOffsetMinutes
-    FROM log_entries e JOIN types t ON t.id = e.type_id
-    ORDER BY e.timestamp DESC
-  `)) {
-    const entry: LogEntry = {
-      id: er.id as string,
-      timestamp: fromDbDatetime(er.timestamp as string),
-      eventUtcOffsetMinutes: (er.eventUtcOffsetMinutes as number) ?? null,
-      typeId: er.typeId as string,
-      typeName: er.typeName as string,
-      comment: (er.comment as string) ?? null,
-      items: [],
-    };
-    out.push(entry);
-    byId.set(entry.id, entry);
-  }
-  if (out.length === 0) return out;
-
-  // 2) All items in one scan; push under their entry, index for the quantifier join.
   const itemByKey = new Map<string, LogEntryItem>(); // `${entryId}\0${itemId}` -> item
-  for await (const ir of db.eval(`
-    SELECT lei.entry_id AS entryId, i.id AS itemId, i.name AS name,
-           c.id AS categoryId, c.name AS categoryName,
-           lei.source_bundle_id AS sourceBundleId, b.name AS sourceBundleName
-    FROM log_entry_items lei
-    JOIN items i ON i.id = lei.item_id
-    JOIN categories c ON c.id = i.category_id
-    LEFT JOIN bundles b ON b.id = lei.source_bundle_id
-    ORDER BY i.name ASC
-  `)) {
+  for await (const ir of db.eval(
+    `SELECT lei.entry_id AS entryId, i.id AS itemId, i.name AS name,
+            c.id AS categoryId, c.name AS categoryName,
+            lei.source_bundle_id AS sourceBundleId, b.name AS sourceBundleName
+     FROM log_entry_items lei
+     JOIN items i ON i.id = lei.item_id
+     JOIN categories c ON c.id = i.category_id
+     LEFT JOIN bundles b ON b.id = lei.source_bundle_id
+     ${scoped ? `WHERE lei.entry_id IN (${ph})` : ''}
+     ORDER BY i.name ASC`,
+    params,
+  )) {
     const entry = byId.get(ir.entryId as string);
     if (!entry) continue;
     const item: LogEntryItem = {
@@ -209,15 +210,16 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
     itemByKey.set(`${ir.entryId as string}\0${ir.itemId as string}`, item);
   }
 
-  // 3) All quantifier values in one scan; attach to their item.
-  for await (const qr of db.eval(`
-    SELECT qv.entry_id AS entryId, qv.item_id AS itemId,
-           q.id AS id, q.name AS name, qv.value AS value,
-           q.units AS units, q.min_value AS minValue, q.max_value AS maxValue
-    FROM log_entry_quantifier_values qv
-    JOIN item_quantifiers q ON q.id = qv.quantifier_id
-    ORDER BY q.name ASC
-  `)) {
+  for await (const qr of db.eval(
+    `SELECT qv.entry_id AS entryId, qv.item_id AS itemId,
+            q.id AS id, q.name AS name, qv.value AS value,
+            q.units AS units, q.min_value AS minValue, q.max_value AS maxValue
+     FROM log_entry_quantifier_values qv
+     JOIN item_quantifiers q ON q.id = qv.quantifier_id
+     ${scoped ? `WHERE qv.entry_id IN (${ph})` : ''}
+     ORDER BY q.name ASC`,
+    params,
+  )) {
     const item = itemByKey.get(`${qr.entryId as string}\0${qr.itemId as string}`);
     if (!item) continue;
     item.quantifiers.push({
@@ -229,7 +231,23 @@ export async function getAllLogEntries(): Promise<LogEntry[]> {
       maxValue: (qr.maxValue as number) ?? null,
     });
   }
+}
 
+export async function getAllLogEntries(): Promise<LogEntry[]> {
+  const db = await getDatabase();
+  const out: LogEntry[] = [];
+  const byId = new Map<string, LogEntry>();
+  for await (const er of db.eval(`
+    SELECT e.id, e.timestamp, e.type_id AS typeId, t.name AS typeName, e.comment,
+           e.event_utc_offset_minutes AS eventUtcOffsetMinutes
+    FROM log_entries e JOIN types t ON t.id = e.type_id
+    ORDER BY e.timestamp DESC
+  `)) {
+    const entry = mkEntry(er);
+    out.push(entry);
+    byId.set(entry.id, entry);
+  }
+  await hydrateEntries(db, byId); // full scan (no id filter)
   return out;
 }
 
@@ -271,75 +289,14 @@ export async function getLogEntriesPage(
   const out: LogEntry[] = [];
   const byId = new Map<string, LogEntry>();
   for (const er of pageRows) {
-    const entry: LogEntry = {
-      id: er.id as string,
-      timestamp: fromDbDatetime(er.timestamp as string),
-      eventUtcOffsetMinutes: (er.eventUtcOffsetMinutes as number) ?? null,
-      typeId: er.typeId as string,
-      typeName: er.typeName as string,
-      comment: (er.comment as string) ?? null,
-      items: [],
-    };
+    const entry = mkEntry(er);
     out.push(entry);
     byId.set(entry.id, entry);
   }
   const lastRow = pageRows[pageRows.length - 1];
   const nextCursor: LogCursor | null = hasMore ? { ts: lastRow.timestamp as string, id: lastRow.id as string } : null;
 
-  // 2) Items + 3) quantifier values for just this page.
-  const ids = out.map((e) => e.id);
-  const ph = ids.map(() => '?').join(',');
-
-  const itemByKey = new Map<string, LogEntryItem>();
-  for await (const ir of db.eval(
-    `SELECT lei.entry_id AS entryId, i.id AS itemId, i.name AS name,
-            c.id AS categoryId, c.name AS categoryName,
-            lei.source_bundle_id AS sourceBundleId, b.name AS sourceBundleName
-     FROM log_entry_items lei
-     JOIN items i ON i.id = lei.item_id
-     JOIN categories c ON c.id = i.category_id
-     LEFT JOIN bundles b ON b.id = lei.source_bundle_id
-     WHERE lei.entry_id IN (${ph})
-     ORDER BY i.name ASC`,
-    ids,
-  )) {
-    const entry = byId.get(ir.entryId as string);
-    if (!entry) continue;
-    const item: LogEntryItem = {
-      id: ir.itemId as string,
-      name: ir.name as string,
-      categoryId: ir.categoryId as string,
-      categoryName: ir.categoryName as string,
-      sourceBundleId: (ir.sourceBundleId as string) ?? null,
-      sourceBundleName: (ir.sourceBundleName as string) ?? null,
-      quantifiers: [],
-    };
-    entry.items.push(item);
-    itemByKey.set(`${ir.entryId as string}\0${ir.itemId as string}`, item);
-  }
-
-  for await (const qr of db.eval(
-    `SELECT qv.entry_id AS entryId, qv.item_id AS itemId,
-            q.id AS id, q.name AS name, qv.value AS value,
-            q.units AS units, q.min_value AS minValue, q.max_value AS maxValue
-     FROM log_entry_quantifier_values qv
-     JOIN item_quantifiers q ON q.id = qv.quantifier_id
-     WHERE qv.entry_id IN (${ph})
-     ORDER BY q.name ASC`,
-    ids,
-  )) {
-    const item = itemByKey.get(`${qr.entryId as string}\0${qr.itemId as string}`);
-    if (!item) continue;
-    item.quantifiers.push({
-      id: qr.id as string,
-      name: qr.name as string,
-      value: qr.value as number,
-      units: (qr.units as string) ?? null,
-      minValue: (qr.minValue as number) ?? null,
-      maxValue: (qr.maxValue as number) ?? null,
-    });
-  }
-
+  await hydrateEntries(db, byId, out.map((e) => e.id)); // scoped to this page
   return { entries: out, nextCursor };
 }
 
@@ -361,72 +318,11 @@ export async function getLogEntryById(entryId: string): Promise<LogEntry | null>
 
   if (!entryRow) return null;
 
-  const itemRows: any[] = [];
-  for await (const row of db.eval(`
-    SELECT
-      i.id,
-      i.name,
-      c.id as categoryId,
-      c.name as categoryName,
-      lei.source_bundle_id as sourceBundleId,
-      b.name as sourceBundleName
-    FROM log_entry_items lei
-    JOIN items i ON i.id = lei.item_id
-    JOIN categories c ON c.id = i.category_id
-    LEFT JOIN bundles b ON b.id = lei.source_bundle_id
-    WHERE lei.entry_id = ?
-    ORDER BY i.name ASC
-  `, [entryId])) {
-    itemRows.push(row);
-  }
-
-  const items: LogEntryItem[] = [];
-  for (const ir of itemRows) {
-    const itemId = ir.id as string;
-    const quantRows: any[] = [];
-    for await (const row of db.eval(`
-      SELECT
-        q.id,
-        q.name,
-        qv.value,
-        q.units,
-        q.min_value as minValue,
-        q.max_value as maxValue
-      FROM log_entry_quantifier_values qv
-      JOIN item_quantifiers q ON q.id = qv.quantifier_id
-      WHERE qv.entry_id = ? AND qv.item_id = ?
-      ORDER BY q.name ASC
-    `, [entryId, itemId])) {
-      quantRows.push(row);
-    }
-
-    items.push({
-      id: itemId,
-      name: ir.name as string,
-      categoryId: ir.categoryId as string,
-      categoryName: ir.categoryName as string,
-      sourceBundleId: (ir.sourceBundleId as string) ?? null,
-      sourceBundleName: (ir.sourceBundleName as string) ?? null,
-      quantifiers: quantRows.map((qr) => ({
-        id: qr.id as string,
-        name: qr.name as string,
-        value: qr.value as number,
-        units: (qr.units as string) ?? null,
-        minValue: (qr.minValue as number) ?? null,
-        maxValue: (qr.maxValue as number) ?? null,
-      })),
-    });
-  }
-
-  return {
-    id: entryRow.id as string,
-    timestamp: fromDbDatetime(entryRow.timestamp as string),
-    eventUtcOffsetMinutes: (entryRow.eventUtcOffsetMinutes as number) ?? null,
-    typeId: entryRow.typeId as string,
-    typeName: entryRow.typeName as string,
-    comment: (entryRow.comment as string) ?? null,
-    items,
-  };
+  // Same batched hydration as the list paths (no more per-item quantifier N+1).
+  const entry = mkEntry(entryRow);
+  const byId = new Map<string, LogEntry>([[entry.id, entry]]);
+  await hydrateEntries(db, byId, [entry.id]);
+  return entry;
 }
 
 

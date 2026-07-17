@@ -97,27 +97,35 @@ export interface CategoryRow {
  */
 export async function getCategoriesWithCounts(typeName: string): Promise<CategoryRow[]> {
   const db = await getDatabase();
-  const typeStmt = await db.prepare('SELECT id FROM types WHERE name = ?');
-  const typeRow = await typeStmt.get([typeName]);
-  await typeStmt.finalize();
+  const typeRow = await db.get('SELECT id FROM types WHERE name = ?', [typeName]);
   if (!typeRow) return [];
+  const typeId = typeRow.id as string;
 
-  const stmt = await db.prepare(`
-    SELECT c.id AS id, c.name AS name, c.retired_at AS retiredAt,
-      (SELECT count(*) FROM items i WHERE i.category_id = c.id) AS itemCount
+  // Item counts per category — one grouped query, not a per-category subquery.
+  const counts = new Map<string, number>();
+  for await (const r of db.eval(`
+    SELECT i.category_id AS id, count(*) AS n
+    FROM items i JOIN categories c ON c.id = i.category_id
+    WHERE c.type_id = ? GROUP BY i.category_id
+  `, [typeId])) {
+    if (r.id != null) counts.set(r.id as string, (r.n as number) || 0);
+  }
+
+  const rows: CategoryRow[] = [];
+  for await (const r of db.eval(`
+    SELECT c.id AS id, c.name AS name, c.retired_at AS retiredAt
     FROM categories c
     WHERE c.type_id = ?
     ORDER BY c.name ASC
-  `);
-  const rows: any[] = [];
-  for await (const r of stmt.all([typeRow.id as string])) rows.push(r);
-  await stmt.finalize();
-  return rows.map((r) => ({
-    id: r.id as string,
-    name: r.name as string,
-    itemCount: (r.itemCount as number) ?? 0,
-    retired: r.retiredAt != null,
-  }));
+  `, [typeId])) {
+    rows.push({
+      id: r.id as string,
+      name: r.name as string,
+      itemCount: counts.get(r.id as string) ?? 0,
+      retired: r.retiredAt != null,
+    });
+  }
+  return rows;
 }
 
 /** Create a category under a Type (idempotent by unique `(type_id, name)`). */
@@ -588,33 +596,30 @@ export async function getBundleItemIds(bundleId: string): Promise<string[]> {
 
 export async function getAllCatalogBundles(): Promise<Array<{ id: string; name: string; type: string; itemIds: string[] }>> {
   const db = await getDatabase();
-  const bundleStmt = await db.prepare(`
-    SELECT 
-      b.id,
-      b.name,
-      t.name as type
+
+  // Bundles (flat) + all members in one scan, grouped in JS — was N+1 (a members
+  // query per bundle). Members ordered by display_order within each bundle.
+  const out: Array<{ id: string; name: string; type: string; itemIds: string[] }> = [];
+  const byId = new Map<string, { itemIds: string[] }>();
+  for await (const b of db.eval(`
+    SELECT b.id AS id, b.name AS name, t.name AS type
     FROM bundles b
     LEFT JOIN types t ON t.id = b.type_id
     ORDER BY b.name
-  `);
+  `)) {
+    const bundle = { id: b.id as string, name: b.name as string, type: (b.type as string) || 'Activity', itemIds: [] as string[] };
+    out.push(bundle);
+    byId.set(bundle.id, bundle);
+  }
+  if (out.length === 0) return out;
 
-  const bundles: any[] = [];
-  for await (const row of bundleStmt.all()) bundles.push(row);
-  await bundleStmt.finalize();
-
-  const out: Array<{ id: string; name: string; type: string; itemIds: string[] }> = [];
-  for (const b of bundles) {
-    const itemStmt = await db.prepare('SELECT item_id FROM bundle_members WHERE bundle_id = ?');
-    const itemIds: string[] = [];
-    for await (const r of itemStmt.all([b.id as string])) itemIds.push(r.item_id as string);
-    await itemStmt.finalize();
-
-    out.push({
-      id: b.id as string,
-      name: b.name as string,
-      type: (b.type as string) || 'Activity',
-      itemIds,
-    });
+  for await (const r of db.eval(`
+    SELECT bundle_id AS bundleId, item_id AS itemId
+    FROM bundle_members
+    WHERE item_id IS NOT NULL
+    ORDER BY bundle_id, display_order
+  `)) {
+    byId.get(r.bundleId as string)?.itemIds.push(r.itemId as string);
   }
   return out;
 }
