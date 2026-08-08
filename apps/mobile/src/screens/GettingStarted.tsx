@@ -23,6 +23,13 @@ import {
   type CanonicalCatalog,
   type CatalogIndexEntry,
 } from '../data/catalogImport';
+import { importBackup, type BackupData } from '../data/backup';
+
+/** A parsed import file is a full backup (catalog + logs) if it carries a logs array. */
+function isBackupFile(parsed: unknown): parsed is BackupData {
+  const b = parsed as BackupData | null;
+  return !!b && Array.isArray(b.logs) && b.logs.length > 0;
+}
 
 const logger = createLogger('GettingStarted');
 
@@ -58,23 +65,40 @@ export default function GettingStarted({ onDone, onStartScratch }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
-  // Load a catalog, preview it, and (on confirm) commit — shared by all sources.
+  // Load an import source, preview it, and (on confirm) commit — shared by all
+  // sources. A picked FILE may be a full backup (catalog + log entries); if so we
+  // route it through importBackup so the logs come in too, not just the catalog.
   const runImport = async (load: () => Promise<CanonicalCatalog | null>) => {
     if (busy) return;
     setBusy(true);
     try {
-      const cat = await track(load());
-      if (!cat) return; // user cancelled
-      const preview = await track(previewCatalogImport(cat));
-      const lines = [
-        t('gettingStarted.previewCounts', {
-          types: preview.typesAdd,
-          categories: preview.categoriesAdd,
-          items: preview.itemsAdd,
-        }),
-      ];
-      if (preview.itemsSkip) lines.push(t('gettingStarted.previewSkip', { items: preview.itemsSkip }));
-      if (preview.warnings.length) lines.push(t('gettingStarted.previewWarnings', { count: preview.warnings.length }));
+      const parsed = await track(load());
+      if (!parsed) return; // user cancelled
+      const backup = isBackupFile(parsed) ? parsed : null;
+
+      const lines: string[] = [];
+      if (backup) {
+        const p = await track(importBackup(backup, { mode: 'merge', dryRun: true }));
+        lines.push(
+          t('gettingStarted.previewBackup', {
+            items: p.catalogItemsAdd,
+            bundles: p.bundlesAdd,
+            logs: p.logsAdd,
+          }),
+        );
+        if (p.warnings.length) lines.push(t('gettingStarted.previewWarnings', { count: p.warnings.length }));
+      } else {
+        const p = await track(previewCatalogImport(parsed));
+        lines.push(
+          t('gettingStarted.previewCounts', {
+            types: p.typesAdd,
+            categories: p.categoriesAdd,
+            items: p.itemsAdd,
+          }),
+        );
+        if (p.itemsSkip) lines.push(t('gettingStarted.previewSkip', { items: p.itemsSkip }));
+        if (p.warnings.length) lines.push(t('gettingStarted.previewWarnings', { count: p.warnings.length }));
+      }
 
       Alert.alert(t('gettingStarted.previewTitle'), lines.join('\n'), [
         { text: t('common.cancel'), style: 'cancel' },
@@ -86,13 +110,23 @@ export default function GettingStarted({ onDone, onStartScratch }: Props) {
             // which can hold the JS thread while it writes many rows.
             await new Promise<void>((resolve) => setTimeout(() => resolve(), 0));
             try {
-              const r = await track(commitCatalogImport(cat));
-              logger.info('Catalog imported', r);
-              Alert.alert(
-                t('gettingStarted.doneTitle'),
-                t('gettingStarted.doneBody', { items: r.itemsAdd, categories: r.categoriesAdd }),
-                [{ text: t('common.done'), onPress: onDone }],
-              );
+              if (backup) {
+                const r = await track(importBackup(backup, { mode: 'merge' }));
+                logger.info('Backup imported', r);
+                Alert.alert(
+                  t('gettingStarted.doneTitleBackup'),
+                  t('gettingStarted.doneBodyBackup', { items: r.catalogItemsAdd, logs: r.logsAdd }),
+                  [{ text: t('common.done'), onPress: onDone }],
+                );
+              } else {
+                const r = await track(commitCatalogImport(parsed));
+                logger.info('Catalog imported', r);
+                Alert.alert(
+                  t('gettingStarted.doneTitle'),
+                  t('gettingStarted.doneBody', { items: r.itemsAdd, categories: r.categoriesAdd }),
+                  [{ text: t('common.done'), onPress: onDone }],
+                );
+              }
             } catch (e) {
               logger.error('Commit failed', e);
               Alert.alert(t('gettingStarted.importFailed'), String(e));

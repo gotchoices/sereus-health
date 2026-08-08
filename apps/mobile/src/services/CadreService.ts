@@ -266,21 +266,21 @@ class CadreServiceImpl {
   /**
    * Run authority genesis. Idempotent, safe on every start.
    *
-   * cadre-core 0.8 uses a SINGLE-KEY model: the cadre authority key is *derived
-   * from the node identity* (not an independent keypair). `createSeed`,
-   * `publishStrand`, and `publishFormationInvite` all sign with the identity key
-   * and refuse unless its public half matches the control node's PeerId — so we
-   * must NOT mint a separate random authority key. `ensureAuthorityKey` inserts
-   * the derived key only when the table is empty.
+   * cadre-core 0.9 uses a SINGLE-KEY model: the cadre owner key is *derived from
+   * the node identity* (not an independent keypair). `createSeed`, `publishStrand`,
+   * and `publishFormationInvite` all sign with the identity key and refuse unless
+   * its public half matches the control node's PeerId — so we must NOT mint a
+   * separate random owner key. `ensureOwnerKey` inserts the derived key only when
+   * the table is empty. (0.9.0 renamed the "authority" concept to "owner".)
    */
   private async runAuthorityGenesis(): Promise<string> {
     if (!this.node) throw new Error('CadreNode not running');
-    const { privateKeyB64, publicKeyB64 } = this.node.getIdentityAuthorityKey();
+    const { privateKeyB64, publicKeyB64 } = this.node.getIdentityOwnerKey();
 
     const controlDb = this.node.getControlDatabase();
     if (!controlDb) throw new Error('Control database not available');
 
-    const inserted = await controlDb.ensureAuthorityKey(publicKeyB64);
+    const inserted = await controlDb.ensureOwnerKey(publicKeyB64);
     this.node.initializeSeedBootstrap(privateKeyB64);
     this._authorityPublicKey = publicKeyB64;
 
@@ -358,7 +358,7 @@ class CadreServiceImpl {
     await this.ensureStarted();
     if (!this.node) return null;
     try {
-      return this.node.getIdentityAuthorityKey().privateKeyB64;
+      return this.node.getIdentityOwnerKey().privateKeyB64;
     } catch (err) {
       logger.warn('exportAuthorityPrivateKey failed:', err);
       return null;

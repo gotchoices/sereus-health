@@ -69,6 +69,15 @@ sensitive (membership secrets / strand access) — share only over a trusted cha
 Full removal from the cadre control DB is not yet exposed by cadre-core; removing a row
 drops it from this view only, and the UI says so.
 
+## Loading (must never hang)
+
+Control-DB reads (`OwnerKey`, `CadrePeer`) go through a **consistent** read that needs a
+control-network quorum. On a **solo node** (no drone/cohort yet) that read blocks forever,
+so the data layer **time-boxes** each read (~5s, run concurrently) and renders with whatever
+returned. The screen therefore always shows the Network ID + "This device" + empty sections
+on first visit rather than sitting on a perpetual "Loading" spinner. Once a cohort exists,
+the reads return in well under the timeout.
+
 ## Connectivity
 
 On screen entry, probe Fret (DHT) for peer status: Online, Unknown, Unreachable. *(Status
