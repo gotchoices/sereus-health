@@ -368,7 +368,9 @@ export default function EditEntry(props: { mode: EditEntryMode; entryId?: string
               {[
                 { label: t('editEntry.tsNow'), fn: () => setTimestamp(new Date().toISOString()) },
                 { label: t('editEntry.tsMinus1h'), fn: () => shiftHours(-1) },
-                { label: t('editEntry.tsYesterday'), fn: () => shiftHours(-24) },
+                { label: t('editEntry.tsPlus1h'), fn: () => shiftHours(1) },
+                { label: t('editEntry.tsMinus1d'), fn: () => shiftHours(-24) },
+                { label: t('editEntry.tsPlus1d'), fn: () => shiftHours(24) },
               ].map((c) => (
                 <TouchableOpacity key={c.label} onPress={c.fn} style={[styles.tsChip, { borderColor: theme.border, backgroundColor: theme.surface }]}>
                   <Text style={{ color: theme.textSecondary, ...typography.small }}>{c.label}</Text>

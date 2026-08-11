@@ -93,7 +93,9 @@ const en: Dict = {
   'editEntry.changeTypeBody': 'The items you added will be cleared.',
   'editEntry.tsNow': 'Now',
   'editEntry.tsMinus1h': '−1h',
-  'editEntry.tsYesterday': 'Yesterday',
+  'editEntry.tsPlus1h': '+1h',
+  'editEntry.tsMinus1d': '−1d',
+  'editEntry.tsPlus1d': '+1d',
 
   'configureCatalog.title': 'Catalog',
   'configureCatalog.filterPlaceholder': 'Filter…',
