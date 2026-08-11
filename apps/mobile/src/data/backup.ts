@@ -182,11 +182,18 @@ export interface ImportPreview {
   warnings: string[];
 }
 
+export interface ImportProgress {
+  /** Which phase is running. `catalog` reports no count (one atomic insert). */
+  phase: 'catalog' | 'entries';
+  done: number;
+  total: number;
+}
+
 export interface ImportOptions {
   mode: 'merge' | 'replace';
   dryRun?: boolean;
-  /** Progress callback for the (potentially long) log-insert phase. */
-  onProgress?: (done: number, total: number) => void;
+  /** Progress callback for the (potentially long) write phases. */
+  onProgress?: (p: ImportProgress) => void;
 }
 
 function emptyPreview(): ImportPreview {
@@ -260,6 +267,14 @@ export async function importBackup(
       })),
     },
   };
+  // Announce the catalog phase and yield once so the UI paints its indicator
+  // *before* the (single, atomic) catalog transaction blocks the JS thread. We
+  // deliberately do NOT report per-item counts here — that would require yielding
+  // inside the open transaction.
+  if (write) {
+    options.onProgress?.({ phase: 'catalog', done: 0, total: 0 });
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  }
   const cat = await importCanonicalCatalog(canonical, { dryRun: options.dryRun ?? false });
   preview.catalogItemsAdd = cat.itemsAdd;
   preview.catalogItemsSkip = cat.itemsSkip;
@@ -352,7 +367,9 @@ export async function importBackup(
     // Insert in batched transactions (a few commits, not one-per-entry),
     // reporting progress for the UI.
     if (write && toInsert.length > 0) {
-      const result = await createLogEntriesBulk(toInsert, { onProgress: options.onProgress });
+      const result = await createLogEntriesBulk(toInsert, {
+        onProgress: (done, total) => options.onProgress?.({ phase: 'entries', done, total }),
+      });
       preview.logsAdd += result.added;
       preview.errors.push(...result.errors);
     }

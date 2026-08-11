@@ -10,7 +10,7 @@ import { useT } from '../i18n/useT';
 import { clearAllData } from '../db/clear';
 import { createLogger } from '../util/logger';
 import { track } from '../util/activity';
-import { exportBackup, importBackup, type BackupData, type ImportPreview } from '../data/backup';
+import { exportBackup, importBackup, type BackupData, type ImportPreview, type ImportProgress } from '../data/backup';
 
 const logger = createLogger('BackupRestore');
 
@@ -23,7 +23,7 @@ export default function BackupRestore(props: BackupRestoreProps) {
   const t = useT();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [importProgress, setImportProgress] = useState<{ done: number; total: number } | null>(null);
+  const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
 
   const handleExportBackup = async () => {
     if (isExporting) return;
@@ -189,12 +189,16 @@ export default function BackupRestore(props: BackupRestoreProps) {
     // The confirm dialog dismissed handleImportBackup's spinner; the actual write
     // is the long part, so drive the indicator (and progress) from here.
     setIsImporting(true);
-    setImportProgress({ done: 0, total: 0 });
+    setImportProgress(null);
+    // Yield once so the overlay (with its native-animated spinner) paints BEFORE
+    // the first blocking phase — otherwise the JS thread is busy and nothing
+    // renders until the log phase finally yields.
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
     try {
       const result = await track(importBackup(backupData, {
         mode,
         dryRun: false,
-        onProgress: (done, total) => setImportProgress({ done, total }),
+        onProgress: (p) => setImportProgress(p),
       }));
 
       const totalAdd = result.catalogItemsAdd + result.bundlesAdd + result.logsAdd;
@@ -338,11 +342,13 @@ export default function BackupRestore(props: BackupRestoreProps) {
         <View style={styles.importOverlay}>
           <ActivityIndicator size="large" color="#FFFFFF" />
           <Text style={styles.importOverlayText}>
-            {importProgress && importProgress.total > 0
+            {importProgress?.phase === 'entries' && importProgress.total > 0
               ? t('backupRestore.importingCount')
                   .replace('{done}', String(importProgress.done))
                   .replace('{total}', String(importProgress.total))
-              : `${t('backupRestore.import')}…`}
+              : importProgress?.phase === 'catalog'
+                ? t('backupRestore.importingCatalog')
+                : t('backupRestore.importPreparing')}
           </Text>
         </View>
       )}

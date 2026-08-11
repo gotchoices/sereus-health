@@ -300,7 +300,9 @@ const en: Dict = {
   'backupRestore.clearDataConfirm': 'This permanently deletes all data on this device and cannot be undone. If you haven’t exported a backup yet, do that first. Continue?',
   'backupRestore.clearDataAction': 'Clear',
   'backupRestore.clearDataDone': 'Data cleared. You can import a backup now.',
-  'backupRestore.importingCount': 'Importing {done}/{total}…',
+  'backupRestore.importPreparing': 'Preparing…',
+  'backupRestore.importingCatalog': 'Importing catalog…',
+  'backupRestore.importingCount': 'Importing entries {done}/{total}…',
   'backupRestore.clearDataFailed': 'Failed. See logs for details.',
 
   'apiKeys.title': 'Assistant Setup',
