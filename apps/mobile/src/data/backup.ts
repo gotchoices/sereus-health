@@ -5,7 +5,7 @@ import {
   importCanonicalCatalog,
   type CanonicalCatalog,
 } from '../db/catalog';
-import { getAllLogEntries, createLogEntry } from '../db/logEntries';
+import { getAllLogEntries, createLogEntriesBulk, type CreateLogEntryInput } from '../db/logEntries';
 import { clearAllData } from '../db/clear';
 import { getDatabase } from '../db';
 
@@ -185,6 +185,8 @@ export interface ImportPreview {
 export interface ImportOptions {
   mode: 'merge' | 'replace';
   dryRun?: boolean;
+  /** Progress callback for the (potentially long) log-insert phase. */
+  onProgress?: (done: number, total: number) => void;
 }
 
 function emptyPreview(): ImportPreview {
@@ -199,13 +201,6 @@ function emptyPreview(): ImportPreview {
 /** Idempotency key for a log entry: (timestampUtc, typeName, sorted item names). */
 function logKey(timestampUtc: string, typeName: string, itemNames: string[]): string {
   return `${timestampUtc}|${typeName.toLowerCase()}|${itemNames.map((n) => n.toLowerCase()).sort().join(',')}`;
-}
-
-async function scalar(db: any, sql: string, params: any[]): Promise<string | null> {
-  const stmt = await db.prepare(sql);
-  const row = await stmt.get(params);
-  await stmt.finalize();
-  return row ? (row.id as string) : null;
 }
 
 /**
@@ -279,65 +274,87 @@ export async function importBackup(
     const existing = await getAllLogEntries();
     const seen = new Set(existing.map((e) => logKey(e.timestamp, e.typeName, e.items.map((i) => i.name))));
 
+    // Preload name→id resolution maps ONCE (three queries) instead of the
+    // per-entry N+1 lookups that made large restores crawl.
+    const SEP = '\u0000';
+    const typeIdByName = new Map<string, string>();
+    const itemIdByKey = new Map<string, string>(); // `${typeId}${SEP}${categoryName}${SEP}${itemName}`
+    const qidByKey = new Map<string, string>(); // `${itemId}${SEP}${quantifierName}`
+    {
+      const s = await db.prepare('SELECT id, name FROM types');
+      for await (const r of s.all()) typeIdByName.set(r.name as string, r.id as string);
+      await s.finalize();
+    }
+    {
+      const s = await db.prepare(
+        'SELECT i.id AS id, i.name AS itemName, c.name AS categoryName, c.type_id AS typeId FROM items i JOIN categories c ON c.id = i.category_id',
+      );
+      for await (const r of s.all()) {
+        itemIdByKey.set(`${r.typeId as string}${SEP}${r.categoryName as string}${SEP}${r.itemName as string}`, r.id as string);
+      }
+      await s.finalize();
+    }
+    {
+      const s = await db.prepare('SELECT id, item_id AS itemId, name FROM item_quantifiers');
+      for await (const r of s.all()) qidByKey.set(`${r.itemId as string}${SEP}${r.name as string}`, r.id as string);
+      await s.finalize();
+    }
+
+    // Resolve every backup log into insert-ready input, in memory (no writes),
+    // preserving the original skip/warning semantics.
+    const toInsert: CreateLogEntryInput[] = [];
     for (const log of backupData.logs) {
       const key = logKey(log.timestampUtc, log.typeName, log.items.map((i) => i.itemName));
       if (seen.has(key)) {
         preview.logsSkip++; // idempotent: entry already present (value/comment updates are a future refinement)
         continue;
       }
-
-      if (!write) {
-        preview.logsAdd++;
-        seen.add(key);
-        continue;
-      }
-
-      // Resolve ids by name.
-      const typeId = await scalar(db, 'SELECT id FROM types WHERE name = ?', [log.typeName]);
+      const typeId = typeIdByName.get(log.typeName);
       if (!typeId) {
         preview.warnings.push(`Log ${log.timestampUtc}: unknown type "${log.typeName}" — skipped`);
         preview.logsSkip++;
         continue;
       }
-      const saveItems: Array<{ itemId: string; sourceBundleId: null; quantifiers: Array<{ quantifierId: string; value: number }> }> = [];
+      const items: CreateLogEntryInput['items'] = [];
       for (const it of log.items) {
-        const itemId = await scalar(
-          db,
-          'SELECT i.id AS id FROM items i JOIN categories c ON c.id = i.category_id WHERE c.type_id = ? AND c.name = ? AND i.name = ? LIMIT 1',
-          [typeId, it.categoryName, it.itemName],
-        );
+        const itemId = itemIdByKey.get(`${typeId}${SEP}${it.categoryName}${SEP}${it.itemName}`);
         if (!itemId) {
           preview.warnings.push(`Log ${log.timestampUtc}: item "${it.itemName}" not found — skipped`);
           continue;
         }
         const quantifiers: Array<{ quantifierId: string; value: number }> = [];
         for (const q of it.quantifiers ?? []) {
-          const qid = await scalar(db, 'SELECT id AS id FROM item_quantifiers WHERE item_id = ? AND name = ? LIMIT 1', [itemId, q.name]);
+          const qid = qidByKey.get(`${itemId}${SEP}${q.name}`);
           if (qid) quantifiers.push({ quantifierId: qid, value: q.value });
           else preview.warnings.push(`Log ${log.timestampUtc}: quantifier "${q.name}" on "${it.itemName}" not found — value dropped`);
         }
-        saveItems.push({ itemId, sourceBundleId: null, quantifiers });
+        items.push({ itemId, sourceBundleId: null, quantifiers });
       }
-
-      if (saveItems.length === 0) {
+      if (items.length === 0) {
         preview.errors.push(`Log ${log.timestampUtc}: no resolvable items — skipped`);
         preview.logsSkip++;
         continue;
       }
-
-      try {
-        await createLogEntry({
-          timestamp: log.timestampUtc,
-          typeId,
-          comment: log.comment ?? null,
-          eventUtcOffsetMinutes: log.eventUtcOffsetMinutes ?? null,
-          items: saveItems,
-        });
+      seen.add(key);
+      if (!write) {
         preview.logsAdd++;
-        seen.add(key);
-      } catch (err) {
-        preview.errors.push(`Log ${log.timestampUtc}: ${String(err)}`);
+        continue;
       }
+      toInsert.push({
+        timestamp: log.timestampUtc,
+        typeId,
+        comment: log.comment ?? null,
+        eventUtcOffsetMinutes: log.eventUtcOffsetMinutes ?? null,
+        items,
+      });
+    }
+
+    // Insert in batched transactions (a few commits, not one-per-entry),
+    // reporting progress for the UI.
+    if (write && toInsert.length > 0) {
+      const result = await createLogEntriesBulk(toInsert, { onProgress: options.onProgress });
+      preview.logsAdd += result.added;
+      preview.errors.push(...result.errors);
     }
   }
 

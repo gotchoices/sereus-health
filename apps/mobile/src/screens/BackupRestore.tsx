@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import RNFS from 'react-native-fs';
 import Share from 'react-native-share';
@@ -23,6 +23,7 @@ export default function BackupRestore(props: BackupRestoreProps) {
   const t = useT();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ done: number; total: number } | null>(null);
 
   const handleExportBackup = async () => {
     if (isExporting) return;
@@ -185,12 +186,20 @@ export default function BackupRestore(props: BackupRestoreProps) {
   };
 
   const performImport = async (backupData: BackupData, mode: 'merge' | 'replace') => {
+    // The confirm dialog dismissed handleImportBackup's spinner; the actual write
+    // is the long part, so drive the indicator (and progress) from here.
+    setIsImporting(true);
+    setImportProgress({ done: 0, total: 0 });
     try {
-      const result = await track(importBackup(backupData, { mode, dryRun: false }));
-      
+      const result = await track(importBackup(backupData, {
+        mode,
+        dryRun: false,
+        onProgress: (done, total) => setImportProgress({ done, total }),
+      }));
+
       const totalAdd = result.catalogItemsAdd + result.bundlesAdd + result.logsAdd;
       const totalUpdate = result.catalogItemsUpdate + result.bundlesUpdate + result.logsUpdate;
-      
+
       Alert.alert(
         'Import Complete',
         `Added: ${totalAdd}\nUpdated: ${totalUpdate}\n\n${result.warnings.join('\n')}`
@@ -198,6 +207,9 @@ export default function BackupRestore(props: BackupRestoreProps) {
     } catch (err) {
       logger.error('Import failed:', err);
       Alert.alert('Import Failed', String(err));
+    } finally {
+      setIsImporting(false);
+      setImportProgress(null);
     }
   };
 
@@ -304,25 +316,36 @@ export default function BackupRestore(props: BackupRestoreProps) {
           </TouchableOpacity>
         </View>
 
-        {/* Danger Zone (dev-only) */}
-        {__DEV__ && (
-          <View style={[styles.dangerZone, { borderColor: '#DC2626' }]}>
-            <Text style={[styles.dangerZoneTitle, { color: '#DC2626' }]}>
-              {t('backupRestore.dangerZone')}
+        {/* Danger Zone */}
+        <View style={[styles.dangerZone, { borderColor: '#DC2626' }]}>
+          <Text style={[styles.dangerZoneTitle, { color: '#DC2626' }]}>
+            {t('backupRestore.dangerZone')}
+          </Text>
+          <TouchableOpacity
+            style={[styles.dangerButton, { borderColor: '#DC2626' }]}
+            onPress={handleClearData}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trash-outline" size={20} color="#DC2626" />
+            <Text style={[styles.dangerButtonText, { color: '#DC2626' }]}>
+              {t('backupRestore.clearData')}
             </Text>
-            <TouchableOpacity
-              style={[styles.dangerButton, { borderColor: '#DC2626' }]}
-              onPress={handleClearData}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="trash-outline" size={20} color="#DC2626" />
-              <Text style={[styles.dangerButtonText, { color: '#DC2626' }]}>
-                {t('backupRestore.clearData')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+          </TouchableOpacity>
+        </View>
       </ScrollView>
+
+      {isImporting && (
+        <View style={styles.importOverlay}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
+          <Text style={styles.importOverlayText}>
+            {importProgress && importProgress.total > 0
+              ? t('backupRestore.importingCount')
+                  .replace('{done}', String(importProgress.done))
+                  .replace('{total}', String(importProgress.total))
+              : `${t('backupRestore.import')}…`}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -330,6 +353,22 @@ export default function BackupRestore(props: BackupRestoreProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  importOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[3],
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  importOverlayText: {
+    ...typography.body,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   header: {
     paddingHorizontal: spacing[3],

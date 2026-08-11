@@ -91,6 +91,74 @@ export async function createLogEntry(input: CreateLogEntryInput): Promise<string
   }
 }
 
+/**
+ * Bulk-insert many log entries efficiently (backup restore). Unlike calling
+ * `createLogEntry` per entry — which opens a transaction (and, on the optimystic
+ * backend, a block-store flush) for **every** record — this batches entries into
+ * a small number of transactions. Callers must pass already-resolved ids (do the
+ * name→id lookups once, in memory, before calling).
+ *
+ * Batches are committed independently: a failing batch rolls back only its own
+ * entries and is reported in `errors`; earlier batches stay committed. Between
+ * batches we yield to the event loop so a progress UI can paint.
+ */
+export async function createLogEntriesBulk(
+  inputs: CreateLogEntryInput[],
+  opts?: { chunkSize?: number; onProgress?: (done: number, total: number) => void },
+): Promise<{ added: number; errors: string[] }> {
+  const db = await getDatabase();
+  const chunkSize = Math.max(1, opts?.chunkSize ?? 50);
+  const total = inputs.length;
+  const errors: string[] = [];
+  let added = 0;
+
+  for (let start = 0; start < total; start += chunkSize) {
+    const batch = inputs.slice(start, start + chunkSize);
+    await db.exec('BEGIN');
+    try {
+      for (const input of batch) {
+        const entryId = newUuid();
+        await db.exec(
+          'INSERT INTO log_entries (id, timestamp, type_id, comment, event_utc_offset_minutes) VALUES (?, ?, ?, ?, ?)',
+          [
+            entryId,
+            toDbDatetime(input.timestamp),
+            input.typeId,
+            input.comment,
+            input.eventUtcOffsetMinutes !== undefined
+              ? input.eventUtcOffsetMinutes
+              : captureUtcOffsetMinutes(input.timestamp),
+          ],
+        );
+        for (const item of input.items) {
+          await db.exec('INSERT INTO log_entry_items (entry_id, item_id, source_bundle_id) VALUES (?, ?, ?)', [
+            entryId,
+            item.itemId,
+            item.sourceBundleId,
+          ]);
+          for (const q of item.quantifiers) {
+            await db.exec(
+              'INSERT INTO log_entry_quantifier_values (entry_id, item_id, quantifier_id, value) VALUES (?, ?, ?, ?)',
+              [entryId, item.itemId, q.quantifierId, q.value],
+            );
+          }
+        }
+      }
+      await db.exec('COMMIT');
+      added += batch.length;
+    } catch (e) {
+      await db.exec('ROLLBACK');
+      errors.push(`Entries ${start + 1}-${start + batch.length}: ${String(e)}`);
+    }
+    opts?.onProgress?.(Math.min(start + chunkSize, total), total);
+    // Yield so the JS thread can paint progress between batches.
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  }
+
+  if (added > 0) noteLogActivity().catch(() => {});
+  return { added, errors };
+}
+
 export async function updateLogEntry(entryId: string, input: CreateLogEntryInput): Promise<void> {
   const db = await getDatabase();
 
