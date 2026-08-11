@@ -235,8 +235,6 @@ export default function EditEntry(props: { mode: EditEntryMode; entryId?: string
   };
 
   const title = props.mode === 'edit' ? t('editEntry.titleEdit') : props.mode === 'clone' ? t('editEntry.titleClone') : t('editEntry.titleNew');
-  const primaryLabel = props.mode === 'edit' ? t('editEntry.save') : props.mode === 'clone' ? t('editEntry.clone') : t('editEntry.add');
-
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
@@ -248,7 +246,10 @@ export default function EditEntry(props: { mode: EditEntryMode; entryId?: string
           <TouchableOpacity onPress={onPressDelete} style={styles.headerIcon} hitSlop={HIT_SLOP}>
             <Ionicons name="trash-outline" size={20} color={theme.error} />
           </TouchableOpacity>
-        ) : <View style={styles.headerIcon} />}
+        ) : null}
+        <TouchableOpacity onPress={onPressSave} disabled={!canSave} style={styles.headerIcon} hitSlop={HIT_SLOP}>
+          <Ionicons name="save-outline" size={20} color={canSave ? theme.accentPrimary : theme.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -388,10 +389,6 @@ export default function EditEntry(props: { mode: EditEntryMode; entryId?: string
               style={[styles.textArea, { borderColor: theme.border, color: theme.textPrimary }]}
             />
           </View>
-
-          <TouchableOpacity onPress={onPressSave} disabled={!canSave} style={[styles.primaryButton, { backgroundColor: canSave ? theme.accentPrimary : theme.border }]}>
-            <Text style={styles.primaryButtonText}>{primaryLabel}</Text>
-          </TouchableOpacity>
         </KeyboardAwareScrollView>
       )}
 
@@ -434,8 +431,6 @@ const styles = StyleSheet.create({
   selector: { borderWidth: 1, borderRadius: 12, paddingHorizontal: spacing[3], paddingVertical: spacing[3], flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
   tsChip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: spacing[3], paddingVertical: 6 },
   textArea: { borderWidth: 1, borderRadius: 12, paddingHorizontal: spacing[3], paddingVertical: spacing[3], minHeight: 96, textAlignVertical: 'top', ...typography.body },
-  primaryButton: { borderRadius: 12, paddingVertical: spacing[3], alignItems: 'center', justifyContent: 'center', marginTop: spacing[2] },
-  primaryButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   iosBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
   iosCard: { borderTopLeftRadius: 16, borderTopRightRadius: 16, borderWidth: 1, overflow: 'hidden' },
   iosHeader: { padding: spacing[3], borderBottomWidth: 1, alignItems: 'flex-end' },

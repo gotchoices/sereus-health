@@ -7,7 +7,7 @@ import { pick, types, errorCodes, isErrorWithCode } from '@react-native-document
 import yaml from 'js-yaml';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
-import { resetDatabaseForDev } from '../db/reset';
+import { clearAllData } from '../db/clear';
 import { createLogger } from '../util/logger';
 import { track } from '../util/activity';
 import { exportBackup, importBackup, type BackupData, type ImportPreview } from '../data/backup';
@@ -116,7 +116,7 @@ export default function BackupRestore(props: BackupRestoreProps) {
       let backupData: BackupData;
       try {
         backupData = yaml.load(fileContent) as BackupData;
-      } catch (parseErr) {
+      } catch {
         Alert.alert('Import Failed', 'Invalid backup file format');
         setIsImporting(false);
         return;
@@ -212,7 +212,11 @@ export default function BackupRestore(props: BackupRestoreProps) {
           style: 'destructive',
           onPress: async () => {
             try {
-              await track(resetDatabaseForDev());
+              // Session-safe clear: empties all data rows but keeps the
+              // optimystic strand/session alive, so the database stays live and
+              // writable (ready for an immediate import on this same screen) —
+              // no relaunch. Navigating away shows the first-run empty state.
+              await track(clearAllData());
               Alert.alert(t('backupRestore.clearDataTitle'), t('backupRestore.clearDataDone'));
             } catch (e) {
               logger.error('Clear data failed:', e);

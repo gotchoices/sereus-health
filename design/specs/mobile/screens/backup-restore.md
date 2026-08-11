@@ -41,6 +41,12 @@ Allow the user to export a full backup of their data, clear local data, and impo
 - Clears the local database so it is truly empty (no reseed).
 - Requires explicit confirmation.
 - If “modified since last backup” is true, the UI should strongly encourage an export first (or require an explicit acknowledgement).
+- **Stays in-session**: clearing empties all data but keeps the database live and writable **without a
+  relaunch**, so the user remains on the Backup/Restore screen and can immediately tap **Import**. (This
+  is the primary purpose of Clear — to prepare for an import.) Implemented as a data-only clear that
+  leaves the storage session/strand intact, not a store-destroying reset.
+- Navigating away after a clear (e.g. to Home) shows the normal **first-run empty state**, including the
+  offer to import a starter catalog.
 
 ## Status & guardrails (recommended)
 

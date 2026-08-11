@@ -297,7 +297,7 @@ const en: Dict = {
   'backupRestore.clearDataTitle': 'Clear Local Data',
   'backupRestore.clearDataConfirm': 'This will delete all your data. Continue?',
   'backupRestore.clearDataAction': 'Clear',
-  'backupRestore.clearDataDone': 'Done. Fully close and relaunch the app.',
+  'backupRestore.clearDataDone': 'Data cleared. You can import a backup now.',
   'backupRestore.clearDataFailed': 'Failed. See logs for details.',
 
   'apiKeys.title': 'Assistant Setup',

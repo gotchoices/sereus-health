@@ -44,6 +44,16 @@ Dark mode:
 - **Body**: 16 / 400
 - **Small**: 12 / 400
 
+## Screen headers & editor actions
+
+- Screens have a top header row: **back** affordance (`chevron-back`) on the left, title next to it.
+- **Editor screens** (create/edit/clone forms) commit via a **top-right header icon** (`save-outline`),
+  **disabled until the form is valid** (`accentPrimary` when enabled, `textSecondary` when disabled).
+  There is **no separate bottom "Save" button** — the primary action lives only in the header so it is
+  always reachable without scrolling. Applies to EditItem, EditEntry, EditBundle, etc.
+- A destructive per-record action (e.g. delete) sits to the **left of the save icon** in the header
+  when the screen is in edit mode (`trash-outline`, `error` color).
+
 ## Date/time inputs
 
 - Use platform-native pickers; keep presentation consistent (modal/inline) across screens.
