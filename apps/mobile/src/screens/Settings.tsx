@@ -4,7 +4,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { spacing, typography, useTheme, useThemeContext } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
 import { track } from '../util/activity';
-import { runQueryBenchmarks, formatBenchResults } from '../db/bench';
+import { runQueryBenchmarks, formatBenchResults, runInsertBenchmarks, runFkBenchmarks, runRealTableBench, formatInsertBenchResults } from '../db/bench';
 
 type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
 
@@ -44,6 +44,69 @@ export default function Settings(props: SettingsProps) {
 
   const handleAbout = () => {
     Alert.alert(t('common.notImplementedTitle'), t('common.notImplementedBody'));
+  };
+
+  const handleInsertBench = () => {
+    Alert.alert(
+      'Insert-throughput benchmark',
+      'On a throwaway table (created + dropped), times 172-row inserts three ways:\n\nA · individual INSERTs (1 txn)\nB · multi-row INSERT chunk 50\nC · single multi-row INSERT\n\nA is the slow one (~1 min). Results also log to console.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Run',
+          onPress: async () => {
+            try {
+              const results = await track(runInsertBenchmarks(172));
+              Alert.alert('Insert bench results', formatInsertBenchResults(results));
+            } catch (e) {
+              Alert.alert('Insert bench failed', String(e));
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleRealBench = () => {
+    Alert.alert(
+      'Real-table benchmark',
+      'Inserts 50 rows into the REAL items table (optimystic-backed) individual vs multi-row, via a throwaway category it fully deletes after. This is the one that reflects the real import cost.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Run',
+          onPress: async () => {
+            try {
+              const results = await track(runRealTableBench(50));
+              Alert.alert('Real-table bench results', formatInsertBenchResults(results));
+            } catch (e) {
+              Alert.alert('Real-table bench failed', String(e));
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleFkBench = () => {
+    Alert.alert(
+      'FK-impact benchmark',
+      'Inserts into a child table with a foreign key, 40 rows, four ways:\n\nD · individual, FK ON\nE · multi-row, FK ON\nF · individual, FK OFF\nG · multi-row, FK OFF\n\nShows whether FK checks (not statement count) are the real cost. Results also log to console.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Run',
+          onPress: async () => {
+            try {
+              const results = await track(runFkBenchmarks(40));
+              Alert.alert('FK bench results', formatInsertBenchResults(results));
+            } catch (e) {
+              Alert.alert('FK bench failed', String(e));
+            }
+          },
+        },
+      ],
+    );
   };
 
   const handleDebug = () => {
@@ -147,6 +210,27 @@ export default function Settings(props: SettingsProps) {
               icon="bug-outline"
               title={t('settings.debug')}
               onPress={handleDebug}
+            />
+          )}
+          {__DEV__ && (
+            <SettingsRow
+              icon="speedometer-outline"
+              title="Insert benchmark (dev)"
+              onPress={handleInsertBench}
+            />
+          )}
+          {__DEV__ && (
+            <SettingsRow
+              icon="git-branch-outline"
+              title="FK-impact benchmark (dev)"
+              onPress={handleFkBench}
+            />
+          )}
+          {__DEV__ && (
+            <SettingsRow
+              icon="server-outline"
+              title="Real-table benchmark (dev)"
+              onPress={handleRealBench}
             />
           )}
         </View>

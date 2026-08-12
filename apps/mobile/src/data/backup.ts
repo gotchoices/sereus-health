@@ -237,14 +237,20 @@ export async function importBackup(
     return preview;
   }
 
+  const _phase: Record<string, number> = {}; // dev: per-phase timings (logged at end)
+  let _t0 = Date.now();
+
   await ensureDatabaseInitialized();
   const db = await getDatabase();
+  _phase.init = Date.now() - _t0;
 
   const write = !options.dryRun;
 
   // Replace mode: clear everything first (real runs only).
   if (options.mode === 'replace' && write) {
+    _t0 = Date.now();
     await clearAllData();
+    _phase.clear = Date.now() - _t0;
   }
 
   // ── Catalog (reuse the canonical importer) ─────────────────────────────────
@@ -275,7 +281,9 @@ export async function importBackup(
     options.onProgress?.({ phase: 'catalog', done: 0, total: 0 });
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
   }
+  _t0 = Date.now();
   const cat = await importCanonicalCatalog(canonical, { dryRun: options.dryRun ?? false });
+  _phase.catalog = Date.now() - _t0;
   preview.catalogItemsAdd = cat.itemsAdd;
   preview.catalogItemsSkip = cat.itemsSkip;
   preview.bundlesAdd = cat.bundlesAdd;
@@ -286,7 +294,9 @@ export async function importBackup(
   if (backupData.logs && backupData.logs.length > 0) {
     // Existing keys — after a replace clear this is empty. In merge/dry-run it
     // reflects current data so re-import doesn't duplicate.
+    _t0 = Date.now();
     const existing = await getAllLogEntries();
+    _phase.getExisting = Date.now() - _t0;
     const seen = new Set(existing.map((e) => logKey(e.timestamp, e.typeName, e.items.map((i) => i.name))));
 
     // Preload name→id resolution maps ONCE (three queries) instead of the
@@ -295,6 +305,7 @@ export async function importBackup(
     const typeIdByName = new Map<string, string>();
     const itemIdByKey = new Map<string, string>(); // `${typeId}${SEP}${categoryName}${SEP}${itemName}`
     const qidByKey = new Map<string, string>(); // `${itemId}${SEP}${quantifierName}`
+    _t0 = Date.now();
     {
       const s = await db.prepare('SELECT id, name FROM types');
       for await (const r of s.all()) typeIdByName.set(r.name as string, r.id as string);
@@ -314,9 +325,11 @@ export async function importBackup(
       for await (const r of s.all()) qidByKey.set(`${r.itemId as string}${SEP}${r.name as string}`, r.id as string);
       await s.finalize();
     }
+    _phase.preload = Date.now() - _t0;
 
     // Resolve every backup log into insert-ready input, in memory (no writes),
     // preserving the original skip/warning semantics.
+    _t0 = Date.now();
     const toInsert: CreateLogEntryInput[] = [];
     for (const log of backupData.logs) {
       const key = logKey(log.timestampUtc, log.typeName, log.items.map((i) => i.itemName));
@@ -363,16 +376,27 @@ export async function importBackup(
         items,
       });
     }
+    _phase.resolve = Date.now() - _t0;
 
     // Insert in batched transactions (a few commits, not one-per-entry),
     // reporting progress for the UI.
     if (write && toInsert.length > 0) {
+      _t0 = Date.now();
       const result = await createLogEntriesBulk(toInsert, {
         onProgress: (done, total) => options.onProgress?.({ phase: 'entries', done, total }),
       });
+      _phase.insert = Date.now() - _t0;
       preview.logsAdd += result.added;
       preview.errors.push(...result.errors);
     }
+  }
+
+  if (write && __DEV__) {
+    // eslint-disable-next-line no-console
+    console.log(
+      `[ImportPhases] mode=${options.mode} total=${Object.values(_phase).reduce((a, b) => a + b, 0)}ms  ` +
+        Object.entries(_phase).map(([k, v]) => `${k}=${v}ms`).join('  '),
+    );
   }
 
   return preview;
