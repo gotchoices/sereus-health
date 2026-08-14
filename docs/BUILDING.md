@@ -11,9 +11,9 @@
 
 2. **Environment Variables** - Set before building:
    ```bash
-   export SEREUS_STORE_FILE=/path/to/your-keystore.keystore
-   export SEREUS_STORE_PASSWORD=your_password
-   # Optional: export SEREUS_KEY_ALIAS=your_alias  (defaults to org.sereus.health)
+   export STORE_FILE_HEALTH=/path/to/your-keystore.keystore
+   export STORE_PASSWORD_HEALTH=your_password
+   # Optional: export KEY_ALIAS_HEALTH=your_alias  (defaults to org.sereus.health)
    ```
 
 ## Android
@@ -52,7 +52,7 @@ keytool -genkeypair -v -storetype PKCS12 \
 
 **Verify keystore:**
 ```bash
-keytool -list -v -keystore $SEREUS_STORE_FILE
+keytool -list -v -keystore $STORE_FILE_HEALTH
 ```
 
 **Verify APK signature:**
@@ -85,7 +85,7 @@ npm run build:ios
 
 **Missing environment variables:**
 ```
-SEREUS_STORE_FILE environment variable is not set
+STORE_FILE_HEALTH environment variable is not set
 ```
 → Set the required environment variables before running build commands.
 
@@ -93,7 +93,7 @@ SEREUS_STORE_FILE environment variable is not set
 ```
 Keystore file not found at: /path/to/keystore
 ```
-→ Verify `SEREUS_STORE_FILE` points to an existing file.
+→ Verify `STORE_FILE_HEALTH` points to an existing file.
 
 **Could not find gems in locally installed gems:**
 ```

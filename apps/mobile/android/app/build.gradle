@@ -77,6 +77,10 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+// Single source of truth for app version — see ../../version.json (shared with
+// iOS, kept in sync by `yarn version:*`). Android reads it live at configure time.
+def appVersion = new groovy.json.JsonSlurper().parseText(file("../../version.json").text)
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -87,8 +91,8 @@ android {
         applicationId "org.sereus.health"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersion.build
+        versionName appVersion.version
     }
     signingConfigs {
         debug {
@@ -99,13 +103,13 @@ android {
         }
         release {
             // Use environment variables for production keystore (matches rn-v1).
-            // Set SEREUS_STORE_FILE to the path of your keystore file
-            // Set SEREUS_STORE_PASSWORD to your keystore password
-            // Optionally set SEREUS_KEY_ALIAS (defaults to org.sereus.health)
-            keyAlias System.getenv("SEREUS_KEY_ALIAS") ?: "org.sereus.health"
-            storeFile file(System.getenv("SEREUS_STORE_FILE") ?: "release.keystore")
-            storePassword System.getenv("SEREUS_STORE_PASSWORD") ?: "not_set"
-            keyPassword System.getenv("SEREUS_STORE_PASSWORD") ?: "not_set"
+            // Set STORE_FILE_HEALTH to the path of your keystore file
+            // Set STORE_PASSWORD_HEALTH to your keystore password
+            // Optionally set KEY_ALIAS_HEALTH (defaults to org.sereus.health)
+            keyAlias System.getenv("KEY_ALIAS_HEALTH") ?: "org.sereus.health"
+            storeFile file(System.getenv("STORE_FILE_HEALTH") ?: "release.keystore")
+            storePassword System.getenv("STORE_PASSWORD_HEALTH") ?: "not_set"
+            keyPassword System.getenv("STORE_PASSWORD_HEALTH") ?: "not_set"
         }
     }
     buildTypes {

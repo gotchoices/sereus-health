@@ -13,19 +13,19 @@ platform :android do
   desc "Build release APK"
   lane :build_apk do
     # Check environment variables
-    unless ENV["SEREUS_STORE_FILE"]
-      UI.error("SEREUS_STORE_FILE environment variable is not set")
+    unless ENV["STORE_FILE_HEALTH"]
+      UI.error("STORE_FILE_HEALTH environment variable is not set")
       UI.error("Set this to the path of your keystore file")
-      raise "Missing SEREUS_STORE_FILE"
+      raise "Missing STORE_FILE_HEALTH"
     end
 
-    unless ENV["SEREUS_STORE_PASSWORD"]
-      UI.error("SEREUS_STORE_PASSWORD environment variable is not set")
-      raise "Missing SEREUS_STORE_PASSWORD"
+    unless ENV["STORE_PASSWORD_HEALTH"]
+      UI.error("STORE_PASSWORD_HEALTH environment variable is not set")
+      raise "Missing STORE_PASSWORD_HEALTH"
     end
 
-    unless File.exist?(ENV["SEREUS_STORE_FILE"])
-      UI.error("Keystore file not found at: #{ENV["SEREUS_STORE_FILE"]}")
+    unless File.exist?(ENV["STORE_FILE_HEALTH"])
+      UI.error("Keystore file not found at: #{ENV["STORE_FILE_HEALTH"]}")
       raise "Keystore file not found"
     end
 
@@ -50,19 +50,19 @@ platform :android do
   desc "Build app bundle for Play Store submission"
   lane :build_app_bundle do
     # Check environment variables
-    unless ENV["SEREUS_STORE_FILE"]
-      UI.error("SEREUS_STORE_FILE environment variable is not set")
+    unless ENV["STORE_FILE_HEALTH"]
+      UI.error("STORE_FILE_HEALTH environment variable is not set")
       UI.error("Set this to the path of your keystore file")
-      raise "Missing SEREUS_STORE_FILE"
+      raise "Missing STORE_FILE_HEALTH"
     end
 
-    unless ENV["SEREUS_STORE_PASSWORD"]
-      UI.error("SEREUS_STORE_PASSWORD environment variable is not set")
-      raise "Missing SEREUS_STORE_PASSWORD"
+    unless ENV["STORE_PASSWORD_HEALTH"]
+      UI.error("STORE_PASSWORD_HEALTH environment variable is not set")
+      raise "Missing STORE_PASSWORD_HEALTH"
     end
 
-    unless File.exist?(ENV["SEREUS_STORE_FILE"])
-      UI.error("Keystore file not found at: #{ENV["SEREUS_STORE_FILE"]}")
+    unless File.exist?(ENV["STORE_FILE_HEALTH"])
+      UI.error("Keystore file not found at: #{ENV["STORE_FILE_HEALTH"]}")
       raise "Keystore file not found"
     end
 

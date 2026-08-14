@@ -50,7 +50,7 @@ Files in `health/web/.well-known/`:
 - **`assetlinks.json`** — health's single Android statement. **Functional for debug-signed
   builds** (carries the shared debug keystore SHA-256 `FA:C6:17:…:9C`, same keystore chat
   uses). **Before a release/Play build, add the release keystore fingerprint** to the array
-  (`SEREUS_STORE_FILE=… SEREUS_STORE_PASSWORD=… ./gradlew signingReport`).
+  (`STORE_FILE_HEALTH=… STORE_PASSWORD_HEALTH=… ./gradlew signingReport`).
 - **`apple-app-site-association`** — health's single iOS detail, `paths: ["/health/invite/*"]`.
   Replace `TEAMID` with the Apple Developer Team ID (nothing in the repo has it yet).
 

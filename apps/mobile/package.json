@@ -1,6 +1,6 @@
 {
   "name": "mobile",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -13,6 +13,9 @@
     "build:ios:sim": "cd ios && bundle exec fastlane build_simulator",
     "build:ios:ipa": "cd ios && bundle exec fastlane build_ipa",
     "build:ios:beta": "cd ios && bundle exec fastlane beta",
+    "version:show": "node scripts/version.js show",
+    "version:bump": "node scripts/version.js bump",
+    "version:build": "node scripts/version.js build",
     "lint": "eslint .",
     "pack:build": "node scripts/build-assistant-pack.js",
     "prestart": "node scripts/build-assistant-pack.js",
