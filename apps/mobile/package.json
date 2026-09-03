@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "android": "react-native run-android",
+    "android": "sh -c '. ./env-defaults.sh && react-native run-android --port \"$METRO_PORT\" --deviceId \"$DEVICE_SERIAL\"'",
+    "android:emu": "sh -c '. ./env-defaults.sh && react-native run-android --active-arch-only --port \"$METRO_PORT\" --deviceId \"$DEVICE_SERIAL\"'",
+    "emulator": "sh -c '. ./env-defaults.sh && \"${ANDROID_HOME:-$HOME/Library/Android/sdk}/emulator/emulator\" -avd \"$AVD_NAME\" -port \"$EMULATOR_PORT\"'",
     "ios": "react-native run-ios",
     "icons:android": "bash scripts/logo-gen-android.sh",
     "icons:ios": "bash scripts/logo-gen-ios.sh",
@@ -19,7 +21,9 @@
     "lint": "eslint .",
     "pack:build": "node scripts/build-assistant-pack.js",
     "prestart": "node scripts/build-assistant-pack.js",
-    "start": "react-native start",
+    "start": "sh -c '. ./env-defaults.sh && react-native start --port \"$METRO_PORT\"'",
+    "launch:android": "sh -c '. ./env-defaults.sh && adb -s \"$DEVICE_SERIAL\" shell am start -W -a android.intent.action.VIEW -d \"$DEEPLINK\"'",
+    "launch:ios": "sh -c 'xcrun simctl openurl booted \"$DEEPLINK\"'",
     "test": "jest"
   },
   "dependencies": {
