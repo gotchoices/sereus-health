@@ -49,6 +49,56 @@ This checklist tracks spec review work for the **mobile** target. Treat it as th
 
 ## Sereus / Optimystic Integration
 
+### Stack upgrade — 0.12 wave (2026-09-02)
+
+Upgraded from the 0.10 stack to the published **0.12** release so health can test a
+Linux cadre node: `@serfab/cadre-core` 0.10→**0.12**, `@optimystic/*` 0.22→**0.27**,
+`@quereus/*` 4.11→**4.18**, `p2p-fret` 0.6→**1.0.0-beta.4**. Removed `@serfab/strand-proto`
+(deleted upstream — formation is now native in cadre-core), the two directly-declared
+`@optimystic/quereus-plugin-*` deps (now composed inside cadre-core; kept in `resolutions`
+to force one version), and `fast-text-encoding` (Hermes has native `TextEncoder`). Added
+`@libp2p/websockets` + `@libp2p/circuit-relay-v2` + `@libp2p/webrtc` + `react-native-webrtc`
++ `@multiformats/multiaddr`, and pinned libp2p to the 0.12-tested versions
+(`@libp2p/interface` 3.3.0, `libp2p` 3.3.11, `@libp2p/peer-id` 6.0.15, `@multiformats/multiaddr`
+13.0.3, `@libp2p/peer-collections` 7.0.28, `@noble/hashes` 2.4.0 — the last two added to
+`resolutions` to collapse duplicate copies that broke `dial()`/transport types).
+
+Key API changes absorbed in `CadreService.ts`:
+- **`StrandConfig.mode` ('bootstrap'|'networked') is GONE.** Solo/local commit is automatic;
+  a strand no longer needs a teardown+re-add to "go networked". We found once with
+  `founder: true` (gated on `@sereus/healthStrandFounded`), then re-open with `founder: false`.
+- **`publishStrand(id, 'o')`** registers the strand in the control DB so a joining Linux node
+  discovers + replicates it (done once on the founder path; re-attempted on connect).
+- New node-local seams wired: `trustedOwners` + `bootstrapPeers` persistent stores (LevelDB
+  `optimystic-node-local`) and `hibernation:{enabled:false}`.
+- Transports now `[webSockets(), circuitRelayTransport(), webRTC()]` so a NAT'd phone can dial
+  a relay-enabled drone and upgrade to a direct path. `metro.config.js` forces the Hermes-safe
+  `browser` variants of `@libp2p/crypto` + `@libp2p/webrtc`; `index.js` calls
+  `react-native-webrtc`'s `registerGlobals()`.
+
+**Data wipe on upgrade:** pre-1.0 has no schema/data migration and 0.22→0.27 changed the
+optimystic substrate. Existing installs must export → upgrade → Clear local data → re-import.
+
+> **TODO — move identity + trust anchor into react-native-keychain (KeyStore seam).**
+> Identity is still injected as `config.privateKey` (loaded from the control LevelDB via
+> `loadOrCreateRNPeerKey`), and the trusted-owner anchor is plaintext LevelDB. The reference
+> app uses cadre-core's `KeyStore` seam over a secure enclave (`SecureStoreKeyStore`) plus a
+> secure-store-backed `PersistentTrustedOwnerStore`, so the identity key and the trust anchor
+> it qualifies share one fate. Migrate both to `react-native-keychain` (already a dependency);
+> handle existing installs (no persisted keychain identity → cold-start once). See the header
+> comment in `src/services/CadreService.ts`.
+
+### Connect to a Linux cadre node (Step 3, partial — 2026-09-02)
+
+Minimal drone-connect landed: **Sereus Connections → My Nodes (+)** opens a modal to enter a
+node's bootstrap multiaddr (`cadreService.connectToNode`), which persists it
+(`@sereus/bootstrapNodes`, applied as `controlNetwork.bootstrapNodes` on next start) and
+live-dials it. The modal also exposes this device's **owner public key** (for the node's
+out-of-band trust config) and the existing drone-seed path. See `docs/cadre-node-testing.md`
+for how to stand up a cadre-cli drone or cadre-host and run an end-to-end replication test.
+Still open: applying a drone-emitted seed in-app, relay reservation for phone reachability
+(needed for guest invitations), and status probing.
+
 ### RN Compatibility (bundling)
 
 - [x] `@serfab/cadre-core` loads in RN (Metro resolves)

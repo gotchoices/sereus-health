@@ -11,12 +11,17 @@ On first run the app auto-generates a party ID and starts a local health
 strand via `addStrand()`. No authority key or networking setup is required
 for local storage — the user logs data immediately.
 
-Authority keys, CadrePeer registration, and control-DB strand entries are
-created automatically when the user first adds a remote node. After that,
-health data replicates to the new node automatically.
+The owner key, strand publication, and CadrePeer registration happen on the
+founder path at first start (owner genesis + `publishStrand`); adding a remote
+node's bootstrap address then replicates health data to it automatically. Under
+cadre-core 0.12 there is no longer a per-strand `mode` ('bootstrap'/'networked') —
+solo/local commit is automatic, so a strand does not need to be torn down and
+re-added when a peer appears.
 
-The previous `rn-leveldb` storage backend is deprecated; migration to
-optimystic (`IRawStorage` / `MMKVRawStorage`) is in progress.
+Storage: the health strand and the control/node-local repos are all backed by
+`LevelDBRawStorage` (`@optimystic/db-p2p-storage-rn`) over the `rn-leveldb`
+native module — an internal optimystic block store, distinct from the legacy
+per-table direct-LevelDB layout (`db/config.ts` Mode B).
 
 ## Implementation References
 
@@ -24,7 +29,11 @@ optimystic (`IRawStorage` / `MMKVRawStorage`) is in progress.
 - **Control database schema**: `sereus/docs/cadre-architecture.md` — `AuthorityKey`, `CadrePeer`, `Strand` tables; query via Quereus SQL (`db.eval()`)
 - **Storage**: `@optimystic/db-p2p` `IRawStorage`; RN: `@optimystic/db-p2p-storage-rn` (`MMKVRawStorage`)
 - **Enrollment flows**: `sereus/docs/cadre-architecture.md` — seed bootstrap, four modes (phone→drone, server→phone, server→drone, phone→phone via relay)
-- **RN transports**: `webSockets()` + `circuitRelayTransport()` (no TCP in RN); bootstrap/relay via DNSADDR
+- **RN transports** (cadre-core 0.12): `webSockets()` + `circuitRelayTransport()` + `webRTC()`
+  (no TCP in RN). WebSockets dials a reachable node; circuit-relay dials `/p2p-circuit`
+  reservations through a relay-enabled node; webRTC upgrades a relayed connection to a direct
+  path. `metro.config.js` forces the `browser` variants of `@libp2p/crypto`/`@libp2p/webrtc`,
+  and `index.js` installs `react-native-webrtc`'s globals.
 
 ## Core Concepts
 

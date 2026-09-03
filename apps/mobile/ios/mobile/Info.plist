@@ -4,6 +4,8 @@
 <dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Take a photo to attach to the assistant (e.g. a meal or document).</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Sereus Health does not record audio; this is required by the peer-to-peer WebRTC library used to sync your data between your devices.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

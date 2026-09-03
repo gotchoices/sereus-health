@@ -3,6 +3,9 @@
     package="org.sereus.health">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- libp2p WebRTC transport (react-native-webrtc) needs network-state access to
+         gather ICE candidates.  Data-channel-only: no audio/video capture. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Assistant camera capture (react-native-image-picker). Camera is optional. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />

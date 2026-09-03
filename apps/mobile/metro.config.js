@@ -1,5 +1,6 @@
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 const path = require('path');
+const fs = require('fs');
 
 const defaultConfig = getDefaultConfig(__dirname);
 
@@ -44,6 +45,65 @@ const nodeBuiltinStubs = {
   'node:http2': emptyShim,
 };
 
+// Where Metro looks up packages — shared between the resolver config below and
+// the libp2p browser-variant map that follows.
+const metroNodeModulesPaths = [
+  // Mobile app's node_modules
+  path.resolve(__dirname, 'node_modules'),
+  // Health project root
+  path.resolve(__dirname, '../../node_modules'),
+  // Monorepo root (yarn workspaces hoists here)
+  path.resolve(workspaceRoot, 'node_modules'),
+  // Local-stack only: the ser workspaces' own node_modules (libp2p, etc.).
+  ...(localStack
+    ? [
+        path.resolve(workspaceRoot, 'sereus/node_modules'),
+        path.resolve(workspaceRoot, 'optimystic/node_modules'),
+        path.resolve(workspaceRoot, 'quereus/node_modules'),
+        path.resolve(workspaceRoot, 'fret/node_modules'),
+      ]
+    : []),
+];
+
+// Force the Hermes-safe `browser` variants of two @libp2p packages.
+//
+//   @libp2p/crypto — ed25519/etc. key modules.  The browser variants use
+//     @noble + WebCrypto (Hermes-safe); the Node variants call
+//     crypto.generateKeyPairSync / sign / verify that our minimal node-crypto
+//     shim does not implement.
+//   @libp2p/webrtc — the Node variants pull `node-datachannel` (a native addon
+//     absent on RN); the browser variants read the WebRTC engine off the globals
+//     react-native-webrtc's registerGlobals() installs (see index.js).  We force
+//     the `browser` (not `react-native`) field: `react-native` only remaps
+//     webrtc/index.js, leaving the private-to-public modules on node-datachannel.
+//
+// With `unstable_enablePackageExports: true`, Metro resolves via `exports` and
+// the package.json `browser`-field rewrite is not reliably applied to internal
+// relative imports — so we apply it explicitly in resolveRequest below.
+function loadLibp2pBrowserMap(scope, name) {
+  for (const nmRoot of metroNodeModulesPaths) {
+    const pkgDir = path.join(nmRoot, scope, name);
+    const pkgJson = path.join(pkgDir, 'package.json');
+    if (!fs.existsSync(pkgJson)) continue;
+    const map = JSON.parse(fs.readFileSync(pkgJson, 'utf8')).browser;
+    if (!map || typeof map !== 'object') return null;
+    const out = Object.create(null);
+    for (const [from, to] of Object.entries(map)) {
+      // Skip non-path targets such as `"node:net": false` — handled by the
+      // extraNodeModules empty shims above.
+      if (typeof to !== 'string') continue;
+      out[path.resolve(pkgDir, from)] = path.resolve(pkgDir, to);
+    }
+    return out;
+  }
+  return null;
+}
+const libp2pBrowserMap = Object.assign(
+  Object.create(null),
+  loadLibp2pBrowserMap('@libp2p', 'crypto') ?? {},
+  loadLibp2pBrowserMap('@libp2p', 'webrtc') ?? {},
+);
+
 /**
  * Metro configuration
  * https://reactnative.dev/docs/metro
@@ -83,23 +143,7 @@ const config = {
     },
     assetExts: defaultConfig.resolver.assetExts.filter(ext => ext !== 'qsql'),
     sourceExts: [...defaultConfig.resolver.sourceExts, 'qsql'],
-    nodeModulesPaths: [
-      // Mobile app's node_modules
-      path.resolve(__dirname, 'node_modules'),
-      // Health project root
-      path.resolve(__dirname, '../../node_modules'),
-      // Monorepo root (yarn workspaces hoists here)
-      path.resolve(workspaceRoot, 'node_modules'),
-      // Local-stack only: the ser workspaces' own node_modules (libp2p, etc.).
-      ...(localStack
-        ? [
-            path.resolve(workspaceRoot, 'sereus/node_modules'),
-            path.resolve(workspaceRoot, 'optimystic/node_modules'),
-            path.resolve(workspaceRoot, 'quereus/node_modules'),
-            path.resolve(workspaceRoot, 'fret/node_modules'),
-          ]
-        : []),
-    ],
+    nodeModulesPaths: metroNodeModulesPaths,
     // Map workspace packages to their actual locations (portal-like resolution).
     // Local-stack only — in npm mode these resolve from node_modules normally.
     extraNodeModules: {
@@ -153,11 +197,23 @@ const config = {
       // this automatically — no manual redirect is needed.
 
       // Default resolution
-      return context.resolveRequest(
+      const resolved = context.resolveRequest(
         { ...context, resolveRequest: undefined },
         moduleName,
         platform,
       );
+
+      // Rewrite @libp2p/crypto + @libp2p/webrtc internal modules to their
+      // Hermes-safe `browser` variants (see libp2pBrowserMap above).
+      if (
+        resolved &&
+        resolved.type === 'sourceFile' &&
+        libp2pBrowserMap[resolved.filePath]
+      ) {
+        return { type: 'sourceFile', filePath: libp2pBrowserMap[resolved.filePath] };
+      }
+
+      return resolved;
     },
   },
 };

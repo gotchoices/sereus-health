@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -36,6 +37,8 @@ export default function SereusConnections(props: { onBack: () => void }) {
   const [guests, setGuests] = useState<SereusNode[]>([]);
   const [busy, setBusy] = useState(false);
   const [secret, setSecret] = useState<SecretResult | null>(null);
+  const [nodeModal, setNodeModal] = useState(false);
+  const [addr, setAddr] = useState('');
 
   const reload = useCallback(async () => {
     const data = await getSereusConnections();
@@ -102,27 +105,49 @@ export default function SereusConnections(props: { onBack: () => void }) {
     });
   };
 
+  // Open the connect-to-node modal (enter a Linux cadre node's bootstrap
+  // multiaddr — the primary way to add a reachable drone/server).
   const handleAddNode = () => {
-    Alert.alert(t('sereus.addNode'), undefined, [
-      {
-        // The primary, working path: generate a seed to hand to a drone/server
-        // (via cadre-cli). Self-arms the authority key if needed.
-        text: t('sereus.addNodeDrone'),
-        onPress: () =>
-          void runAction(async () => {
-            const seed = await cadreService.createDroneSeed();
-            setSecret({ title: t('sereus.seedTitle'), body: t('sereus.seedBody'), value: seed });
-            await reload();
-          }),
-      },
-      {
-        // Scan-a-server-QR (inbound dial) still needs the QR/scan + dialInvite
-        // wiring; keep it explicit rather than pretending.
-        text: t('sereus.addNodeServer'),
-        onPress: () => Alert.alert(t('common.notImplementedTitle'), t('sereus.addNodeStub')),
-      },
-      { text: t('common.cancel'), style: 'cancel' },
-    ]);
+    setAddr('');
+    setNodeModal(true);
+  };
+
+  // Dial + persist the entered bootstrap multiaddr so the strand replicates to
+  // the Linux node.  The node must already trust this phone's owner key
+  // (see handleShowOwnerKey) out-of-band.
+  const handleConnect = () => {
+    void runAction(async () => {
+      await cadreService.connectToNode(addr);
+      setNodeModal(false);
+      await reload();
+      Alert.alert(t('sereus.connected'), t('sereus.connectedBody'));
+    });
+  };
+
+  // Show this device's owner PUBLIC key so the user can configure the Linux node
+  // to trust it (cadre-cli --owner / CADRE_OWNER_KEYS).
+  const handleShowOwnerKey = () => {
+    void runAction(async () => {
+      await cadreService.ensureStarted();
+      let key = cadreService.getOwnerPublicKey();
+      if (!key) {
+        await cadreService.createAuthorityKey();
+        key = cadreService.getOwnerPublicKey();
+      }
+      if (!key) throw new Error(t('sereus.ownerKeyUnavailable'));
+      setNodeModal(false);
+      setSecret({ title: t('sereus.ownerKeyTitle'), body: t('sereus.ownerKeyBody'), value: key });
+    });
+  };
+
+  // The seed path: mint a base64url seed to hand to a drone via cadre-cli.
+  const handleDroneSeed = () => {
+    void runAction(async () => {
+      const seed = await cadreService.createDroneSeed();
+      setNodeModal(false);
+      setSecret({ title: t('sereus.seedTitle'), body: t('sereus.seedBody'), value: seed });
+      await reload();
+    });
   };
 
   const handleAddGuest = () => {
@@ -374,7 +399,56 @@ export default function SereusConnections(props: { onBack: () => void }) {
         </ScrollView>
       )}
 
-      {/* Generated-secret modal (node seed / guest invitation) */}
+      {/* Add-node modal: connect to a Linux cadre node by bootstrap multiaddr */}
+      {nodeModal ? (
+        <View style={styles.overlay}>
+          <View style={[styles.modal, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{t('sereus.addNode')}</Text>
+            <Text style={{ color: theme.textSecondary, ...typography.small }}>
+              {t('sereus.connectBody')}
+            </Text>
+            <TextInput
+              value={addr}
+              onChangeText={setAddr}
+              placeholder={t('sereus.connectPlaceholder')}
+              placeholderTextColor={theme.textSecondary}
+              autoCapitalize="none"
+              autoCorrect={false}
+              multiline
+              style={[
+                styles.input,
+                { color: theme.textPrimary, borderColor: theme.border, backgroundColor: theme.background },
+              ]}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                onPress={handleConnect}
+                disabled={!addr.trim()}
+                style={[styles.modalBtn, { backgroundColor: theme.accentPrimary, opacity: addr.trim() ? 1 : 0.4 }]}
+              >
+                <Text style={styles.modalBtnText}>{t('sereus.connect')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setNodeModal(false)}
+                style={[styles.modalBtn, { backgroundColor: theme.border }]}
+              >
+                <Text style={[styles.modalBtnText, { color: theme.textPrimary }]}>{t('sereus.close')}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={{ height: 1, backgroundColor: theme.border, marginVertical: spacing[1] }} />
+            <TouchableOpacity onPress={handleShowOwnerKey} style={styles.linkRow} hitSlop={HIT_SLOP}>
+              <Ionicons name="key-outline" size={18} color={theme.accentPrimary} />
+              <Text style={{ color: theme.accentPrimary, ...typography.small }}>{t('sereus.showOwnerKey')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleDroneSeed} style={styles.linkRow} hitSlop={HIT_SLOP}>
+              <Ionicons name="qr-code-outline" size={18} color={theme.accentPrimary} />
+              <Text style={{ color: theme.accentPrimary, ...typography.small }}>{t('sereus.addNodeDrone')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : null}
+
+      {/* Generated-secret modal (node seed / guest invitation / owner key) */}
       {secret ? (
         <View style={styles.overlay}>
           <View style={[styles.modal, { backgroundColor: theme.surface, borderColor: theme.border }]}>
@@ -490,6 +564,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: spacing[2],
   },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: spacing[2],
+    minHeight: 64,
+    textAlignVertical: 'top',
+    ...typography.small,
+    fontFamily: 'monospace',
+  },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[2], paddingVertical: spacing[1] },
   modalActions: { flexDirection: 'row', gap: spacing[2], marginTop: spacing[1] },
   modalBtn: {
     flex: 1,

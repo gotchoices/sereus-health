@@ -78,6 +78,18 @@ if (typeof AbortSignal !== 'undefined' &&
 // Polyfill for crypto.getRandomValues (needed for UUIDv4 generation on RN/Hermes)
 import 'react-native-get-random-values';
 
+// WebRTC globals (react-native-webrtc): install RTCPeerConnection et al. onto the
+// global scope BEFORE any libp2p code runs.  @libp2p/webrtc's browser variant —
+// which Metro is configured to resolve (see metro.config.js) — reads
+// RTCPeerConnection off globals.  Guarded so a missing/unlinked native module
+// during bundle eval can't abort startup (the webRTC transport just won't work).
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  require('react-native-webrtc').registerGlobals();
+} catch (e) {
+  console.warn('[webrtc] registerGlobals failed (direct peer paths disabled):', e);
+}
+
 // Polyfill for crypto.subtle.digest (Web Crypto API).
 // Hermes does not provide crypto.subtle; libp2p packages rely on it via
 // multiformats/hashes/sha2-browser which calls crypto.subtle.digest().
@@ -101,9 +113,10 @@ if (!globalThis.crypto.subtle) {
   };
 }
 
-// Polyfill for TextEncoder (Hermes ships it on recent RN; harmless no-op if present).
-import 'fast-text-encoding';
-
+// TextEncoder: Hermes on RN 0.82 ships a native, spec-correct TextEncoder, so no
+// polyfill is needed (the sereus reference app drops fast-text-encoding for the
+// same reason — the polyfill risks double-encoding).
+//
 // TextDecoder: match the sereus reference app's polyfills/hermes.js decoder, but
 // force it over a present-but-incomplete native impl.  Bare RN 0.82 Hermes ships a
 // NATIVE TextDecoder that rejects the standard `{ fatal: true }` option, and

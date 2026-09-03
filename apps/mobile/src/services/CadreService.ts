@@ -1,25 +1,47 @@
 /**
  * CadreService — singleton wrapper around @serfab/cadre-core CadreNode.
  *
- * Boots at first data access.  Creates a local health strand via addStrand()
- * so health data is stored in optimystic from the start.  Adding remote nodes
- * later automatically distributes the data.
+ * Boots at first data access.  Creates (or re-opens) a local health strand so
+ * health data is stored in optimystic from the start.  Entering a remote node's
+ * bootstrap multiaddr (see `connectToNode`) lets the strand replicate to a
+ * Linux cadre node (cadre-cli drone or cadre-host).
  *
- * Authority keys, CadrePeer registration, and control-DB strand entries are
- * deferred until the user adds a second node (see STATUS.md Step 3).
+ * Stack: cadre-core 0.12 / optimystic 0.27 / quereus 4.18 / p2p-fret 1.0-beta.
+ *
+ * Notable 0.12 changes vs the previous (0.10) integration:
+ *   - `StrandConfig.mode` ('bootstrap' | 'networked') is GONE.  Solo/local
+ *     commit is automatic at the storage layer; a strand no longer needs to be
+ *     torn down + re-added to "go networked" when a peer appears.  We found the
+ *     strand once with `founder: true`, then re-open with `founder: false`.
+ *   - `publishStrand()` registers the strand in the control DB so a joining
+ *     drone discovers and replicates it.  Done once (founder path).
+ *   - New node-local seams: `trustedOwners` / `bootstrapPeers` stores (persisted
+ *     here in a dedicated LevelDB) and `hibernation`.
+ *   - Transports now include circuit-relay + webRTC so a NAT'd phone can dial a
+ *     relay-enabled drone and upgrade to a direct path.
+ *
+ * Identity: still injected as `config.privateKey`, loaded from the control
+ * LevelDB via `loadOrCreateRNPeerKey`.  MIGRATION TODO (tracked in
+ * design/specs/mobile/STATUS.md): move identity + the trusted-owner anchor into
+ * react-native-keychain via cadre-core's `KeyStore` seam (the reference app's
+ * secure-enclave model), so the trust-bearing records share the identity's fate.
  *
  * References:
- *   sereus/packages/cadre-core/README.md
- *   sereus/docs/cadre-architecture.md
+ *   cadre/sereus-latest/packages/reference-app-rn/src/cadre-phone.ts
+ *   cadre/sereus-latest/docs/reference-app-rn.md
+ *   cadre/sereus-latest/docs/architecture.md
  */
 
 import {
   CadreNode,
   ControlFormationUsageRecorder,
+  PersistentTrustedOwnerStore,
+  PersistentBootstrapPeerStore,
   type CadreNodeConfig,
   type CadreNodeEvents,
   type ControlDatabase,
   type StrandInstance,
+  type DurableSlot,
 } from '@serfab/cadre-core';
 import {
   AUTHORITY_GENESIS_TIMEOUT_MS,
@@ -27,8 +49,13 @@ import {
   withTimeout,
 } from './cadreAsync';
 import { webSockets } from '@libp2p/websockets';
+import { circuitRelayTransport } from '@libp2p/circuit-relay-v2';
+import { webRTC } from '@libp2p/webrtc';
+import { multiaddr } from '@multiformats/multiaddr';
+import type { Libp2pTransports } from '@optimystic/db-p2p';
 import {
   LevelDBRawStorage,
+  LevelDBKVStore,
   openOptimysticRNDb,
   loadOrCreateRNPeerKey,
 } from '@optimystic/db-p2p-storage-rn';
@@ -40,6 +67,16 @@ import { createLogger } from '../util/logger';
 
 type OptimysticDb = ReturnType<typeof openOptimysticRNDb>;
 
+/**
+ * db-p2p's transport-factory element type.  The `webRTC()` factory from
+ * `@libp2p/webrtc` carries a nominally-different `[transportSymbol]` brand than
+ * db-p2p's pinned `@libp2p/interface` (the symbol is a global-registry key, so
+ * they are runtime-identical).  `CadreNodeConfig.network.transports` is exactly
+ * this `Libp2pTransports`, so we bridge with `as unknown as TransportFactory`.
+ * Mirrors the same cast in the RN reference app's `cadre-phone.ts`.
+ */
+type TransportFactory = Libp2pTransports[number];
+
 const logger = createLogger('CadreService');
 
 // ---------------------------------------------------------------------------
@@ -50,18 +87,29 @@ const SAPP_ID = 'org.sereus.health';
 const SAPP_VERSION = '1.1';
 const PARTY_ID_KEY = '@sereus/partyId';
 const STRAND_ID_KEY = '@sereus/healthStrandId';
-const BOOTSTRAP_NODES: string[] = [];
+/** Set once the health strand has been founded + published (see doStart). */
+const STRAND_FOUNDED_KEY = '@sereus/healthStrandFounded';
+/** JSON array of bootstrap multiaddrs the user has added (Linux cadre nodes). */
+const BOOTSTRAP_NODES_KEY = '@sereus/bootstrapNodes';
 /** Guest invitation validity window (24h) — long enough for a doctor visit. */
 const INVITE_EXPIRY_MS = 24 * 60 * 60 * 1000;
+
+/** Key prefix inside the node-local LevelDB for the trusted-owner anchor. */
+const TRUSTED_OWNERS_KV = 'trusted-owners';
+/** Key prefix inside the node-local LevelDB for cold-start dial hints. */
+const BOOTSTRAP_PEERS_KV = 'bootstrap-peers';
 
 /**
  * LevelDB directory naming for optimystic stores.
  *
- * Each strand (plus the control network, strandId='control') gets its own
- * native LevelDB directory.  `reset.ts` mirrors this prefix when destroying
- * stores; keep them in sync.
+ * Each strand (plus the control network, strandId='control', and the
+ * node-local record store, strandId='node-local') gets its own native LevelDB
+ * directory.  `reset.ts` mirrors this prefix when destroying stores; keep them
+ * in sync.
  */
 export const OPTIMYSTIC_DB_PREFIX = 'optimystic-';
+/** Pseudo-strandId for the node-local record store (trust anchor + dial hints). */
+export const NODE_LOCAL_STRAND_ID = 'node-local';
 
 function optimysticDbName(strandId: string): string {
   return `${OPTIMYSTIC_DB_PREFIX}${strandId}`;
@@ -93,6 +141,14 @@ const HEALTH_SCHEMA_DDL = extractInnerDDL(SCHEMA_SQL);
 
 type EventHandler<T> = (payload: T) => void;
 
+/** A DurableSlot over one key of a LevelDBKVStore (trusted-owner / bootstrap-peer). */
+function kvStoreSlot(kv: LevelDBKVStore, key: string): DurableSlot {
+  return {
+    load: () => kv.get(key),
+    save: (text: string) => kv.set(key, text),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
@@ -107,9 +163,9 @@ class CadreServiceImpl {
   private _startPromise: Promise<void> | null = null;
   /**
    * LevelDB handles open for the lifetime of this CadreService instance.
-   * Keyed by strandId (including 'control').  The provider callback memoizes
-   * through this map so each strand opens its native handle exactly once.
-   * Closed in `stop()`.
+   * Keyed by strandId (including 'control' and 'node-local').  The provider
+   * callback memoizes through this map so each strand opens its native handle
+   * exactly once.  Closed in `stop()`.
    */
   private readonly openDbs = new Map<string, OptimysticDb>();
 
@@ -133,14 +189,30 @@ class CadreServiceImpl {
     return this._startError;
   }
 
-  /** True once authority genesis has run and seed/invite flows are armed. */
+  /** True once owner genesis has run and seed/invite flows are armed. */
   get hasAuthorityKey(): boolean {
     return this._authorityPublicKey !== null;
   }
 
-  /** The cadre authority public key (base64url), or null before genesis. */
+  /** The cadre owner public key (base64url), or null before genesis. */
   get authorityPublicKey(): string | null {
     return this._authorityPublicKey;
+  }
+
+  /**
+   * The node's owner PUBLIC key (base64url) for out-of-band pairing — this is
+   * the value a Linux cadre node must be told to trust (e.g. `CADRE_OWNER_KEYS`
+   * / cadre-cli `--owner`, or a pinned invite) so it will accept this phone's
+   * strand.  Never exposes private material.  Null before genesis.
+   */
+  getOwnerPublicKey(): string | null {
+    if (!this.node) return null;
+    try {
+      return this.node.getIdentityOwnerKey().publicKeyB64;
+    } catch (err) {
+      logger.warn('getOwnerPublicKey unavailable:', err);
+      return null;
+    }
   }
 
   // -----------------------------------------------------------------------
@@ -177,20 +249,40 @@ class CadreServiceImpl {
       const privateKey = await loadOrCreateRNPeerKey(controlDb);
       logger.info('Loaded peer identity from control store');
 
+      // Node-local records (trusted-owner anchor + cold-start dial hints) live
+      // in their own LevelDB so clearing them can't disturb replicated strand
+      // data.  Both persist across restarts so a trusted drone stays trusted.
+      // MIGRATION TODO: the trust anchor should move to react-native-keychain
+      // alongside the identity key (see file header + STATUS.md).
+      const nodeLocalDb = this.getOrOpenDb(NODE_LOCAL_STRAND_ID);
+      const nodeLocalKv = new LevelDBKVStore(nodeLocalDb, 'sereus:node-local:');
+      const trustedOwnerStore = await PersistentTrustedOwnerStore.open(
+        kvStoreSlot(nodeLocalKv, `${TRUSTED_OWNERS_KV}.${this._partyId}`),
+        this._partyId,
+      );
+      const bootstrapPeerStore = await PersistentBootstrapPeerStore.open(
+        kvStoreSlot(nodeLocalKv, `${BOOTSTRAP_PEERS_KV}.${this._partyId}`),
+        this._partyId,
+      );
+
+      // Bootstrap multiaddrs the user has added (Linux cadre nodes).  Empty on a
+      // solo phone; entries dial out at start so the strand can replicate.
+      const bootstrapNodes = await this.getBootstrapNodes();
+      if (bootstrapNodes.length > 0) {
+        logger.info('Bootstrap nodes:', bootstrapNodes);
+      }
+
       const config: CadreNodeConfig = {
         privateKey,
         controlNetwork: {
           partyId: this._partyId,
-          bootstrapNodes: BOOTSTRAP_NODES,
+          bootstrapNodes,
         },
         profile: 'transaction',
-        // cadre-core 0.8.x enforces signed sApp schemas by default
-        // (requireSignedSchemas, fail-closed).  The health sApp is not yet
-        // signed (see the unsigned sAppConfig below), so relax the policy for
-        // dev/test to bring the strand up.  MIGRATION TODO: give the sApp an
-        // ed25519 author key, set `sAppConfig.id` = author public key, and
-        // `signature` = signSchema(schema, version, authorPrivateKey), then
-        // drop this flag.
+        // The health sApp schema is not yet signed (unsigned sAppConfig below),
+        // so relax the fail-closed policy for dev/test.  MIGRATION TODO: give the
+        // sApp an ed25519 author key, set sAppConfig.id = author public key and
+        // sAppConfig.signature = signSchema(...), then drop this flag.
         requireSignedSchemas: false,
         strandFilter: { mode: 'sAppId', sAppId: SAPP_ID },
         storage: {
@@ -198,12 +290,24 @@ class CadreServiceImpl {
             new LevelDBRawStorage(this.getOrOpenDb(strandId)),
         },
         network: {
-          // RN requires explicit transports (no TCP).  WebSockets satisfies
-          // the constructor; actual peer communication is deferred until the
-          // user adds remote nodes (Step 3).
-          transports: [webSockets()],
-          listenAddrs: [],
+          // RN requires explicit transports (no TCP).
+          //   webSockets           — dial a reachable drone over /ws
+          //   circuitRelayTransport — dial /p2p-circuit reservations through a
+          //                           relay-enabled drone (NAT'd phone)
+          //   webRTC               — upgrade a relayed connection to a direct
+          //                           /webrtc data path (relay stays signalling)
+          // iceServers: [] — relay-signalled webRTC still works on host/LAN
+          // candidates; a STUN/TURN manifest can be added later.
+          transports: [
+            webSockets(),
+            circuitRelayTransport(),
+            webRTC({ rtcConfiguration: { iceServers: [] } }) as unknown as TransportFactory,
+          ],
+          listenAddrs: [], // RN cannot accept inbound connections
         },
+        hibernation: { enabled: false },
+        trustedOwners: { store: trustedOwnerStore },
+        bootstrapPeers: { store: bootstrapPeerStore },
       };
 
       logger.info('Creating CadreNode...');
@@ -212,27 +316,48 @@ class CadreServiceImpl {
       await this.node.start();
       logger.info('CadreNode started. Peer ID:', this.node.peerId?.toString());
 
-      // Create the health strand.  addStrand() does NOT write to the control
-      // database — it starts a strand locally with its own libp2p node and
-      // StrandDatabase.  No authority key required.
-      //
-      // Mode = 'bootstrap': solo node, no remote peers yet.  Schema apply and
-      // DML route through the OPTIMYSTIC LOCAL transactor (backed by the same
-      // LevelDB we created via createLibp2pNode), so a cold start finishes in
-      // seconds instead of timing out on consensus round-trips that can never
-      // complete with zero peers.  This is exactly what the
-      // `wire-strand-storage-into-bootstrap-transactor` ticket in sereus was
-      // built for — sereus-health is its named host-app verification target.
-      //
-      // STATUS.md Step 3 (adding the first remote node) will need to restart
-      // the strand in `'networked'` mode; the StrandMode is fixed for the
-      // lifetime of a StrandDatabase instance.
+      // Owner genesis makes this phone its own party owner so it can author the
+      // owner-signed Strand INSERT that publishStrand performs.  On a solo node
+      // (cadre-of-one) the control path commits locally in milliseconds; we
+      // still time-box it defensively so a wedged control op can't hang boot.
+      // Fail-soft: if genesis doesn't complete, the strand still works locally
+      // (addStrand below) — only control-DB publish + seed/invite flows wait.
+      await this.runOwnerGenesisSafe();
+
+      // Formation responder: validates guest-invitation tokens on redemption.
+      try {
+        this.initializeFormationResponder();
+      } catch (err) {
+        logger.warn('formation responder init failed:', err);
+      }
+
+      // Create (or re-open) the health strand.
       const strandId = await this.getOrCreateValue(STRAND_ID_KEY);
       this._strandId = strandId;
-      logger.info('Adding health strand:', strandId);
+      const founded = (await AsyncStorage.getItem(STRAND_FOUNDED_KEY)) === '1';
 
+      // First time only: publish the strand into the control DB so a joining
+      // drone discovers + replicates it, and found it (write the Header /
+      // membership bootstrap).  On later boots we re-open as a non-founder; the
+      // strand's rows are already in local storage and sync fills the rest.
+      if (!founded && this._authorityPublicKey) {
+        try {
+          await withTimeout(
+            this.node.publishStrand(strandId, 'o'),
+            CONTROL_OP_TIMEOUT_MS,
+            'publishStrand',
+          );
+          logger.info('Published health strand to control DB:', strandId);
+        } catch (err) {
+          // Non-fatal: the strand still works locally; it just isn't yet
+          // discoverable by a drone.  A later connect can re-attempt (see
+          // republishStrand).
+          logger.warn('publishStrand deferred:', err instanceof Error ? err.message : err);
+        }
+      }
+
+      logger.info(`Adding health strand (founder=${!founded}):`, strandId);
       this.healthStrand = await this.node.addStrand({
-        mode: 'bootstrap',
         strandRow: {
           Id: strandId,
           MemberPrivateKey: null,
@@ -242,16 +367,16 @@ class CadreServiceImpl {
           id: SAPP_ID,
           version: SAPP_VERSION,
           schema: HEALTH_SCHEMA_DDL,
-          signature: '', // Unsigned — accepted only because requireSignedSchemas:false above (see MIGRATION TODO)
+          // Unsigned — accepted only because requireSignedSchemas:false above.
+          signature: '',
         },
+        founder: !founded,
       });
       logger.info('Health strand ready. Database available:', !!this.healthStrand?.database);
 
-      // Arm authority genesis + the formation responder OFF the boot path.
-      // Both touch the control network, whose consistent reads block on a solo
-      // node (no cohort → no quorum). Awaiting them here would hang boot; the
-      // health strand already works locally (bootstrap mode) without them.
-      this.armCadreServicesInBackground();
+      if (!founded) {
+        await AsyncStorage.setItem(STRAND_FOUNDED_KEY, '1');
+      }
     } catch (err) {
       this._startError = err instanceof Error ? err.message : String(err);
       logger.error('doStart failed:', this._startError);
@@ -260,20 +385,18 @@ class CadreServiceImpl {
   }
 
   // -----------------------------------------------------------------------
-  // Authority key + seed + invitation flows
+  // Owner genesis + seed + invitation flows
   // -----------------------------------------------------------------------
 
   /**
-   * Run authority genesis. Idempotent, safe on every start.
+   * Run owner genesis. Idempotent, safe on every start.
    *
-   * cadre-core 0.9 uses a SINGLE-KEY model: the cadre owner key is *derived from
-   * the node identity* (not an independent keypair). `createSeed`, `publishStrand`,
-   * and `publishFormationInvite` all sign with the identity key and refuse unless
-   * its public half matches the control node's PeerId — so we must NOT mint a
-   * separate random owner key. `ensureOwnerKey` inserts the derived key only when
-   * the table is empty. (0.9.0 renamed the "authority" concept to "owner".)
+   * Single-key model: the cadre owner key is DERIVED from the node identity (not
+   * an independent keypair).  `createSeed`, `publishStrand`, and
+   * `publishFormationInvite` all sign with the identity key.  `ensureOwnerKey`
+   * inserts the derived key only when the OwnerKey table is empty.
    */
-  private async runAuthorityGenesis(): Promise<string> {
+  private async runOwnerGenesis(): Promise<string> {
     if (!this.node) throw new Error('CadreNode not running');
     const { privateKeyB64, publicKeyB64 } = this.node.getIdentityOwnerKey();
 
@@ -286,37 +409,26 @@ class CadreServiceImpl {
 
     logger.info(
       inserted
-        ? '✓ authority genesis: inserted founding key, seed flows enabled'
-        : '✓ authority key already present, seed flows enabled',
+        ? '✓ owner genesis: inserted founding key, seed flows enabled'
+        : '✓ owner key already present, seed flows enabled',
     );
     return publicKeyB64;
   }
 
-  /**
-   * Best-effort background bring-up of control-network services that must NOT
-   * gate boot. Fired (not awaited) from doStart. Authority genesis is time-boxed
-   * because its control-DB read never returns on a solo node.
-   */
-  private armCadreServicesInBackground(): void {
-    void (async () => {
-      try {
-        await withTimeout(
-          this.runAuthorityGenesis(),
-          AUTHORITY_GENESIS_TIMEOUT_MS,
-          'authority genesis',
-        );
-      } catch (err) {
-        logger.warn(
-          'authority genesis deferred (solo node / no control cohort yet):',
-          err instanceof Error ? err.message : err,
-        );
-      }
-      try {
-        this.initializeFormationResponder();
-      } catch (err) {
-        logger.warn('formation responder init failed:', err);
-      }
-    })();
+  /** Time-boxed, fail-soft owner genesis for the boot path. */
+  private async runOwnerGenesisSafe(): Promise<void> {
+    try {
+      await withTimeout(
+        this.runOwnerGenesis(),
+        AUTHORITY_GENESIS_TIMEOUT_MS,
+        'owner genesis',
+      );
+    } catch (err) {
+      logger.warn(
+        'owner genesis deferred (solo node / no control cohort yet):',
+        err instanceof Error ? err.message : err,
+      );
+    }
   }
 
   /**
@@ -335,23 +447,23 @@ class CadreServiceImpl {
   }
 
   /**
-   * Ensure the authority key exists. Under the 0.8 single-key model there's
-   * nothing to "create" — the key is the node identity — so this just runs
-   * genesis (idempotent), time-boxed so the UI never hangs on a solo node.
+   * Ensure the owner key exists. Under the single-key model there's nothing to
+   * "create" — the key is the node identity — so this just runs genesis
+   * (idempotent), time-boxed so the UI never hangs on a solo node.
    */
   async createAuthorityKey(): Promise<{ publicKey: string }> {
     await this.ensureStarted();
     const publicKey = await withTimeout(
-      this.runAuthorityGenesis(),
+      this.runOwnerGenesis(),
       CONTROL_OP_TIMEOUT_MS,
-      'authority genesis',
+      'owner genesis',
     );
     return { publicKey };
   }
 
   /**
-   * Reveal the authority private key for offline backup. Because authority ==
-   * node identity, this IS the device's identity secret — only ever call from an
+   * Reveal the owner private key for offline backup. Because owner == node
+   * identity, this IS the device's identity secret — only ever call from an
    * explicit, user-confirmed "export for recovery" affordance, and never log it.
    */
   async exportAuthorityPrivateKey(): Promise<string | null> {
@@ -365,10 +477,87 @@ class CadreServiceImpl {
     }
   }
 
+  // -----------------------------------------------------------------------
+  // Remote node connection (Linux cadre node)
+  // -----------------------------------------------------------------------
+
+  /** The bootstrap multiaddrs the user has added (persisted). */
+  async getBootstrapNodes(): Promise<string[]> {
+    try {
+      const raw = await AsyncStorage.getItem(BOOTSTRAP_NODES_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter((x) => typeof x === 'string') : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Add a Linux cadre node by its bootstrap multiaddr (e.g.
+   * `/ip4/<host>/tcp/4002/ws/p2p/<peerId>`), persist it, and — if the node is
+   * running — dial it live so the strand starts replicating immediately.
+   * On the next start the address is used as a control-network bootstrap node.
+   *
+   * The remote node must already trust this phone's owner key
+   * (see `getOwnerPublicKey`) out-of-band, or accept an applied seed.
+   */
+  async connectToNode(addr: string): Promise<void> {
+    const trimmed = addr.trim();
+    if (!trimmed) throw new Error('Enter a bootstrap multiaddr');
+    // Validate — multiaddr() throws on a malformed address.
+    const ma = multiaddr(trimmed);
+    if (!trimmed.includes('/p2p/')) {
+      throw new Error('Address must end in /p2p/<peerId> so the node can be identified');
+    }
+
+    const list = await this.getBootstrapNodes();
+    if (!list.includes(trimmed)) {
+      list.push(trimmed);
+      await AsyncStorage.setItem(BOOTSTRAP_NODES_KEY, JSON.stringify(list));
+    }
+
+    if (this.node) {
+      const libp2p = this.node.getControlNode();
+      if (!libp2p) throw new Error('Control network not available');
+      await libp2p.dial(ma);
+      logger.info('Dialed remote node:', trimmed);
+      // Make sure the strand is discoverable by the node we just added.
+      await this.republishStrand();
+    }
+  }
+
+  /** Remove a previously-added bootstrap node (does not disconnect a live dial). */
+  async removeBootstrapNode(addr: string): Promise<void> {
+    const list = (await this.getBootstrapNodes()).filter((a) => a !== addr);
+    await AsyncStorage.setItem(BOOTSTRAP_NODES_KEY, JSON.stringify(list));
+  }
+
+  /**
+   * Best-effort (re)publish of the health strand into the control DB so a newly
+   * connected node can discover it.  Safe to call repeatedly; failures are
+   * logged, not thrown.
+   */
+  private async republishStrand(): Promise<void> {
+    if (!this.node || !this._strandId) return;
+    if (!this._authorityPublicKey) {
+      await this.runOwnerGenesisSafe();
+      if (!this._authorityPublicKey) return;
+    }
+    try {
+      await withTimeout(
+        this.node.publishStrand(this._strandId, 'o'),
+        CONTROL_OP_TIMEOUT_MS,
+        'publishStrand',
+      );
+    } catch (err) {
+      logger.debug('republishStrand skipped:', err instanceof Error ? err.message : err);
+    }
+  }
+
   /**
    * Generate a base64url seed for transporting cadre membership to a new node —
-   * typically a drone/server consumed via cadre-cli. This is the primary way the
-   * phone enrolls its own additional nodes. Requires the authority key; if
+   * typically a drone/server consumed via cadre-cli. Requires the owner key; if
    * genesis is still pending (solo node), we attempt it once, time-boxed, and
    * surface an honest precondition error rather than hanging.
    */
@@ -389,7 +578,7 @@ class CadreServiceImpl {
    * Precondition: this device must have a dialable address, which a phone only
    * gets via a relay reservation from a node in its cadre. On a solo phone
    * `getMultiaddrs()` is empty and we fail fast with a clear message — add a
-   * drone/server first. Mirrors chat's createInvitation (same solo limitation).
+   * drone/server first.
    */
   async createGuestInvitation(): Promise<{
     token: string;
@@ -455,12 +644,11 @@ class CadreServiceImpl {
 
   /**
    * Open (or return the cached handle for) the LevelDB backing a given
-   * strand's optimystic raw storage.  `'control'` is the special strandId
-   * the CadreNode uses for its control-network repo and node identity.
+   * strand's optimystic raw storage.  `'control'` is the control-network repo +
+   * node identity; `'node-local'` is the trusted-owner / bootstrap-peer store.
    *
    * `rn-leveldb` permits exactly one open handle per database name, so the
-   * cache is mandatory — without it, the second call (e.g. control then the
-   * first strand) would throw.
+   * cache is mandatory.
    */
   private getOrOpenDb(strandId: string): OptimysticDb {
     let db = this.openDbs.get(strandId);

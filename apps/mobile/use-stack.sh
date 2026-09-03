@@ -68,21 +68,26 @@ pj_path = os.path.join(APP_DIR, 'package.json')
 # Ordered to match the current resolutions layout so a `local` switch produces
 # a minimal diff.  `in_deps` packages appear in `dependencies`; `in_res`
 # packages appear in `resolutions` when in local mode.
+#
+# NOTE: pinned snapshot for the 0.12 wave (2026-09-02).  `strand-proto` was
+# removed upstream (formation is native in cadre-core).  `quereus-plugin-crypto`
+# and `quereus-plugin-optimystic` are no longer direct deps (cadre-core composes
+# them via @serfab/quereus-plugin-sereus) but stay in `resolutions` so one
+# version wins tree-wide.
 PACKAGES = collections.OrderedDict([
-    ('@optimystic/db-core',                  ('../../../optimystic/packages/db-core',                  '^0.14.1', True,  True)),
-    ('@optimystic/db-p2p',                   ('../../../optimystic/packages/db-p2p',                   '^0.14.1', True,  True)),
-    ('@optimystic/db-p2p-storage-rn',        ('../../../optimystic/packages/db-p2p-storage-rn',        '^0.14.1', True,  True)),
-    ('@optimystic/quereus-plugin-crypto',    ('../../../optimystic/packages/quereus-plugin-crypto',    '^0.14.1', True,  True)),
-    ('@optimystic/quereus-plugin-optimystic',('../../../optimystic/packages/quereus-plugin-optimystic','^0.14.1', True,  True)),
-    ('@quereus/quereus',                     ('../../../quereus/packages/quereus',                     '^4.3.0',  True,  True)),
-    ('@quereus/isolation',                   ('../../../quereus/packages/quereus-isolation',           '^4.3.0',  True,  True)),
-    ('@quereus/store',                       ('../../../quereus/packages/quereus-store',               '^4.3.0',  True,  True)),
-    ('@quereus/plugin-leveldb',              ('../../../quereus/packages/quereus-plugin-leveldb',      '^4.3.0',  False, True)),
-    ('@serfab/strand-proto',                 ('../../../sereus/packages/strand-proto',                 '^0.8.1',  False, True)),
-    ('p2p-fret',                             ('../../../fret/packages/fret',                            '^0.6.0',  True,  True)),
+    ('@optimystic/db-core',                  ('../../../optimystic/packages/db-core',                  '^0.27.0', True,  True)),
+    ('@optimystic/db-p2p',                   ('../../../optimystic/packages/db-p2p',                   '^0.27.0', True,  True)),
+    ('@optimystic/db-p2p-storage-rn',        ('../../../optimystic/packages/db-p2p-storage-rn',        '^0.27.0', True,  True)),
+    ('@optimystic/quereus-plugin-crypto',    ('../../../optimystic/packages/quereus-plugin-crypto',    '^0.27.0', False, True)),
+    ('@optimystic/quereus-plugin-optimystic',('../../../optimystic/packages/quereus-plugin-optimystic','^0.27.0', False, True)),
+    ('@quereus/quereus',                     ('../../../quereus/packages/quereus',                     '^4.18.0', True,  True)),
+    ('@quereus/isolation',                   ('../../../quereus/packages/quereus-isolation',           '^4.18.0', True,  True)),
+    ('@quereus/store',                       ('../../../quereus/packages/quereus-store',               '^4.18.0', True,  True)),
+    ('@quereus/plugin-leveldb',              ('../../../quereus/packages/quereus-plugin-leveldb',      '^4.18.0', False, True)),
+    ('p2p-fret',                             ('../../../fret/packages/fret',                            '^1.0.0-beta.4', True, True)),
     # dep-only ser packages (never in resolutions)
-    ('@quereus/plugin-react-native-leveldb', ('../../../quereus/packages/quereus-plugin-react-native-leveldb', '^4.3.0', True, False)),
-    ('@serfab/cadre-core',                   ('../../../sereus/packages/cadre-core',                   '^0.8.1',  True,  False)),
+    ('@quereus/plugin-react-native-leveldb', ('../../../quereus/packages/quereus-plugin-react-native-leveldb', '^4.18.0', True, False)),
+    ('@serfab/cadre-core',                   ('../../../sereus/packages/cadre-core',                   '^0.12.0', True,  False)),
 ])
 NAMES = set(PACKAGES)
 SENTINEL = '@serfab/cadre-core'  # its spec tells us the current mode
