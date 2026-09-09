@@ -15,7 +15,8 @@ node_modules/
 # Generated
 design/generated/meta/outputs.json
 design/generated/status.json
-design/generated/site/
+# Rendered scenario site: rebuilt from scratch by publish-scenarios, duplicates images/
+design/generated/*/site/
 
 # Temporary
 tmp/
