@@ -104,12 +104,40 @@ function AppContent() {
 
   useEffect(() => {
     let alive = true;
+    // Never hold the splash hostage to the data layer.
+    //
+    // Strand founding can currently hang indefinitely in the optimystic stack
+    // (see optimystic#8 / sereus#8): `ensureDatabaseInitialized()` then neither
+    // resolves NOR rejects, so a plain `.finally()` never fires and the app sits
+    // on a bare spinner forever with no way in.  Bound the wait instead: the
+    // initialization keeps running in the background (so the app becomes fully
+    // functional if/when it converges), but the UI renders either way and each
+    // screen falls back to its own error/empty state.
+    const STARTUP_DB_WAIT_MS = 20000;
+    let settled = false;
+    const proceed = () => {
+      if (settled) return;
+      settled = true;
+      if (alive) setCatalogChecked(true);
+    };
+    const timer = setTimeout(() => {
+      if (!settled) {
+        console.warn(
+          `[startup] database not ready after ${STARTUP_DB_WAIT_MS}ms — rendering the UI anyway; ` +
+            'initialization continues in the background.',
+        );
+      }
+      proceed();
+    }, STARTUP_DB_WAIT_MS);
+
     ensureDatabaseInitialized()
       .then(() => getTypeCount())
-      .then((count) => { if (alive) setShowOnboarding(count === 0); })
+      // Only decide onboarding if the DB answered within the window; flipping
+      // to GettingStarted after the app has already rendered would be jarring.
+      .then((count) => { if (alive && !settled) setShowOnboarding(count === 0); })
       .catch(() => { /* if the check fails, fall through to the normal app */ })
-      .finally(() => { if (alive) setCatalogChecked(true); });
-    return () => { alive = false; };
+      .finally(() => { clearTimeout(timer); proceed(); });
+    return () => { alive = false; clearTimeout(timer); };
   }, []);
 
   // Check assistant configuration on mount and when screen changes

@@ -362,6 +362,12 @@ class CadreServiceImpl {
           Id: strandId,
           MemberPrivateKey: null,
           Type: 'o', // open strand
+          // cadre-core 0.13: provenance — the owner key of the machine that
+          // published this Strand row.  We ARE the founder (we publishStrand
+          // above under our own owner identity), so it's our own owner key.
+          // null is legal (consent-seated strands record no trustworthy signer)
+          // and is what we fall back to if owner genesis hasn't completed.
+          FounderOwnerKey: this._authorityPublicKey,
         },
         sAppConfig: {
           id: SAPP_ID,
