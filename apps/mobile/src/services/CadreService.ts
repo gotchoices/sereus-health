@@ -141,6 +141,31 @@ const HEALTH_SCHEMA_DDL = extractInnerDDL(SCHEMA_SQL);
 
 type EventHandler<T> = (payload: T) => void;
 
+/** Outcome of enrolling a remote cadre node (see `connectToNode`). */
+export type AddNodeResult = {
+  /** Peer ID parsed out of the bootstrap multiaddr. */
+  peerId: string;
+  /** True when the drone accepted the seed over `/sereus/seed/1.0.0`. */
+  delivered: boolean;
+  /** Always returned, so the seed can be delivered out of band if needed. */
+  encodedSeed: string;
+  /** Why delivery didn't happen, when `delivered` is false. */
+  reason?: string;
+};
+
+/**
+ * Peer ID from a multiaddr's trailing `/p2p/<id>` segment.  The LAST such
+ * segment is the target: a relayed address (`…/p2p/<relay>/p2p-circuit/p2p/<node>`)
+ * names the relay first and the node we actually want second.  Parsed from the
+ * string because `Multiaddr.getPeerId()` was removed in @multiformats/multiaddr v13.
+ */
+function peerIdFromMultiaddr(addr: string): string | null {
+  const parts = addr.split('/p2p/');
+  if (parts.length < 2) return null;
+  const id = parts[parts.length - 1].split('/')[0].trim();
+  return id.length > 0 ? id : null;
+}
+
 /** A DurableSlot over one key of a LevelDBKVStore (trusted-owner / bootstrap-peer). */
 function kvStoreSlot(kv: LevelDBKVStore, key: string): DurableSlot {
   return {
@@ -500,37 +525,89 @@ class CadreServiceImpl {
   }
 
   /**
-   * Add a Linux cadre node by its bootstrap multiaddr (e.g.
-   * `/ip4/<host>/tcp/4002/ws/p2p/<peerId>`), persist it, and — if the node is
-   * running — dial it live so the strand starts replicating immediately.
-   * On the next start the address is used as a control-network bootstrap node.
+   * Add a Linux cadre node (drone) by its bootstrap multiaddr, e.g.
+   * `/ip4/<host>/tcp/4002/ws/p2p/<peerId>`.
    *
-   * The remote node must already trust this phone's owner key
-   * (see `getOwnerPublicKey`) out-of-band, or accept an applied seed.
+   * This is the FULL enrollment, not just a dial.  `addDrone()` is what both
+   * AUTHORIZES the node (an owner-signed `CadrePeer` row) and mints the seed it
+   * needs, and it records the handed-over address as a durable dial target.
+   * Authorization is the part that actually matters: an unauthorized peer has
+   * its cohort traffic refused, so writes still report success while nothing
+   * replicates — a silent failure (see optimystic#19).  `createSeed()` alone
+   * does NOT authorize, which is why this path does not use it.
+   *
+   * We then try to hand the seed over the wire (`/sereus/seed/1.0.0`).  If the
+   * drone isn't listening for seeds, we return the encoded seed so it can be
+   * delivered out of band (`cadre start --seed …`, or `POST /seed` when the
+   * drone sets `CADRE_SEED_TOKEN`).
    */
-  async connectToNode(addr: string): Promise<void> {
+  async connectToNode(addr: string): Promise<AddNodeResult> {
     const trimmed = addr.trim();
     if (!trimmed) throw new Error('Enter a bootstrap multiaddr');
     // Validate — multiaddr() throws on a malformed address.
-    const ma = multiaddr(trimmed);
-    if (!trimmed.includes('/p2p/')) {
+    multiaddr(trimmed);
+    const dronePeerId = peerIdFromMultiaddr(trimmed);
+    if (!dronePeerId) {
       throw new Error('Address must end in /p2p/<peerId> so the node can be identified');
     }
 
+    await this.ensureStarted();
+    if (!this.node) throw new Error('CadreNode not running');
+
+    // Persist first: even if enrollment fails midway, the next start still
+    // bootstraps against this node.
     const list = await this.getBootstrapNodes();
     if (!list.includes(trimmed)) {
       list.push(trimmed);
       await AsyncStorage.setItem(BOOTSTRAP_NODES_KEY, JSON.stringify(list));
     }
 
-    if (this.node) {
-      const libp2p = this.node.getControlNode();
-      if (!libp2p) throw new Error('Control network not available');
-      await libp2p.dial(ma);
-      logger.info('Dialed remote node:', trimmed);
-      // Make sure the strand is discoverable by the node we just added.
-      await this.republishStrand();
+    // Authorizing is an owner-signed control write, so we need the owner key.
+    if (!this._authorityPublicKey) {
+      await this.createAuthorityKey(); // time-boxed; throws with a clear message
     }
+
+    logger.info('Enrolling drone:', dronePeerId);
+    const { seed, encodedSeed } = await withTimeout(
+      this.node.addDrone({ dronePeerId, droneMultiaddrs: [trimmed] }),
+      CONTROL_OP_TIMEOUT_MS,
+      'addDrone',
+    );
+    logger.info('✓ drone authorized (CadrePeer row signed)');
+
+    // Try to deliver the seed over the network; fall back to out-of-band.
+    let delivered = false;
+    let reason: string | undefined;
+    try {
+      const res = await withTimeout(
+        this.node.deliverSeed(trimmed, seed),
+        CONTROL_OP_TIMEOUT_MS,
+        'deliverSeed',
+      );
+      delivered = res.accepted;
+      reason = res.reason;
+      logger.info(delivered ? '✓ seed delivered' : `seed not accepted: ${reason ?? 'unknown'}`);
+    } catch (err) {
+      reason = err instanceof Error ? err.message : String(err);
+      logger.warn('seed delivery failed (deliver out of band):', reason);
+    }
+
+    // addDrone dials nothing itself; reconcile now rather than waiting for the
+    // next timed pass, so the connection comes up immediately.
+    try {
+      await withTimeout(
+        this.node.reconcileControlCohort(),
+        CONTROL_OP_TIMEOUT_MS,
+        'reconcileControlCohort',
+      );
+    } catch (err) {
+      logger.debug('cohort reconcile deferred:', err instanceof Error ? err.message : err);
+    }
+
+    // Make sure the strand is discoverable by the node we just added.
+    await this.republishStrand();
+
+    return { peerId: dronePeerId, delivered, encodedSeed, reason };
   }
 
   /** Remove a previously-added bootstrap node (does not disconnect a live dial). */
@@ -562,10 +639,16 @@ class CadreServiceImpl {
   }
 
   /**
-   * Generate a base64url seed for transporting cadre membership to a new node —
-   * typically a drone/server consumed via cadre-cli. Requires the owner key; if
-   * genesis is still pending (solo node), we attempt it once, time-boxed, and
-   * surface an honest precondition error rather than hanging.
+   * Generate a base64url seed for transporting cadre membership to a new node
+   * whose peer ID we do not know yet — i.e. a provider-hosted drone that gets
+   * created from the seed (`cadre-provider`).
+   *
+   * NOTE: this seeds but does NOT authorize — `createSeed()` only signs the
+   * current control-network state.  A node that is seeded but not authorized
+   * has its cohort traffic refused and will not replicate (optimystic#19).
+   * Once you know the node's address, enroll it with `connectToNode()`, which
+   * uses `addDrone()` to authorize it properly.  Prefer that path whenever the
+   * node already exists.
    */
   async createDroneSeed(): Promise<string> {
     await this.ensureStarted();

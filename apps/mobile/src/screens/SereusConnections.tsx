@@ -117,10 +117,21 @@ export default function SereusConnections(props: { onBack: () => void }) {
   // (see handleShowOwnerKey) out-of-band.
   const handleConnect = () => {
     void runAction(async () => {
-      await cadreService.connectToNode(addr);
+      const res = await cadreService.connectToNode(addr);
       setNodeModal(false);
       await reload();
-      Alert.alert(t('sereus.connected'), t('sereus.connectedBody'));
+      if (res.delivered) {
+        Alert.alert(t('sereus.connected'), t('sereus.connectedBody'));
+      } else {
+        // The node IS authorized at this point — it just didn't take the seed
+        // over the wire (not listening for seeds).  Hand the seed over so it
+        // can be applied out of band; without it the node can't join.
+        setSecret({
+          title: t('sereus.seedTitle'),
+          body: t('sereus.seedManualBody'),
+          value: res.encodedSeed,
+        });
+      }
     });
   };
 
