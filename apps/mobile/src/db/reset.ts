@@ -3,7 +3,12 @@ import { createLogger } from '../util/logger';
 import { USE_OPTIMYSTIC } from './config';
 import { closeDatabase } from './index';
 import { resetInitializationState } from './init';
-import { OPTIMYSTIC_DB_PREFIX, NODE_LOCAL_STRAND_ID } from '../services/CadreService';
+import { controlStorageScope } from '@serfab/cadre-core';
+import {
+  OPTIMYSTIC_DB_PREFIX,
+  NODE_LOCAL_STRAND_ID,
+  IDENTITY_DB_ID,
+} from '../services/CadreService';
 
 const logger = createLogger('DB Reset');
 
@@ -34,6 +39,7 @@ export async function resetDatabaseForDev(): Promise<void> {
     // Read identifiers before clearing so we know which LevelDB directories
     // to nuke.
     const strandId = await AsyncStorage.getItem('@sereus/healthStrandId');
+    const partyId = await AsyncStorage.getItem('@sereus/partyId');
     await AsyncStorage.multiRemove([
       '@sereus/partyId',
       '@sereus/healthStrandId',
@@ -41,15 +47,16 @@ export async function resetDatabaseForDev(): Promise<void> {
       '@sereus/bootstrapNodes',
     ]);
 
-    // Destroy the optimystic LevelDB directories.  `control` (node identity +
-    // control repo) and `node-local` (trusted-owner anchor + dial hints) always
-    // exist; the strand directory only exists once the strand has been added.
+    // Destroy the optimystic LevelDB directories: the identity store, the
+    // node-local records, the control network's store (cadre-core 1.8+ names it
+    // by scope key, `control-<party id hex>`), and the strand store.
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { LevelDB } = require('rn-leveldb');
     const dbNames = [
-      `${OPTIMYSTIC_DB_PREFIX}control`,
+      `${OPTIMYSTIC_DB_PREFIX}${IDENTITY_DB_ID}`,
       `${OPTIMYSTIC_DB_PREFIX}${NODE_LOCAL_STRAND_ID}`,
     ];
+    if (partyId) dbNames.push(`${OPTIMYSTIC_DB_PREFIX}${controlStorageScope(partyId)}`);
     if (strandId) dbNames.push(`${OPTIMYSTIC_DB_PREFIX}${strandId}`);
 
     for (const name of dbNames) {

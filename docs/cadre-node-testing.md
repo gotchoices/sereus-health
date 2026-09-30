@@ -19,6 +19,19 @@ replicates the strand.
 
 ---
 
+## Stack version notes (sereus 1.8)
+
+- Run the **same sereus release on every machine** of the party (cadre-cli/cadre-host 1.8 with this app).
+- **1.8 cannot open an older control store.** On a Linux node, delete the
+  `control-<party id base64url>` folder inside `storage.path` before starting 1.8 (for cadre-host:
+  `<workdir>/storage`); on the phone, clear the app's storage. Then re-form the party.
+- **Config is validated strictly** in 1.8: an unknown key or misspelled `CADRE_*` variable stops
+  start-up with an error naming it.
+- `network.linkRoundTripMs` (default 3500) must be the **same on every machine** if you set it.
+  Health leaves it at the default.
+- New in 1.8: `cadre enroll add <peerId>` asks a running owner node for a seed for a new machine.
+  (Health's owner is the phone, so the in-app **My Nodes (+)** flow is the usual path.)
+
 ## Concepts you need from the app
 
 Open **Settings → Sereus Connections**. Two values matter:

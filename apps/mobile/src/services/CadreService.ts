@@ -6,30 +6,31 @@
  * bootstrap multiaddr (see `connectToNode`) lets the strand replicate to a
  * Linux cadre node (cadre-cli drone or cadre-host).
  *
- * Stack: cadre-core 0.12 / optimystic 0.27 / quereus 4.18 / p2p-fret 1.0-beta.
+ * Stack: cadre-core 1.8 / optimystic 1.8 / quereus 4.20 / p2p-fret 1.0, with the
+ * `@serfab/cadre-rn` kit for polyfills, Metro settings and native Noise crypto.
  *
- * Notable 0.12 changes vs the previous (0.10) integration:
- *   - `StrandConfig.mode` ('bootstrap' | 'networked') is GONE.  Solo/local
- *     commit is automatic at the storage layer; a strand no longer needs to be
- *     torn down + re-added to "go networked" when a peer appears.  We found the
- *     strand once with `founder: true`, then re-open with `founder: false`.
- *   - `publishStrand()` registers the strand in the control DB so a joining
- *     drone discovers and replicates it.  Done once (founder path).
- *   - New node-local seams: `trustedOwners` / `bootstrapPeers` stores (persisted
- *     here in a dedicated LevelDB) and `hibernation`.
- *   - Transports now include circuit-relay + webRTC so a NAT'd phone can dial a
- *     relay-enabled drone and upgrade to a direct path.
+ * Shape follows the RN reference app (`reference-app-rn/src/phone-node-config.ts`)
+ * and ser/chat, which tracks the stack ahead of health:
+ *   - Strands: `publishStrand()` + `addStrand({ founder })` — founded once, then
+ *     re-opened as a non-founder.  No per-strand `mode` (removed in 0.12).
+ *   - Storage: the provider receives cadre-core's scope key (`control-<hex>` for
+ *     the control network, the strand id for a strand) and uses it verbatim.
+ *   - Durable node-local stores for trustedOwners, bootstrapPeers,
+ *     enrolledMachines, strandPeers and joinedStrands.  cadre-core's in-memory
+ *     defaults silently forget across restarts (sereus#18).
+ *   - network: ws + circuit-relay + webRTC transports, native `noiseCrypto`, and a
+ *     permissive dial gater so LAN (`ws://192.168…`) nodes can be dialed.
+ *   - Adding a node goes through `addDrone()`, which authorizes as well as seeds.
  *
- * Identity: still injected as `config.privateKey`, loaded from the control
- * LevelDB via `loadOrCreateRNPeerKey`.  MIGRATION TODO (tracked in
- * design/specs/mobile/STATUS.md): move identity + the trusted-owner anchor into
- * react-native-keychain via cadre-core's `KeyStore` seam (the reference app's
- * secure-enclave model), so the trust-bearing records share the identity's fate.
+ * Identity: injected as `config.privateKey` (as ser/chat does), loaded from its
+ * own LevelDB via `loadOrCreateRNPeerKey`.  MIGRATION TODO (tracked in
+ * design/specs/mobile/STATUS.md): move identity + the trust-bearing records into
+ * a Keychain-backed `keyStore` — the reference app's secure-enclave model.
  *
- * References:
- *   cadre/sereus-latest/packages/reference-app-rn/src/cadre-phone.ts
- *   cadre/sereus-latest/docs/reference-app-rn.md
- *   cadre/sereus-latest/docs/architecture.md
+ * References (gotchoices/sereus):
+ *   packages/reference-app-rn/src/phone-node-config.ts, cadre-phone.ts
+ *   packages/cadre-rn/README.md
+ *   docs/reference-app-rn.md, docs/architecture.md
  */
 
 import {
@@ -37,12 +38,18 @@ import {
   ControlFormationUsageRecorder,
   PersistentTrustedOwnerStore,
   PersistentBootstrapPeerStore,
+  PersistentEnrolledMachineStore,
+  PersistentStrandPeerBookStore,
+  KeyStoreJoinedStrandStore,
   type CadreNodeConfig,
   type CadreNodeEvents,
   type ControlDatabase,
   type StrandInstance,
   type DurableSlot,
+  type KeyId,
+  type KeyStore,
 } from '@serfab/cadre-core';
+import { buildNoiseCrypto, DEFAULT_NOISE_CRYPTO_MODE } from '@serfab/cadre-rn/noise-crypto';
 import {
   AUTHORITY_GENESIS_TIMEOUT_MS,
   CONTROL_OP_TIMEOUT_MS,
@@ -110,6 +117,8 @@ const BOOTSTRAP_PEERS_KV = 'bootstrap-peers';
 export const OPTIMYSTIC_DB_PREFIX = 'optimystic-';
 /** Pseudo-strandId for the node-local record store (trust anchor + dial hints). */
 export const NODE_LOCAL_STRAND_ID = 'node-local';
+/** Pseudo-scope for the LevelDB holding this node's peer identity key. */
+export const IDENTITY_DB_ID = 'control';
 
 function optimysticDbName(strandId: string): string {
   return `${OPTIMYSTIC_DB_PREFIX}${strandId}`;
@@ -166,12 +175,67 @@ function peerIdFromMultiaddr(addr: string): string | null {
   return id.length > 0 ? id : null;
 }
 
-/** A DurableSlot over one key of a LevelDBKVStore (trusted-owner / bootstrap-peer). */
+/**
+ * A DurableSlot over one key of a LevelDBKVStore (trusted-owner, bootstrap-peer,
+ * enrolled-machine and strand-peer-book records).  `get` resolves `undefined` for
+ * an absent key and throws on a read fault — exactly the absent-vs-fault contract
+ * `DurableSlot` requires (a fault reported as "absent" would let the next save
+ * overwrite an intact record).
+ */
 function kvStoreSlot(kv: LevelDBKVStore, key: string): DurableSlot {
   return {
     load: () => kv.get(key),
     save: (text: string) => kv.set(key, text),
   };
+}
+
+/**
+ * A cadre-core `KeyStore` over the node-local LevelDB, used only to back
+ * `joinedStrands` (sereus 1.7+).  A node configured with `privateKey` has no key
+ * store of its own, and without an injected joined-strand store cadre-core keeps
+ * joins in memory and warns.  Health never joins another party's strand today,
+ * but supplying the durable store is the prescribed embedding and costs nothing.
+ *
+ * Same security posture as the identity key (plaintext in app-private LevelDB);
+ * replace with a Keychain-backed KeyStore when the identity moves there
+ * (MIGRATION TODO in the file header).
+ */
+class LevelDBKeyStore implements KeyStore {
+  constructor(private readonly kv: LevelDBKVStore, private readonly prefix = 'keystore:') {}
+
+  private key(keyId: KeyId): string {
+    return `${this.prefix}${encodeURIComponent(keyId)}`;
+  }
+
+  async get(keyId: KeyId): Promise<Uint8Array | undefined> {
+    const raw = await this.kv.get(this.key(keyId));
+    return raw === undefined ? undefined : hexToBytes(raw);
+  }
+
+  async set(keyId: KeyId, keyMaterial: Uint8Array): Promise<void> {
+    await this.kv.set(this.key(keyId), bytesToHex(keyMaterial));
+  }
+
+  async delete(keyId: KeyId): Promise<void> {
+    await this.kv.delete(this.key(keyId));
+  }
+
+  async list(): Promise<KeyId[]> {
+    const keys = await this.kv.list(this.prefix);
+    return keys.map((k) => decodeURIComponent(k.slice(this.prefix.length)));
+  }
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  let hex = '';
+  for (let i = 0; i < bytes.length; i++) hex += bytes[i].toString(16).padStart(2, '0');
+  return hex;
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -267,28 +331,38 @@ class CadreServiceImpl {
       this._partyId = await this.getOrCreateValue(PARTY_ID_KEY);
       logger.info('Party ID:', this._partyId);
 
-      // Open the control-network LevelDB up-front so we can both load the
-      // persistent peer identity and hand the same handle back to CadreNode's
-      // storage provider when it asks for strandId='control'.
-      const controlDb = this.getOrOpenDb('control');
-      const privateKey = await loadOrCreateRNPeerKey(controlDb);
-      logger.info('Loaded peer identity from control store');
+      // Peer identity.  Kept in its own `optimystic-control` LevelDB, loaded via
+      // loadOrCreateRNPeerKey and injected as `privateKey` (the same model ser/chat
+      // uses).  Note this is NOT the control network's block store: since
+      // cadre-core 1.8 the control store is asked for under the scope key
+      // `controlStorageScope(partyId)` (`control-<party id hex>`), so the two
+      // never share a database.  MIGRATION TODO: move the identity into a
+      // Keychain-backed `keyStore` (the reference app's model) — see STATUS.md.
+      const identityDb = this.getOrOpenDb(IDENTITY_DB_ID);
+      const privateKey = await loadOrCreateRNPeerKey(identityDb);
+      logger.info('Loaded peer identity');
 
-      // Node-local records (trusted-owner anchor + cold-start dial hints) live
-      // in their own LevelDB so clearing them can't disturb replicated strand
-      // data.  Both persist across restarts so a trusted drone stays trusted.
-      // MIGRATION TODO: the trust anchor should move to react-native-keychain
-      // alongside the identity key (see file header + STATUS.md).
+      // Node-local records live in their own LevelDB so clearing them cannot
+      // disturb replicated strand data.  None of these replicate; all must be
+      // durable — cadre-core's in-memory defaults silently forget across restarts:
+      //   trustedOwners    owner keys this node trusts (seed acceptance)
+      //   bootstrapPeers   cold-start dial hints retained from applied seeds
+      //   enrolledMachines machines this owner enrolled (addDrone) — so a
+      //                    restarted phone keeps dialing the drones it added
+      //   strandPeers      where each strand's peers were last seen (sereus 1.7,
+      //                    sereus#18: "either store left in memory reproduces the
+      //                    old behaviour" — peers never re-mesh after a restart)
+      //   joinedStrands    strands joined from ANOTHER party.  A `privateKey`
+      //                    node has no keyStore, so the store is injected here.
       const nodeLocalDb = this.getOrOpenDb(NODE_LOCAL_STRAND_ID);
       const nodeLocalKv = new LevelDBKVStore(nodeLocalDb, 'sereus:node-local:');
-      const trustedOwnerStore = await PersistentTrustedOwnerStore.open(
-        kvStoreSlot(nodeLocalKv, `${TRUSTED_OWNERS_KV}.${this._partyId}`),
-        this._partyId,
-      );
-      const bootstrapPeerStore = await PersistentBootstrapPeerStore.open(
-        kvStoreSlot(nodeLocalKv, `${BOOTSTRAP_PEERS_KV}.${this._partyId}`),
-        this._partyId,
-      );
+      const partyId = this._partyId;
+      const slot = (name: string) => kvStoreSlot(nodeLocalKv, `${name}.${partyId}`);
+      const trustedOwnerStore = await PersistentTrustedOwnerStore.open(slot(TRUSTED_OWNERS_KV), partyId);
+      const bootstrapPeerStore = await PersistentBootstrapPeerStore.open(slot(BOOTSTRAP_PEERS_KV), partyId);
+      const enrolledMachineStore = await PersistentEnrolledMachineStore.open(slot('enrolled-machines'), partyId);
+      const strandPeerStore = await PersistentStrandPeerBookStore.open(slot('strand-peers'), partyId);
+      const joinedStrandStore = new KeyStoreJoinedStrandStore(new LevelDBKeyStore(nodeLocalKv), partyId);
 
       // Bootstrap multiaddrs the user has added (Linux cadre nodes).  Empty on a
       // solo phone; entries dial out at start so the strand can replicate.
@@ -300,7 +374,7 @@ class CadreServiceImpl {
       const config: CadreNodeConfig = {
         privateKey,
         controlNetwork: {
-          partyId: this._partyId,
+          partyId,
           bootstrapNodes,
         },
         profile: 'transaction',
@@ -311,28 +385,49 @@ class CadreServiceImpl {
         requireSignedSchemas: false,
         strandFilter: { mode: 'sAppId', sAppId: SAPP_ID },
         storage: {
-          provider: (strandId: string) =>
-            new LevelDBRawStorage(this.getOrOpenDb(strandId)),
+          // `scope` is cadre-core's storage scope key — `control-<hex>` for the
+          // control network, the (lowercase) strand id for a strand.  It is
+          // opaque and already safe as a database-name segment: use it verbatim.
+          provider: (scope: string) => new LevelDBRawStorage(this.getOrOpenDb(scope)),
         },
         network: {
           // RN requires explicit transports (no TCP).
-          //   webSockets           — dial a reachable drone over /ws
+          //   webSockets           — dial a reachable node over /ws
           //   circuitRelayTransport — dial /p2p-circuit reservations through a
-          //                           relay-enabled drone (NAT'd phone)
+          //                           relay-enabled node (NAT'd phone)
           //   webRTC               — upgrade a relayed connection to a direct
           //                           /webrtc data path (relay stays signalling)
           // iceServers: [] — relay-signalled webRTC still works on host/LAN
           // candidates; a STUN/TURN manifest can be added later.
           transports: [
             webSockets(),
-            circuitRelayTransport(),
+            circuitRelayTransport() as unknown as TransportFactory,
             webRTC({ rtcConfiguration: { iceServers: [] } }) as unknown as TransportFactory,
           ],
           listenAddrs: [], // RN cannot accept inbound connections
+          // Native SHA-256 / ChaCha20-Poly1305 for libp2p-noise (sereus 1.3+, kit
+          // 1.6+).  Metro bundles noise's pure-JS browser build; on Hermes that
+          // is slow enough to miss libp2p's own pings and drop connections
+          // (sereus#13).  Only local primitives change, not the wire protocol.
+          noiseCrypto: buildNoiseCrypto(DEFAULT_NOISE_CRYPTO_MODE),
+          // Permissive DIAL gater — as the RN reference app sets it.  libp2p's
+          // connection-gater resolves to its browser build on RN, which refuses
+          // insecure `ws://` and private/loopback addresses: exactly what a
+          // Linux cadre node on the LAN is (`/ip4/192.168.x.x/tcp/4002/ws`), and
+          // an emulator's `10.0.2.2`.  This only permits the dial; the connection
+          // is still Noise-encrypted and membership is still gated by cadre-core's
+          // own `denyDialPeer` and inbound hooks.  Applied to strand nodes too.
+          connectionGater: { denyDialMultiaddr: () => false },
+          // No `linkRoundTripMs` override: the 3500 ms default now also sizes
+          // Optimystic's timeouts (sereus 1.8).  If ever set, set the SAME value
+          // on every machine of the party — a mismatch is itself a failure mode.
         },
         hibernation: { enabled: false },
         trustedOwners: { store: trustedOwnerStore },
         bootstrapPeers: { store: bootstrapPeerStore },
+        enrolledMachines: { store: enrolledMachineStore },
+        strandPeers: { store: strandPeerStore },
+        joinedStrands: { store: joinedStrandStore },
       };
 
       logger.info('Creating CadreNode...');

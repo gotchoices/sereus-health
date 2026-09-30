@@ -49,6 +49,32 @@ This checklist tracks spec review work for the **mobile** target. Treat it as th
 
 ## Sereus / Optimystic Integration
 
+### Stack upgrade — sereus 1.8 / optimystic 1.8 (2026-09-30)
+
+`@serfab/cadre-core` 1.8.0, `@optimystic/*` 1.8.0, `@quereus/*` 4.20.0, `p2p-fret` 1.0.0, plus the new
+**`@serfab/cadre-rn` 1.8.0** kit. Aligned with the RN reference app (`phone-node-config.ts`) and ser/chat:
+
+- **Entry/Metro via the kit.** `index.js` imports `@serfab/cadre-rn/polyfills` first, then
+  `/polyfills/webrtc` and `/boot-check`; `metro.config.js` wraps health's own settings in
+  `withCadreMetro`. This replaced hand-rolled copies that lacked `WebSocket.bufferedAmount` (libp2p ws
+  writes never complete — sereus#11) and abort reasons. One local patch remains
+  (`src/polyfills/textdecoder-fatal.js`: RN 0.82's native TextDecoder rejects `{fatal:true}`) — worth
+  upstreaming to the kit.
+- **Native Noise crypto** (`network.noiseCrypto = buildNoiseCrypto(DEFAULT_NOISE_CRYPTO_MODE)`), which
+  needs the native deps `react-native-quick-crypto`, `react-native-nitro-modules`,
+  `react-native-quick-base64` (+ `@craftzdog/react-native-buffer`). Native rebuild + `pod install`.
+- **Durable node-local stores** for `enrolledMachines`, `strandPeers`, `joinedStrands` (new since 1.4),
+  alongside `trustedOwners`/`bootstrapPeers`. In-memory defaults forget peers across restarts (sereus#18).
+- **Permissive dial gater** (`connectionGater: { denyDialMultiaddr: () => false }`): libp2p's RN build
+  otherwise refuses `ws://` and private addresses — i.e. a Linux cadre node on the LAN.
+- Storage provider takes cadre-core's scope key verbatim (control store is now `control-<party hex>`);
+  `reset.ts` destroys it.
+- **Wipe required:** a 1.8 node cannot open an earlier control store (new table, changed constraint,
+  renamed store). Upgraded installs must clear app storage and re-form the party.
+- Measured (x86_64 emulator, release build): cold founding **4.3 s** (1.5.0: 7.5 s), cold start → DB
+  ready **9.8 s** (18 s); warm reopen 0.8 s.
+
+
 ### Stack upgrade — 0.12 wave (2026-09-02)
 
 Upgraded from the 0.10 stack to the published **0.12** release so health can test a
