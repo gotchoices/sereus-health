@@ -129,15 +129,19 @@ async function loadCadreData(): Promise<SereusConnectionsData> {
   }));
 
   // ---- Cadre peers (nodes) -----------------------------------------------
+  // Live state: which nodes hold a control-network connection to us right now.
+  // 'online' = connected; 'unreachable' = authorized but not connected.
+  const connected = cadreService.getConnectedControlPeerIds();
   const cadreNodes: SereusNode[] = peerRows.map((row): SereusNode => {
     const peerId = String(row.PeerId);
+    const isSelf = peerId === cadreService.peerId;
     return {
       id: peerId,
       // Phase 3+: store display name, device type, added-at in local metadata.
-      name: peerId === cadreService.peerId ? 'This device' : formatPeerId(peerId),
+      name: isSelf ? 'This device' : formatPeerId(peerId),
       type: 'cadre',
-      deviceType: 'phone',
-      status: 'unknown',
+      deviceType: isSelf ? 'phone' : 'server',
+      status: isSelf || connected.has(peerId) ? 'online' : 'unreachable',
       peerId,
       addedAt: new Date().toISOString(),
     };

@@ -19,9 +19,10 @@ replicates the strand.
 
 ---
 
-## Stack version notes (sereus 1.8)
+## Stack version notes (sereus 1.8 / 1.9)
 
-- Run the **same sereus release on every machine** of the party (cadre-cli/cadre-host 1.8 with this app).
+- Run the **same sereus release on every machine** of the party. Health is on cadre-core 1.9.0 with
+  `@optimystic/*` pinned to **1.8.1**, matching the verified drone.
 - **1.8 cannot open an older control store.** On a Linux node, delete the
   `control-<party id base64url>` folder inside `storage.path` before starting 1.8 (for cadre-host:
   `<workdir>/storage`); on the phone, clear the app's storage. Then re-form the party.
@@ -75,40 +76,49 @@ hibernation:
   enabled: false
 ```
 
-### 2. Start the drone, trusting + enrolling the phone
+### 2. Start the drone, pinning the phone's owner key
 
-A cold node **rejects** a seed unless the seed's signer (the phone's owner key)
-is pinned as a trust anchor. Pin it with `CADRE_OWNER_KEYS`, and enroll the
-phone's seed at start:
+A cold node **rejects** a seed unless its signer (the phone's owner key) is pinned as a
+trust anchor. Start it listening for seeds, with that key pinned:
 
 ```bash
-cd sereus/packages/cadre-cli
-
 # From the app: Sereus Connections → My Nodes (+) → "Show this device's owner key"
-export CADRE_OWNER_KEYS="<phone-owner-key-base64url>"
-
-# From the app: My Nodes (+) → "Add Cloud/Drone" → copy the seed
-npx cadre start -c /path/to/drone.cadre.yaml --seed "<phone-seed-base64url>" --listen-for-seeds
+cadre start -c cadre.yaml --listen-for-seeds --pin-owner-key <phone-owner-key>
+# (equivalently: CADRE_OWNER_KEYS=<phone-owner-key> cadre start -c cadre.yaml --listen-for-seeds)
 ```
 
-Note the drone's **Peer ID** printed on startup. (`--listen-for-seeds` also lets
-the drone accept a seed delivered over the network later; the exact seed flags
-are documented in `sereus/packages/cadre-cli/README.md` — check it if your
-cadre-cli version differs.)
+**Do not use `--owner`.** It makes the node found its own cadre instead of joining
+yours. Note the drone's **Peer ID** printed on startup.
 
-### 3. Connect the phone
+### 3. Add the node from the phone
 
-In **Sereus Connections → My Nodes (+)**, enter the drone's bootstrap multiaddr
-and tap **Connect**:
+In **Sereus Connections → My Nodes (+)**, enter the node's address and tap **Connect**.
+The phone **authorizes** the node (`addDrone`), **delivers its seed** over the network
+(`deliverSeed`, which needs `--listen-for-seeds`), then dials it. The result shows
+on screen:
 
-```
-/ip4/<drone-lan-ip>/tcp/4002/ws/p2p/<drone-peer-id>
-```
+- *Node added*: the seed was accepted. The node row shows **Connected** or
+  **Not connected** live.
+- Otherwise you get the **reason**, plus the seed to apply by hand on the node
+  (`cadre start -c cadre.yaml --seed <seed>`). The node is already authorized.
 
-- Use the drone's **LAN IP** (e.g. `192.168.1.50`) when phone + drone share a
-  network. For an emulator reaching a drone on the same Mac, `adb reverse
-  tcp:4002 tcp:4002` and dial `/ip4/127.0.0.1/tcp/4002/ws/p2p/<peer-id>`.
-- The address **must** end in `/p2p/<peer-id>`.
+Which address form to use depends on the build:
+
+| Build | Address |
+|---|---|
+| Any build, node with a hostname (`uranus.batemans.org`, `kjeib.com`) | `/dns4/<host>/tcp/<port>/wss/p2p/<peerId>` (TLS in front of the node's `/ws` listener) |
+| **Android debug** only, LAN | `/ip4/<lan-ip>/tcp/4002/ws/p2p/<peerId>` |
+| Emulator → node on this Mac | `/ip4/10.0.2.2/tcp/4002/ws/p2p/<peerId>` (Android debug) |
+
+Android **release** builds disable cleartext traffic for every host, so plain
+`ws://` fails there even on the LAN. iOS allows `ws://` to local addresses
+(`NSAllowsLocalNetworking`) but not to public hostnames. The address must end in
+`/p2p/<peerId>`.
+
+For a log capture of a pairing attempt, uncomment the DEBUG line in
+`apps/mobile/src/debug-bootstrap.js`, rebuild, and watch
+`adb logcat -v time | grep ReactNativeJS`. The app logs one summary line per attempt:
+`[CadreService] [pairing] node=… authorized=true delivered=… reason=… controlConnections=…`.
 
 The phone dials the drone, (re)publishes the health strand, and the drone
 (member, `strandFilter: all`) discovers and replicates it.
@@ -145,9 +155,11 @@ node has been told to trust this device's owner key.
 ## Troubleshooting
 
 - **"Address must end in /p2p/<peerId>"** — append `/p2p/<drone-peer-id>`.
-- **Phone connects but nothing replicates** — the drone doesn't trust the phone
-  (owner key not in `CADRE_OWNER_KEYS`) or wasn't enrolled (no `--seed`), or the
-  Party IDs differ. All three must line up.
+- **Phone connects but nothing replicates**: check the pairing result. If the seed wasn't
+  delivered, the node isn't in the cadre yet (apply the shown seed). Also check the node was
+  started with `--pin-owner-key <phone key>` (not `--owner`) and that Party IDs match. Confirm
+  by reading rows back **on the node**: an unresolvable-cohort write still reports success
+  (optimystic#19).
 - **Can't dial from an Android emulator** — use `adb reverse` (above); the
   emulator can't reach the host's LAN IP directly.
 - **iOS build** — after this upgrade added `react-native-webrtc`, run

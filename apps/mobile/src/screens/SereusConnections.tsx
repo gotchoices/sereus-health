@@ -64,6 +64,17 @@ export default function SereusConnections(props: { onBack: () => void }) {
     };
   }, [t, reload]);
 
+  // Live node status: refresh the list whenever a control-network peer
+  // connects or disconnects, so a pairing that drops is visible, not silent.
+  // Subscribes once the node is running (after the first load).
+  useEffect(() => {
+    if (loading) return;
+    const unsubscribe = cadreService.onControlConnectionChange(() => {
+      reload().catch(() => {});
+    });
+    return unsubscribe;
+  }, [loading, reload]);
+
   /** Run a cadre mutation with a busy spinner + honest error surfacing. */
   const runAction = useCallback(
     async (fn: () => Promise<void>) => {
@@ -120,15 +131,19 @@ export default function SereusConnections(props: { onBack: () => void }) {
       const res = await cadreService.connectToNode(addr);
       setNodeModal(false);
       await reload();
+      const node = formatPeerId(res.peerId);
       if (res.delivered) {
-        Alert.alert(t('sereus.connected'), t('sereus.connectedBody'));
+        Alert.alert(t('sereus.connected'), t('sereus.connectedBody', { node }));
       } else {
         // The node IS authorized at this point — it just didn't take the seed
-        // over the wire (not listening for seeds).  Hand the seed over so it
-        // can be applied out of band; without it the node can't join.
+        // over the wire.  Say WHY, and hand the seed over so it can be applied
+        // out of band; without it the node can't join.
         setSecret({
           title: t('sereus.seedTitle'),
-          body: t('sereus.seedManualBody'),
+          body: t('sereus.seedManualBody', {
+            node,
+            reason: res.reason ?? t('sereus.seedReasonUnknown'),
+          }),
           value: res.encodedSeed,
         });
       }
@@ -136,7 +151,7 @@ export default function SereusConnections(props: { onBack: () => void }) {
   };
 
   // Show this device's owner PUBLIC key so the user can configure the Linux node
-  // to trust it (cadre-cli --owner / CADRE_OWNER_KEYS).
+  // to trust it (cadre start --pin-owner-key / CADRE_OWNER_KEYS).
   const handleShowOwnerKey = () => {
     void runAction(async () => {
       await cadreService.ensureStarted();

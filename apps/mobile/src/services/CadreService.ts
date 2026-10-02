@@ -6,7 +6,7 @@
  * bootstrap multiaddr (see `connectToNode`) lets the strand replicate to a
  * Linux cadre node (cadre-cli drone or cadre-host).
  *
- * Stack: cadre-core 1.8 / optimystic 1.8 / quereus 4.20 / p2p-fret 1.0, with the
+ * Stack: cadre-core 1.9 / optimystic 1.8.1 / quereus 4.20 / p2p-fret 1.0, with the
  * `@serfab/cadre-rn` kit for polyfills, Metro settings and native Noise crypto.
  *
  * Shape follows the RN reference app (`reference-app-rn/src/phone-node-config.ts`)
@@ -16,8 +16,9 @@
  *   - Storage: the provider receives cadre-core's scope key (`control-<hex>` for
  *     the control network, the strand id for a strand) and uses it verbatim.
  *   - Durable node-local stores for trustedOwners, bootstrapPeers,
- *     enrolledMachines, strandPeers and joinedStrands.  cadre-core's in-memory
- *     defaults silently forget across restarts (sereus#18).
+ *     enrolledMachines and joinedStrands.  cadre-core's in-memory defaults
+ *     silently forget across restarts.  (strandPeers was retired in 1.9 in favour
+ *     of FRET address hints.)
  *   - network: ws + circuit-relay + webRTC transports, native `noiseCrypto`, and a
  *     permissive dial gater so LAN (`ws://192.168…`) nodes can be dialed.
  *   - Adding a node goes through `addDrone()`, which authorizes as well as seeds.
@@ -39,7 +40,6 @@ import {
   PersistentTrustedOwnerStore,
   PersistentBootstrapPeerStore,
   PersistentEnrolledMachineStore,
-  PersistentStrandPeerBookStore,
   KeyStoreJoinedStrandStore,
   type CadreNodeConfig,
   type CadreNodeEvents,
@@ -349,9 +349,8 @@ class CadreServiceImpl {
       //   bootstrapPeers   cold-start dial hints retained from applied seeds
       //   enrolledMachines machines this owner enrolled (addDrone) — so a
       //                    restarted phone keeps dialing the drones it added
-      //   strandPeers      where each strand's peers were last seen (sereus 1.7,
-      //                    sereus#18: "either store left in memory reproduces the
-      //                    old behaviour" — peers never re-mesh after a restart)
+      //   (strandPeers was retired in cadre-core 1.9: strand peer addresses now
+      //    come from FRET address hints, which need nothing from the app)
       //   joinedStrands    strands joined from ANOTHER party.  A `privateKey`
       //                    node has no keyStore, so the store is injected here.
       const nodeLocalDb = this.getOrOpenDb(NODE_LOCAL_STRAND_ID);
@@ -361,7 +360,6 @@ class CadreServiceImpl {
       const trustedOwnerStore = await PersistentTrustedOwnerStore.open(slot(TRUSTED_OWNERS_KV), partyId);
       const bootstrapPeerStore = await PersistentBootstrapPeerStore.open(slot(BOOTSTRAP_PEERS_KV), partyId);
       const enrolledMachineStore = await PersistentEnrolledMachineStore.open(slot('enrolled-machines'), partyId);
-      const strandPeerStore = await PersistentStrandPeerBookStore.open(slot('strand-peers'), partyId);
       const joinedStrandStore = new KeyStoreJoinedStrandStore(new LevelDBKeyStore(nodeLocalKv), partyId);
 
       // Bootstrap multiaddrs the user has added (Linux cadre nodes).  Empty on a
@@ -426,7 +424,6 @@ class CadreServiceImpl {
         trustedOwners: { store: trustedOwnerStore },
         bootstrapPeers: { store: bootstrapPeerStore },
         enrolledMachines: { store: enrolledMachineStore },
-        strandPeers: { store: strandPeerStore },
         joinedStrands: { store: joinedStrandStore },
       };
 
@@ -696,12 +693,17 @@ class CadreServiceImpl {
         'reconcileControlCohort',
       );
     } catch (err) {
-      logger.debug('cohort reconcile deferred:', err instanceof Error ? err.message : err);
+      logger.warn('cohort reconcile deferred:', err instanceof Error ? err.message : err);
     }
 
     // Make sure the strand is discoverable by the node we just added.
     await this.republishStrand();
 
+    logger.info(
+      `[pairing] node=${dronePeerId} authorized=true delivered=${delivered}` +
+        (reason ? ` reason=${reason}` : '') +
+        ` controlConnections=${this.node.getControlConnectionCount()}`,
+    );
     return { peerId: dronePeerId, delivered, encodedSeed, reason };
   }
 
@@ -871,6 +873,33 @@ class CadreServiceImpl {
   /** Return the CadreNode (for advanced use, e.g., enrollment). */
   get cadreNode(): CadreNode | null {
     return this.node;
+  }
+
+  /**
+   * Peer IDs this node currently holds a live CONTROL-network connection to —
+   * i.e. which cadre nodes (drones) are actually connected right now.  cadre-core
+   * 1.9 emits no control-connection events, so this reads libp2p directly.
+   */
+  getConnectedControlPeerIds(): Set<string> {
+    const libp2p = this.node?.getControlNode();
+    if (!libp2p) return new Set();
+    return new Set(libp2p.getConnections().map((c) => c.remotePeer.toString()));
+  }
+
+  /**
+   * Subscribe to control-network peer connect/disconnect.  Returns an
+   * unsubscribe function.  No-op (returns a no-op) before the node is running.
+   */
+  onControlConnectionChange(handler: () => void): () => void {
+    const libp2p = this.node?.getControlNode();
+    if (!libp2p) return () => {};
+    const listener = () => handler();
+    libp2p.addEventListener('peer:connect', listener);
+    libp2p.addEventListener('peer:disconnect', listener);
+    return () => {
+      libp2p.removeEventListener('peer:connect', listener);
+      libp2p.removeEventListener('peer:disconnect', listener);
+    };
   }
 
   /** Return multiaddrs of this node (empty if not started). */

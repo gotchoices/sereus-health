@@ -49,6 +49,18 @@ This checklist tracks spec review work for the **mobile** target. Treat it as th
 
 ## Sereus / Optimystic Integration
 
+### Drone-pairing readiness — cadre-core 1.9 (2026-10-01)
+
+Per `cadre/feedback/apps/health-ready-for-drone-pairing.md`: `@serfab/cadre-core`/`cadre-rn` 1.9.0,
+`@optimystic/*` pinned to **1.8.1** to match the verified drone (1.9.0 had been published since).
+1.9 retired the strand peer book (FRET address hints replace it), so `strandPeers` was removed.
+Owner-key hint now says `--pin-owner-key` + `--listen-for-seeds` (not `--owner`). The add-node
+hint documents `/dns4/…/wss` (required by release/iOS builds) vs `/ip4/…/ws` (Android debug only).
+Pairing shows the delivery reason and copyable seed on failure, and node rows show live
+**Connected/Not connected** from the control node's libp2p `peer:connect`/`peer:disconnect`.
+`connectToNode` logs a one-line `[pairing]` summary. Open item: cold founding measured slower on
+1.9 (11–16 s vs 4.3 s on 1.8) on a freshly booted emulator. Not yet attributed.
+
 ### Stack upgrade — sereus 1.8 / optimystic 1.8 (2026-09-30)
 
 `@serfab/cadre-core` 1.8.0, `@optimystic/*` 1.8.0, `@quereus/*` 4.20.0, `p2p-fret` 1.0.0, plus the new
