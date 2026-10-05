@@ -64,30 +64,41 @@ MODE    = os.environ['MODE']
 pj_path = os.path.join(APP_DIR, 'package.json')
 
 # ser-local package table — the single source of truth for the toggle.
-#   name : (portal_path_relative_to_app, npm_range, in_deps, in_res)
+#   name : (portal_path_relative_to_app, npm_range, npm_res, in_deps, in_res)
 # Ordered to match the current resolutions layout so a `local` switch produces
 # a minimal diff.  `in_deps` packages appear in `dependencies`; `in_res`
 # packages appear in `resolutions` when in local mode.
 #
-# NOTE: pinned snapshot for the 0.12 wave (2026-09-02).  `strand-proto` was
-# removed upstream (formation is native in cadre-core).  `quereus-plugin-crypto`
+# `npm_res` is the spec written to `resolutions` in npm mode; None means "same as
+# npm_range".  The @optimystic/* packages carry an EXACT pin there on purpose --
+# many stack packages declare ^1.x on them and an exact resolution guarantees one
+# version even if a newer 1.x publishes mid-install.  Keeping this column means
+# `use-stack.sh npm` reproduces the committed package.json byte for byte, so a
+# local -> npm round-trip is a no-op instead of a surprise diff.
+#
+# NOTE: pinned snapshot for the 1.12 wave (2026-10-05): cadre 1.12 / optimystic
+# 1.10.1 / quereus 4.20.1 / p2p-fret 1.0.1.  cadre-core 1.12 REQUIRES optimystic
+# ^1.10.1, so those two move together -- do not bump one alone.  `strand-proto`
+# was removed upstream (formation is native in cadre-core).  `quereus-plugin-crypto`
 # and `quereus-plugin-optimystic` are no longer direct deps (cadre-core composes
 # them via @serfab/quereus-plugin-sereus) but stay in `resolutions` so one
-# version wins tree-wide.
+# version wins tree-wide -- as does `quereus-plugin-sereus` itself.
 PACKAGES = collections.OrderedDict([
-    ('@optimystic/db-core',                  ('../../../optimystic/packages/db-core',                  '^0.27.0', True,  True)),
-    ('@optimystic/db-p2p',                   ('../../../optimystic/packages/db-p2p',                   '^0.27.0', True,  True)),
-    ('@optimystic/db-p2p-storage-rn',        ('../../../optimystic/packages/db-p2p-storage-rn',        '^0.27.0', True,  True)),
-    ('@optimystic/quereus-plugin-crypto',    ('../../../optimystic/packages/quereus-plugin-crypto',    '^0.27.0', False, True)),
-    ('@optimystic/quereus-plugin-optimystic',('../../../optimystic/packages/quereus-plugin-optimystic','^0.27.0', False, True)),
-    ('@quereus/quereus',                     ('../../../quereus/packages/quereus',                     '^4.18.0', True,  True)),
-    ('@quereus/isolation',                   ('../../../quereus/packages/quereus-isolation',           '^4.18.0', True,  True)),
-    ('@quereus/store',                       ('../../../quereus/packages/quereus-store',               '^4.18.0', True,  True)),
-    ('@quereus/plugin-leveldb',              ('../../../quereus/packages/quereus-plugin-leveldb',      '^4.18.0', False, True)),
-    ('p2p-fret',                             ('../../../fret/packages/fret',                            '^1.0.0-beta.4', True, True)),
+    ('@optimystic/db-core',                  ('../../../optimystic/packages/db-core',                  '^1.10.1', '1.10.1', True,  True)),
+    ('@optimystic/db-p2p',                   ('../../../optimystic/packages/db-p2p',                   '^1.10.1', '1.10.1', True,  True)),
+    ('@optimystic/db-p2p-storage-rn',        ('../../../optimystic/packages/db-p2p-storage-rn',        '^1.10.1', '1.10.1', True,  True)),
+    ('@optimystic/quereus-plugin-crypto',    ('../../../optimystic/packages/quereus-plugin-crypto',    '^1.10.1', '1.10.1', False, True)),
+    ('@optimystic/quereus-plugin-optimystic',('../../../optimystic/packages/quereus-plugin-optimystic','^1.10.1', '1.10.1', False, True)),
+    ('@serfab/quereus-plugin-sereus',        ('../../../sereus/packages/quereus-plugin-sereus',        '^1.12.0', None,     False, True)),
+    ('@quereus/quereus',                     ('../../../quereus/packages/quereus',                     '^4.20.1', None,     True,  True)),
+    ('@quereus/isolation',                   ('../../../quereus/packages/quereus-isolation',           '^4.20.1', None,     True,  True)),
+    ('@quereus/store',                       ('../../../quereus/packages/quereus-store',               '^4.20.1', None,     True,  True)),
+    ('@quereus/plugin-leveldb',              ('../../../quereus/packages/quereus-plugin-leveldb',      '^4.20.1', None,     False, True)),
+    ('p2p-fret',                             ('../../../fret/packages/fret',                           '^1.0.1',  None,     True,  True)),
     # dep-only ser packages (never in resolutions)
-    ('@quereus/plugin-react-native-leveldb', ('../../../quereus/packages/quereus-plugin-react-native-leveldb', '^4.18.0', True, False)),
-    ('@serfab/cadre-core',                   ('../../../sereus/packages/cadre-core',                   '^0.12.0', True,  False)),
+    ('@quereus/plugin-react-native-leveldb', ('../../../quereus/packages/quereus-plugin-react-native-leveldb', '^4.20.1', None, True, False)),
+    ('@serfab/cadre-core',                   ('../../../sereus/packages/cadre-core',                   '^1.12.0', None,     True,  False)),
+    ('@serfab/cadre-rn',                     ('../../../sereus/packages/cadre-rn',                     '^1.12.0', None,     True,  False)),
 ])
 NAMES = set(PACKAGES)
 SENTINEL = '@serfab/cadre-core'  # its spec tells us the current mode
@@ -110,7 +121,7 @@ if MODE == 'status':
     print()
     print(f"  {'package':<42s} {'dependencies':<34s} resolutions")
     print(f"  {'-'*42} {'-'*34} {'-'*20}")
-    for name, (path, rng, in_deps, in_res) in PACKAGES.items():
+    for name, (path, rng, rng_res, in_deps, in_res) in PACKAGES.items():
         d = deps.get(name, '—') if in_deps else '(transitive)'
         r = res.get(name, '—')
         d = d if len(str(d)) <= 33 else str(d)[:30] + '...'
@@ -124,7 +135,7 @@ if MODE == cur:
     sys.exit(0)
 
 # --- rewrite dependencies (in place; keys already present) ---
-for name, (path, rng, in_deps, in_res) in PACKAGES.items():
+for name, (path, rng, rng_res, in_deps, in_res) in PACKAGES.items():
     if not in_deps:
         continue
     if name not in deps:
@@ -140,9 +151,9 @@ for name, (path, rng, in_deps, in_res) in PACKAGES.items():
 # version.  This is the npm equivalent of portal ignoring declared ranges.
 preserved = collections.OrderedDict((k, v) for k, v in res.items() if k not in NAMES)
 ser_block = collections.OrderedDict()
-for name, (path, rng, in_deps, in_res) in PACKAGES.items():
+for name, (path, rng, rng_res, in_deps, in_res) in PACKAGES.items():
     if in_res:
-        ser_block[name] = ('portal:' + path) if MODE == 'local' else rng
+        ser_block[name] = ('portal:' + path) if MODE == 'local' else (rng_res or rng)
 
 new_res = collections.OrderedDict()
 for k, v in ser_block.items():
@@ -187,10 +198,9 @@ if echo "$REPORT" | grep -q '^__CHANGED__'; then
       echo "Next: verify wiring with  bash stack-check"
       echo "      (run ../../../pull-stack.sh first if it reports stale builds)"
     else
-      echo "Next (npm mode): latest published stack (quereus 4.3.0, optimystic 0.14.x,"
-      echo "      cadre 0.8.x).  quereus 4.x is required — optimystic 0.14 calls a"
-      echo "      quereus 4.0+ API (Database.notifyExternalChange).  For iOS also run:"
-      echo "      cd ios && pod install"
+      echo "Next (npm mode): the 1.12 wave — cadre 1.12 / optimystic 1.10.1 /"
+      echo "      quereus 4.20.1 / p2p-fret 1.0.1.  cadre-core 1.12 requires"
+      echo "      optimystic ^1.10.1.  For iOS also run:  cd ios && pod install"
     fi
     exit $IRC
   else
@@ -200,8 +210,8 @@ if echo "$REPORT" | grep -q '^__CHANGED__'; then
       echo "  2. bash stack-check      # confirm portal wiring + built targets"
     else
       echo "  2. cd ios && pod install # (iOS native deps)"
-      echo "     Note: latest stack — quereus 4.3.0 (optimystic 0.14 requires the"
-      echo "     quereus 4.0+ notifyExternalChange API)."
+      echo "     Note: the 1.12 wave — cadre 1.12 requires optimystic ^1.10.1,"
+      echo "     so those two always move together."
     fi
   fi
 fi

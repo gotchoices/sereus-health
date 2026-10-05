@@ -2,7 +2,7 @@
 
 This describes how to connect the Health app (a phone node) to an always-on
 **Linux cadre node** so health data replicates off-device, using the cadre-core
-**0.12** stack. Two ways to run the Linux node are covered:
+**1.12** stack. Two ways to run the Linux node are covered:
 
 - **cadre-cli drone** — the simplest test rig (recommended to start).
 - **cadre-host** — the production-style management plane (grants/invites).
@@ -19,10 +19,29 @@ replicates the strand.
 
 ---
 
-## Stack version notes (sereus 1.8 / 1.9)
+## Stack version notes (sereus 1.12)
 
-- Run the **same sereus release on every machine** of the party. Health is on cadre-core 1.9.0 with
-  `@optimystic/*` pinned to **1.8.1**, matching the verified drone.
+- Run the **same sereus release on every machine** of the party. Health is now on
+  `@serfab/cadre-core`/`cadre-rn` **1.12.0**, `@optimystic/*` **1.10.1**, `@quereus/*` **4.20.1**,
+  `p2p-fret` **1.0.1**. cadre-core 1.12 *requires* optimystic ^1.10.1, so the two always move
+  together. **Upgrade the Linux node to the same 1.12 wave before pairing** — health no longer
+  matches a drone left on the 1.9 / optimystic-1.8.1 pin it was previously held back to.
+- **No control-store wipe is announced for 1.9 → 1.12.** The 1.10, 1.11 and 1.12 release notes
+  record no control-store or substrate change (unlike 1.8, below). Treat that as un-verified until
+  first pairing succeeds: if the node refuses to open its store, fall back to the 1.8 procedure.
+- 1.10 installs the **strand-formation responder on every node at `start()`**, validating
+  invitation tokens against the party's own `FormationInvite`/`FormationUsage` rows. Health no
+  longer wires a recorder itself (see `CadreService.initialize`), and an always-on Linux node can
+  now answer a join for a phone that is offline.
+- 1.10 also adds **`requestJoin`**, a join that keeps retrying across restarts until it lands, the
+  invitation is spent, or 30 days pass — useful when the inviting phone is intermittently reachable.
+- 1.11 **removed TURN**: the `'webrtc-turn'` transport, `ConnectionLike.turnRelayed`,
+  `classifyConnectionPath` and `peerKeySigner` are gone, and there is no `/ice-servers.json`
+  manifest. A relay now answers STUN on UDP **3478** — open that port when you redeploy the relay,
+  and keep the relay **uncapped** (`RELAY_APPLY_DEFAULT_LIMIT` unset/`false`), because Optimystic's
+  database protocols do not run over connections a capped relay marks limited.
+- 1.11 wants **`PUBLIC_HOST`** set to the name clients dial the relay at; without it (or
+  `ANNOUNCE_ADDRS`) the relay advertises loopback/Docker-bridge addresses and logs a warning.
 - **1.8 cannot open an older control store.** On a Linux node, delete the
   `control-<party id base64url>` folder inside `storage.path` before starting 1.8 (for cadre-host:
   `<workdir>/storage`); on the phone, clear the app's storage. Then re-form the party.

@@ -6,7 +6,7 @@
  * bootstrap multiaddr (see `connectToNode`) lets the strand replicate to a
  * Linux cadre node (cadre-cli drone or cadre-host).
  *
- * Stack: cadre-core 1.9 / optimystic 1.8.1 / quereus 4.20 / p2p-fret 1.0, with the
+ * Stack: cadre-core 1.12 / optimystic 1.10.1 / quereus 4.20.1 / p2p-fret 1.0.1, with the
  * `@serfab/cadre-rn` kit for polyfills, Metro settings and native Noise crypto.
  *
  * Shape follows the RN reference app (`reference-app-rn/src/phone-node-config.ts`)
@@ -36,7 +36,6 @@
 
 import {
   CadreNode,
-  ControlFormationUsageRecorder,
   PersistentTrustedOwnerStore,
   PersistentBootstrapPeerStore,
   PersistentEnrolledMachineStore,
@@ -441,12 +440,13 @@ class CadreServiceImpl {
       // (addStrand below) — only control-DB publish + seed/invite flows wait.
       await this.runOwnerGenesisSafe();
 
-      // Formation responder: validates guest-invitation tokens on redemption.
-      try {
-        this.initializeFormationResponder();
-      } catch (err) {
-        logger.warn('formation responder init failed:', err);
-      }
+      // Formation responder: installed by `start()` itself since cadre-core 1.10,
+      // backed by the party's own FormationInvite / FormationUsage rows — so
+      // guest-invitation tokens are validated on redemption without us wiring a
+      // recorder.  The old post-start `initializeStrandSolicitation({
+      // formationUsageRecorder })` call was dropped per the 1.10 release notes;
+      // that entry point is now only for customizing the responder (an approver,
+      // a provisioner, custom deadlines).
 
       // Create (or re-open) the health strand.
       const strandId = await this.getOrCreateValue(STRAND_ID_KEY);
@@ -552,21 +552,6 @@ class CadreServiceImpl {
         err instanceof Error ? err.message : err,
       );
     }
-  }
-
-  /**
-   * Install the strand-formation responder, backed by the control DB's
-   * FormationInvite / FormationUsage tables, so guest-invitation tokens are
-   * actually validated on redemption. Synchronous (no control-DB read).
-   */
-  private initializeFormationResponder(): void {
-    if (!this.node) throw new Error('CadreNode not running');
-    const controlDb = this.node.getControlDatabase();
-    if (!controlDb) throw new Error('Control database not available');
-    this.node.initializeStrandSolicitation({
-      formationUsageRecorder: new ControlFormationUsageRecorder(controlDb),
-    });
-    logger.info('✓ formation responder installed (invitation tokens enforced)');
   }
 
   /**

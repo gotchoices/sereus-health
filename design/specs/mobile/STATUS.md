@@ -49,6 +49,32 @@ This checklist tracks spec review work for the **mobile** target. Treat it as th
 
 ## Sereus / Optimystic Integration
 
+### Stack upgrade — sereus 1.12 / optimystic 1.10.1 (2026-10-05)
+
+`@serfab/cadre-core` + `@serfab/cadre-rn` **1.12.0**, `@optimystic/*` **1.10.1**, `@quereus/*`
+**4.20.1**, `p2p-fret` **1.0.1**, with `@serfab/quereus-plugin-sereus` **1.12.0** newly pinned in
+`resolutions` (cadre-core composes it; pinned so one version wins tree-wide). This releases the
+deliberate `@optimystic/*` **1.8.1** pin from the 1.9 drone-pairing wave — cadre-core 1.12 requires
+optimystic ^1.10.1, so the pin and the cadre version could not move independently. Typecheck is
+clean and no API health calls was removed; `use-stack.sh`'s npm table was bumped to match (it had
+drifted back to the 0.12 wave and would have silently downgraded the app on a `local` → `npm`
+round-trip).
+
+- **Formation responder is now automatic.** cadre-core 1.10 installs it in `start()`, backed by the
+  party's `FormationInvite`/`FormationUsage` rows, so the post-start
+  `initializeStrandSolicitation({ formationUsageRecorder: new ControlFormationUsageRecorder(…) })`
+  call was dropped from `CadreService` per the 1.10 notes. That entry point is now only for
+  customizing the responder. An always-on node can also answer a join while the inviter is offline.
+- **OPEN — the Linux node must be upgraded to 1.12 before pairing.** Health was previously held at
+  optimystic 1.8.1 specifically to match the verified drone; that match is now broken by design.
+  See `docs/cadre-node-testing.md` → "Stack version notes".
+- **Not yet adopted** (available, no code change made): `strandReactivity` (1.12) for cross-machine
+  change notifications, the four `@serfab/cadre-rn` phone-node subpaths (`key-store`, `node-local`,
+  `phone-node`, `lifecycle`) that would replace much of `CadreService`'s hand-rolled boot, and
+  `resolveStunServers` (1.11) in place of the empty `iceServers: []` rtcConfiguration.
+- Carried forward from 1.9: cold founding measured slower on 1.9 (11–16 s vs 4.3 s on 1.8); not
+  re-measured on 1.12.
+
 ### Drone-pairing readiness — cadre-core 1.9 (2026-10-01)
 
 Per `cadre/feedback/apps/health-ready-for-drone-pairing.md`: `@serfab/cadre-core`/`cadre-rn` 1.9.0,
