@@ -26,9 +26,27 @@ replicates the strand.
   `p2p-fret` **1.0.1**. cadre-core 1.12 *requires* optimystic ^1.10.1, so the two always move
   together. **Upgrade the Linux node to the same 1.12 wave before pairing** — health no longer
   matches a drone left on the 1.9 / optimystic-1.8.1 pin it was previously held back to.
-- **No control-store wipe is announced for 1.9 → 1.12.** The 1.10, 1.11 and 1.12 release notes
-  record no control-store or substrate change (unlike 1.8, below). Treat that as un-verified until
-  first pairing succeeds: if the node refuses to open its store, fall back to the 1.8 procedure.
+- **A control-store wipe IS required for 1.9 → 1.12.** Verified on an emulator (2026-10-05): a
+  store written by the 1.9 / optimystic-1.8.1 build fails to open on 1.12 with
+
+  ```
+  doStart failed: Failed to execute DDL: ALTER TABLE CadreControl.Revocation DROP CONSTRAINT RowIsGone
+  Error: Module for table 'Revocation' does not support ALTER TABLE DROP CONSTRAINT
+  ```
+
+  cadre-core 1.12 tries to migrate the control schema in place and the table module cannot. The
+  release notes announce no such change, so do not rely on them here. On the phone: **Settings →
+  Backup & Restore → export**, then **Clear local data** (or `adb shell pm clear org.sereus.health`),
+  then re-import after the new build is installed. On a Linux node, expect the same and delete the
+  `control-<party id base64url>` folder inside `storage.path` before starting 1.12 — the failing
+  table is `CadreControl.Revocation`, which every machine of the party holds, so a node carrying a
+  pre-1.12 store should fail the same way. That half is inferred, not yet observed.
+- **A phone wipe changes the phone's identity.** Health keeps its node key in LevelDB (not the
+  Keychain) and loads it through `loadOrCreateRNPeerKey`, so clearing app data mints a **new peer id
+  and a new owner key**. Any owner key a Linux node was told to trust before the wipe is stale: take
+  the key again from **My Nodes (+) → Show this device's owner key** and re-trust it, and re-form the
+  party. (Adopting the kit's secure-store key store would make the identity survive a wipe on iOS;
+  see STATUS.md.)
 - 1.10 installs the **strand-formation responder on every node at `start()`**, validating
   invitation tokens against the party's own `FormationInvite`/`FormationUsage` rows. Health no
   longer wires a recorder itself (see `CadreService.initialize`), and an always-on Linux node can

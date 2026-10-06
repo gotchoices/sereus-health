@@ -68,6 +68,25 @@ round-trip).
 - **OPEN — the Linux node must be upgraded to 1.12 before pairing.** Health was previously held at
   optimystic 1.8.1 specifically to match the verified drone; that match is now broken by design.
   See `docs/cadre-node-testing.md` → "Stack version notes".
+- **A control-store wipe is required.** Observed on the emulator: a 1.9-era store fails to open on
+  1.12 (`ALTER TABLE CadreControl.Revocation DROP CONSTRAINT RowIsGone` — the table module does not
+  support it), and `doStart` then fails on every launch. `pm clear` and a re-found fixed it. The
+  1.10–1.12 release notes announce no such migration, so this is ours to remember.
+- Verified on `emulator-5562` after the wipe: node starts, owner genesis inserts the founding key,
+  `publishStrand` and the strand attach both succeed, DB ready. Cold founding ~64 s **in a debug
+  build on a loaded, memory-tight emulator** — not comparable to the 4.3 s / 11–16 s release-build
+  figures below, and not a perf measurement.
+- **Native SHA-256/512 + Ed25519 adopted** (`src/polyfills/native-crypto.js`, imported after the
+  kit's polyfills). The kit's `crypto.subtle.digest` is pure-JS `@noble/hashes`; chat profiled 47%
+  of all JS time in it, the JS thread blocked up to 43 s, 169 ms per Ed25519 verify on a Galaxy S7
+  vs 0.72 ms native. Confirmed active on device: the boot audit reports
+  `crypto.subtle.importKey native` (only this file installs it) and the file's own
+  vector-check fallback warning never fired. Delete this file when the kit's
+  `feat-rn-kit-native-digest` lands.
+- **Kit strand helpers adopted**: `attachStrandWhenWritable` (so a first sync that outlasts its
+  budget is no longer reported as a failed attach) and `retryAfterRestart` on both `publishStrand`
+  calls (transient "Failed to get super-majority" only). Neither error path was exercised by the
+  solo-phone boot above — they need a real second machine.
 - **Not yet adopted** (available, no code change made): `strandReactivity` (1.12) for cross-machine
   change notifications, the four `@serfab/cadre-rn` phone-node subpaths (`key-store`, `node-local`,
   `phone-node`, `lifecycle`) that would replace much of `CadreService`'s hand-rolled boot, and

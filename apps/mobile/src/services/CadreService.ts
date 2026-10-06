@@ -16,7 +16,7 @@
  *   - Storage: the provider receives cadre-core's scope key (`control-<hex>` for
  *     the control network, the strand id for a strand) and uses it verbatim.
  *   - Durable node-local stores for trustedOwners, bootstrapPeers,
- *     enrolledMachines and joinedStrands.  cadre-core's in-memory defaults
+ *     enrolledMachines, strandNetworkState and joinedStrands.  cadre-core's in-memory defaults
  *     silently forget across restarts.  (strandPeers was retired in 1.9 in favour
  *     of FRET address hints.)
  *   - network: ws + circuit-relay + webRTC transports, native `noiseCrypto`, and a
@@ -39,6 +39,7 @@ import {
   PersistentTrustedOwnerStore,
   PersistentBootstrapPeerStore,
   PersistentEnrolledMachineStore,
+  PersistentStrandNetworkStateStore,
   KeyStoreJoinedStrandStore,
   type CadreNodeConfig,
   type CadreNodeEvents,
@@ -49,6 +50,10 @@ import {
   type KeyStore,
 } from '@serfab/cadre-core';
 import { buildNoiseCrypto, DEFAULT_NOISE_CRYPTO_MODE } from '@serfab/cadre-rn/noise-crypto';
+// Strand bring-up helpers from the kit, so this app behaves like the RN reference
+// app on the two failures that only show up against a real, remote cadre node.
+// (The rest of `/phone-node` — `createPhoneNode` — is not adopted yet; see STATUS.md.)
+import { attachStrandWhenWritable, retryAfterRestart } from '@serfab/cadre-rn/phone-node';
 import {
   AUTHORITY_GENESIS_TIMEOUT_MS,
   CONTROL_OP_TIMEOUT_MS,
@@ -359,6 +364,12 @@ class CadreServiceImpl {
       const trustedOwnerStore = await PersistentTrustedOwnerStore.open(slot(TRUSTED_OWNERS_KV), partyId);
       const bootstrapPeerStore = await PersistentBootstrapPeerStore.open(slot(BOOTSTRAP_PEERS_KV), partyId);
       const enrolledMachineStore = await PersistentEnrolledMachineStore.open(slot('enrolled-machines'), partyId);
+      // Per strand, the FRET routing table its strand node saved, re-imported after
+      // a relaunch.  Without it every restart re-discovers the party's machines from
+      // scratch, which is the slow path back to a cadre node.  The key this lands on
+      // (`strand-network.<partyId>`) is the one `@serfab/cadre-rn/node-local` uses,
+      // so adopting `createPhoneNode` later reads the same record.
+      const strandNetworkStateStore = await PersistentStrandNetworkStateStore.open(slot('strand-network'), partyId);
       const joinedStrandStore = new KeyStoreJoinedStrandStore(new LevelDBKeyStore(nodeLocalKv), partyId);
 
       // Bootstrap multiaddrs the user has added (Linux cadre nodes).  Empty on a
@@ -423,6 +434,7 @@ class CadreServiceImpl {
         trustedOwners: { store: trustedOwnerStore },
         bootstrapPeers: { store: bootstrapPeerStore },
         enrolledMachines: { store: enrolledMachineStore },
+        strandNetworkState: { store: strandNetworkStateStore },
         joinedStrands: { store: joinedStrandStore },
       };
 
@@ -459,10 +471,16 @@ class CadreServiceImpl {
       // strand's rows are already in local storage and sync fills the rest.
       if (!founded && this._authorityPublicKey) {
         try {
-          await withTimeout(
-            this.node.publishStrand(strandId, 'o'),
-            CONTROL_OP_TIMEOUT_MS,
-            'publishStrand',
+          // Each attempt is time-boxed; `retryAfterRestart` retries ONLY the
+          // transient "Failed to get super-majority" that the first control writes
+          // after a lone restart hit, before the cohort has reconnected (sereus 1.9
+          // notes).  A timeout is not that error, so it is not retried.
+          await retryAfterRestart(() =>
+            withTimeout(
+              this.node!.publishStrand(strandId, 'o'),
+              CONTROL_OP_TIMEOUT_MS,
+              'publishStrand',
+            ),
           );
           logger.info('Published health strand to control DB:', strandId);
         } catch (err) {
@@ -473,8 +491,14 @@ class CadreServiceImpl {
         }
       }
 
+      // `addStrand` rejects with StrandAwaitingFirstSyncError when the first sync
+      // has not finished yet, but leaves the strand launched and syncing — the
+      // timeout is a progress report, not an outcome.  The kit's helper then waits
+      // for the strand to become writable (measured: a first sync completing at
+      // ~150 s against a 120 s budget on a 1.8 s round-trip link), so a slow first
+      // replication from a remote cadre node is no longer reported as a failure.
       logger.info(`Adding health strand (founder=${!founded}):`, strandId);
-      this.healthStrand = await this.node.addStrand({
+      this.healthStrand = await attachStrandWhenWritable(this.node, {
         strandRow: {
           Id: strandId,
           MemberPrivateKey: null,
@@ -710,10 +734,14 @@ class CadreServiceImpl {
       if (!this._authorityPublicKey) return;
     }
     try {
-      await withTimeout(
-        this.node.publishStrand(this._strandId, 'o'),
-        CONTROL_OP_TIMEOUT_MS,
-        'publishStrand',
+      // Same transient-only retry as the founding publish: this runs right after a
+      // node is added, which is exactly when the control cohort is still settling.
+      await retryAfterRestart(() =>
+        withTimeout(
+          this.node!.publishStrand(this._strandId!, 'o'),
+          CONTROL_OP_TIMEOUT_MS,
+          'publishStrand',
+        ),
       );
     } catch (err) {
       logger.debug('republishStrand skipped:', err instanceof Error ? err.message : err);

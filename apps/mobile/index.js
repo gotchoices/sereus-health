@@ -20,11 +20,18 @@ import './src/debug-bootstrap';
 
 // 1. The kit's Hermes polyfills — first library import, always.
 import '@serfab/cadre-rn/polyfills';
-// 2. Health-specific: RN 0.82's native TextDecoder rejects `{ fatal: true }`.
+// 2. Native SHA-256/512 + Ed25519 (react-native-quick-crypto), replacing the
+//    kit's pure-JS `crypto.subtle.digest`.  MUST come after the kit's polyfills
+//    (quick-crypto's readable-stream reads globals they install).  Optimystic
+//    hashes every block through this, so in pure JS it dominates the JS thread —
+//    see the file header for the measurements.  Goes away when the kit's
+//    `feat-rn-kit-native-digest` lands.
+import './src/polyfills/native-crypto';
+// 3. Health-specific: RN 0.82's native TextDecoder rejects `{ fatal: true }`.
 import './src/polyfills/textdecoder-fatal';
-// 3. react-native-webrtc's registerGlobals(), for @libp2p/webrtc.
+// 4. react-native-webrtc's registerGlobals(), for @libp2p/webrtc.
 import '@serfab/cadre-rn/polyfills/webrtc';
-// 4. Dev-only audit of native/polyfilled/missing globals (logcat:
+// 5. Dev-only audit of native/polyfilled/missing globals (logcat:
 //    `[cadre-rn] polyfill audit`).  After every polyfill, before the app.
 import '@serfab/cadre-rn/boot-check';
 
