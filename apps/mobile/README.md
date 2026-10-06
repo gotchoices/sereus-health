@@ -1,5 +1,43 @@
 This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
+## Devices and ports
+
+[`env-defaults.sh`](env-defaults.sh) — sourced by every `yarn` script — carries the
+stock React Native settings (Metro 8081, `emulator-5554`), so a fresh clone just
+works. Anything specific to your bench goes in a git-ignored `.env.ports.local`
+beside it. Running several sereus apps at once needs each to have its own slot:
+
+```sh
+METRO_PORT=8082
+EMULATOR_PORT=5562
+DEVICE_SERIAL="emulator-5562"
+AVD_NAME="H_Phone_API_37.1"
+```
+
+Console ports must be even and in 5554..5682 — the odd port above is the paired
+adb port. Each project needs its own `METRO_PORT` and `EMULATOR_PORT`.
+
+Precedence, lowest to highest: the defaults, `.env.ports.local`, then one-off
+`TARGET_*` overrides on the command line (announced on stderr):
+
+```sh
+TARGET_DEVICE=6a61c968 yarn android    # install to the phone, this once
+TARGET_METRO_PORT=8090 yarn start      # Metro elsewhere, this once
+```
+
+A plain exported `DEVICE_SERIAL` or `METRO_PORT` does *not* win — a stale export
+left in a terminal is indistinguishable from an intended one.
+
+This app targets one device at a time: `ANDROID_SERIAL` is pinned to
+`DEVICE_SERIAL`, so Gradle installs there and nowhere else. Boot the emulator
+first, then Metro, then the app:
+
+```sh
+yarn emulator          # AVD_NAME on EMULATOR_PORT
+yarn start             # Metro on METRO_PORT
+yarn android           # installs to DEVICE_SERIAL
+```
+
 # Getting Started
 
 > **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
