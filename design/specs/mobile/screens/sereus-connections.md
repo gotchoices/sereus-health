@@ -93,8 +93,14 @@ sensitive (membership secrets / strand access) — share only over a trusted cha
 
 ## Remove
 
-Full removal from the cadre control DB is not yet exposed by cadre-core; removing a row
-drops it from this view only, and the UI says so.
+- **Node** (trash; not shown on This device): confirm, then `removePeer` — an owner-signed
+  delete of the node's `CadrePeer` row, which also drops it from the membership gate and
+  from cadre-core's dial targets — and remove its addresses from the app's bootstrap list.
+  With the node offline and no other member connected, the delete commits on this device
+  only (cadre-core logs it), which is enough for this device to stop treating it as a
+  member.  The node keeps its copy of the data until it is reset on its machine.
+- **Guest** (unlink): revocation is not wired yet; the row is dropped from this view only,
+  and the UI says so.
 
 ## Loading (must never hang)
 

@@ -262,9 +262,14 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
 - [x] Reusable kit in `src/cadre/` (code parsing, link inbox, scanner — candidates for cadre-rn)
 - [x] Scan (react-native-vision-camera 4.7, as chat), paste (Add Node box takes code or
       address), Android `sereus-join:` link → approval prompt → claim
-- [ ] **Blocked on device:** a 1.12 control DB fails to open on 1.14
-      (`DROP TABLE … pendingjoin` refused by `Revocation.RowIsGone`) — wipe app data to test
-- [ ] End-to-end with a node started with `CADRE_CLAIM_SECRET` (uranus, after its 1.14 upgrade)
+- [x] Emulator run (2026-10-09, debug build, after a data wipe — a 1.12 control DB does not
+      open on 1.14 and no migration is planned): Android link → approval prompt → claim
+      accepted in ~2 s → node restarted into the party, caught up from the phone and started
+      the health strand; My Nodes shows it Connected.  Test node: local cadre-cli 1.14 with
+      CADRE_CLAIM_SECRET, reached at 10.0.2.2.  (A run on a heavily loaded machine stalled
+      after the claim: phone too slow to answer the node's sync requests.)
+- [x] A code opened during first-run onboarding shows Sereus Connections over it
+- [ ] In-app scanner on a real camera; uranus end to end
 
 ### Step 4: Add private-IP drone node
 

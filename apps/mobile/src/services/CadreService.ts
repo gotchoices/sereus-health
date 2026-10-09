@@ -774,6 +774,37 @@ class CadreServiceImpl {
     }
   }
 
+  /**
+   * Remove a node from the cadre: `removePeer` signs and deletes its `CadrePeer` row
+   * (which also takes it out of the membership gate and forgets cadre-core's retained
+   * dial target), then we drop its addresses from our own bootstrap list so the next
+   * start doesn't dial it.
+   *
+   * With the node offline and no other member connected, the delete commits on this
+   * phone only (cadre-core logs it as committed while alone); that is enough to stop
+   * this phone treating it as a member.
+   */
+  async removeNode(peerId: string): Promise<void> {
+    if (peerId === this.peerId) throw new Error('This device cannot remove itself');
+    await this.ensureStarted();
+    if (!this.node) throw new Error('CadreNode not running');
+    if (!this._authorityPublicKey) {
+      await this.createAuthorityKey(); // the delete is owner-signed
+    }
+    logger.info('Removing node:', peerId);
+    await withTimeout(this.node.removePeer(peerId), CONTROL_OP_TIMEOUT_MS, 'removePeer');
+
+    const list = await this.getBootstrapNodes();
+    const kept = list.filter((a) => peerIdFromMultiaddr(a) !== peerId);
+    if (kept.length !== list.length) {
+      await AsyncStorage.setItem(BOOTSTRAP_NODES_KEY, JSON.stringify(kept));
+    }
+    logger.info(
+      `[pairing] removed node=${peerId} bootstrapAddrsDropped=${list.length - kept.length}` +
+        ` controlConnections=${this.node.getControlConnectionCount()}`,
+    );
+  }
+
   /** Remove a previously-added bootstrap node (does not disconnect a live dial). */
   async removeBootstrapNode(addr: string): Promise<void> {
     const list = (await this.getBootstrapNodes()).filter((a) => a !== addr);

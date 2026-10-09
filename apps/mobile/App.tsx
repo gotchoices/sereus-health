@@ -246,7 +246,7 @@ function AppContent() {
   // exiting the app. At a tab root, fall back to the Home tab; only exit from Home.
   useEffect(() => {
     const onBack = () => {
-      if (showOnboarding) return false;
+      if (showOnboarding && screen !== 'SereusConnections') return false;
       if (screenStack.length > 1) {
         popScreen();
         return true;
@@ -259,7 +259,7 @@ function AppContent() {
     };
     const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
     return () => sub.remove();
-  }, [screenStack.length, tab, showOnboarding]);
+  }, [screenStack.length, tab, showOnboarding, screen]);
 
   // Deep link navigation:
   // - Variant is handled globally by VariantProvider + module-level currentVariant (data adapters read getVariant()).
@@ -335,7 +335,9 @@ function AppContent() {
       </View>
     );
   }
-  if (showOnboarding) {
+  // A node code opened from outside (system camera, a link) may arrive on first run:
+  // let Sereus Connections show over onboarding; Back returns to onboarding.
+  if (showOnboarding && screen !== 'SereusConnections') {
     return (
       <GettingStarted
         onDone={() => { setShowOnboarding(false); resetToTabRoot('home'); }}

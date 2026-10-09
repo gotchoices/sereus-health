@@ -23,7 +23,8 @@ it in Health (Android shows a chooser when several Sereus apps register it).
 - Caught by `src/cadre/nodeCodeInbox.ts` (started in `App.tsx`), which also finds a code
   inside another URL's query or fragment (room for a future web landing page).
   `App.tsx` routes to SereusConnections; the screen takes the code and shows the claim
-  approval prompt.  `VariantContext` ignores these links.
+  approval prompt (over first-run onboarding too; Back returns to it).  `VariantContext`
+  ignores these links.
 - **Never logged**: the code carries the node's claim secret.
 - **iOS is left out on purpose** (same as the sereus reference app): when two iOS apps
   register one custom scheme, which opens is undefined, so a code could land in a Sereus

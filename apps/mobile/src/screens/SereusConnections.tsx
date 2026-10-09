@@ -334,17 +334,25 @@ export default function SereusConnections(props: { onBack: () => void }) {
     const isCadre = node.type === 'cadre';
     Alert.alert(
       isCadre ? t('sereus.removeCadreTitle') : t('sereus.revokeGuestTitle'),
-      isCadre ? t('sereus.removeCadreBody') : t('sereus.revokeGuestBody'),
+      isCadre ? t('sereus.removeCadreBody', { node: formatPeerId(node.peerId) }) : t('sereus.revokeGuestBody'),
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
           text: t('common.delete'),
           style: 'destructive',
           onPress: () => {
-            // Full removal needs the cadre control-mutation API (not yet exposed);
-            // for now drop it from this view and say so honestly.
-            if (isCadre) setCadre((prev) => prev.filter((n) => n.id !== node.id));
-            else setGuests((prev) => prev.filter((n) => n.id !== node.id));
+            if (isCadre) {
+              // Signed CadrePeer delete + forget its addresses (CadreService.removeNode).
+              void runAction(async () => {
+                await cadreService.removeNode(node.peerId);
+                await reload();
+                Alert.alert(t('sereus.removedTitle'), t('sereus.removedBody', { node: formatPeerId(node.peerId) }));
+              });
+              return;
+            }
+            // Guest revocation needs the strand-membership API (not wired yet):
+            // drop it from this view and say so honestly.
+            setGuests((prev) => prev.filter((n) => n.id !== node.id));
             Alert.alert(t('sereus.removeLocalNote'));
           },
         },
@@ -452,13 +460,20 @@ export default function SereusConnections(props: { onBack: () => void }) {
           </View>
         </View>
 
-        <TouchableOpacity hitSlop={HIT_SLOP} onPress={() => handleRemoveNode(node)}>
-          <Ionicons
-            name={removeIcon}
-            size={20}
-            color={isCadre ? theme.error : theme.textSecondary}
-          />
-        </TouchableOpacity>
+        {/* This device can't remove itself from its own cadre. */}
+        {node.peerId !== cadreService.peerId ? (
+          <TouchableOpacity
+            hitSlop={HIT_SLOP}
+            onPress={() => handleRemoveNode(node)}
+            accessibilityLabel={isCadre ? t('sereus.removeCadreTitle') : t('sereus.revokeGuestTitle')}
+          >
+            <Ionicons
+              name={removeIcon}
+              size={20}
+              color={isCadre ? theme.error : theme.textSecondary}
+            />
+          </TouchableOpacity>
+        ) : null}
       </View>
     );
   };
