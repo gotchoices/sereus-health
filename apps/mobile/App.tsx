@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
-import { ActivityIndicator, Alert, AppState, BackHandler, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, BackHandler, Linking, View } from 'react-native';
 import LogHistory from './src/screens/LogHistory';
 import { useVariantParams, VariantProvider } from './src/mock';
 import EditEntry from './src/screens/EditEntry';
@@ -33,6 +33,7 @@ import {
 } from './src/services/reminders/notifications';
 import GlobalActivityIndicator from './src/components/GlobalActivityIndicator';
 import { ThemeProvider } from './src/theme/useTheme';
+import { nodeCodeInbox } from './src/cadre/nodeCodeInbox';
 
 type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
 type Screen =
@@ -168,6 +169,21 @@ function AppContent() {
   }, []);
 
   const currentGraph = useMemo(() => (currentGraphId ? graphs.find((g) => g.id === currentGraphId) ?? null : null), [currentGraphId, graphs]);
+
+  // Node codes opened from outside the app (system camera, a tapped sereus-join:
+  // link) go to Sereus Connections, which takes the code from the inbox and asks
+  // the user to approve before anything is claimed.  Already there: the screen's
+  // own inbox subscription handles it (navigating again would remount it).
+  const screenRef = useRef(screen);
+  screenRef.current = screen;
+  useEffect(() => {
+    nodeCodeInbox.start(Linking);
+    return nodeCodeInbox.subscribe(() => {
+      if (screenRef.current === 'SereusConnections') return;
+      setTab('settings');
+      setScreenStack(['Settings', 'SereusConnections']);
+    });
+  }, []);
 
   const pushScreen = (next: Screen) => setScreenStack((prev) => [...prev, next]);
   const popScreen = () =>

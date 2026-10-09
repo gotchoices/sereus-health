@@ -19,13 +19,23 @@ replicates the strand.
 
 ---
 
-## Stack version notes (sereus 1.12)
+## Stack version notes (sereus 1.14)
 
 - Run the **same sereus release on every machine** of the party. Health is now on
-  `@serfab/cadre-core`/`cadre-rn` **1.12.0**, `@optimystic/*` **1.10.1**, `@quereus/*` **4.20.1**,
-  `p2p-fret` **1.0.1**. cadre-core 1.12 *requires* optimystic ^1.10.1, so the two always move
-  together. **Upgrade the Linux node to the same 1.12 wave before pairing** — health no longer
-  matches a drone left on the 1.9 / optimystic-1.8.1 pin it was previously held back to.
+  `@serfab/cadre-core`/`cadre-rn` **1.14.0**, `@optimystic/*` **1.12.1**, `@quereus/*` **4.20.2**,
+  `p2p-fret` **1.0.2**. cadre-core 1.14 *requires* optimystic ^1.12.0. 1.14 binds every signed
+  control approval to the party id, so a 1.12 machine and a 1.14 machine reject each other's
+  writes: **upgrade the Linux node to cadre-cli 1.14 before pairing.**
+- **A control-store wipe IS required for 1.12 → 1.14.** Seen on the emulator (2026-10-08):
+
+  ```
+  doStart failed: Failed to execute DDL: DROP TABLE IF EXISTS CadreControl.pendingjoin
+  Error: cannot drop table 'cadrecontrol.pendingjoin': it is referenced by CHECK constraint 'RowIsGone' on table 'Revocation'
+  ```
+
+  Same remedy as below (export, clear local data, re-import); expect the same on the node.
+- **New in 1.14: claim by code** (Option A0 below) — no Party ID / owner key copying.
+- Earlier wave, kept for reference:
 - **A control-store wipe IS required for 1.9 → 1.12.** Verified on an emulator (2026-10-05): a
   store written by the 1.9 / optimystic-1.8.1 build fails to open on 1.12 with
 
@@ -88,7 +98,41 @@ The same **My Nodes (+)** modal has:
 
 ---
 
-## Option A — cadre-cli drone (recommended)
+## Option A0 — claim by node code (1.14+, simplest)
+
+The node starts unowned with a one-time claim secret; the phone scans a code carrying the
+node's peer ID, addresses and secret, and claims it. Nothing is copied by hand, and the
+node learns the party from the claim.
+
+1. Config as in Option A step 1, but `partyId: "unclaimed"` (a placeholder).
+2. Start with a secret (env only — never a flag; it must not be combined with
+   `--pin-owner-key`, `--owner`, `--seed`):
+
+   ```bash
+   export CADRE_CLAIM_SECRET="$(node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))")"
+   cadre start -c cadre.yaml --identity-file cadre-peer.key
+   ```
+3. Make the code. cadre-host shows it as a QR; bare cadre-cli doesn't print one yet, so
+   build it from the peer ID and the addresses the phone can dial (each ending in
+   `/p2p/<peerId>`), then render it as a QR in the terminal:
+
+   ```bash
+   CODE=$(PEER="$(cat cadre-peer.id)" ADDRS="/ip4/192.168.2.27/tcp/4002/ws/p2p/$(cat cadre-peer.id)" \
+     node --input-type=module -e "import { encodeNodeClaimPayload } from '@serfab/cadre-core';
+       console.log(encodeNodeClaimPayload({ peerId: process.env.PEER,
+         multiaddrs: process.env.ADDRS.split(','), secret: process.env.CADRE_CLAIM_SECRET }))")
+   qrencode -t ansiutf8 "$CODE"     # or paste "$CODE" into the phone
+   ```
+
+   The code holds the secret: don't paste it anywhere public.
+4. On the phone: Sereus Connections → My Nodes (+) → **Scan node code** (or paste the code
+   into the box; on Android, scanning with the system camera also opens Health). Check the
+   prompt, tap **Add to my cadre**. The node logs `✓ Claimed by owner <first 8 of key>`,
+   restarts once into your party, and the phone shows it connected.
+
+Same transport rules as Option A step 3 (`/ws` only from an Android debug build).
+
+## Option A — cadre-cli drone, added by address
 
 ### 1. Create a drone config
 

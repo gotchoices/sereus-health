@@ -26,8 +26,10 @@ async function readControlRows(
       CONTROL_READ_TIMEOUT_MS,
       sql,
     );
-  } catch {
+  } catch (err) {
     // Solo node (read blocked) or table not present yet — render with what we have.
+    console.warn(`[sereusConnections] control read gave up (${rows.length} rows so far): ${sql}:`,
+      err instanceof Error ? err.message : err);
   }
   return rows;
 }

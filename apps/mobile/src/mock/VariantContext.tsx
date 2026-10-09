@@ -2,6 +2,7 @@ import React, { createContext, ReactNode, useCallback, useContext, useEffect, us
 import { Linking } from 'react-native';
 import { defaultVariant, isValidVariant, mockMode, type Variant } from './config';
 import { setCurrentVariant } from './useVariant';
+import { nodeCodeFromUrl } from '../cadre/nodeCodeLink';
 
 interface VariantContextValue {
   mockMode: boolean;
@@ -66,6 +67,9 @@ export function VariantProvider({ children, initialVariant }: { children: ReactN
   const [linkSeq, setLinkSeq] = useState(0);
 
   const handleUrl = useCallback((url: string | null) => {
+    // Node codes (sereus-join:…) are not screen links: the node-code inbox
+    // (src/cadre/nodeCodeInbox.ts) owns them.
+    if (nodeCodeFromUrl(url)) return;
     const { route: parsedRoute, params: parsedParams } = parseDeepLink(url);
 
     setRoute(parsedRoute);

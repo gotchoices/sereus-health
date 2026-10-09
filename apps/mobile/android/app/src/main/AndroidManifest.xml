@@ -45,6 +45,18 @@
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="health" />
         </intent-filter>
+        <!-- Cadre node codes (sereus-join:1.…): a node waiting to be claimed shows one as
+             a QR code or link.  Lets the stock camera / Google Lens / a tapped link open it
+             here; the app routes it to Sereus Connections and asks before claiming.  When
+             several Sereus apps register it, Android shows a chooser.  Android only: iOS
+             picks an undefined app when two register a scheme, so iOS scans in-app
+             (design/specs/mobile/global/deep-links.md). -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="sereus-join" />
+        </intent-filter>
         <!-- Verified Android App Links (path-based on the shared sereus.org host,
              mirroring chat's /chat/invite). Scoped to /health/invite so the app claims
              only guest-invite links, NOT the /health landing/download page. Requires the

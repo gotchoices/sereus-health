@@ -22,7 +22,7 @@ Party ID with tap-to-copy. Show as much as fits on a single line.
 
 ### My Nodes
 
-- **(+)** to add a remote node — **Add Cloud/Drone** (implemented) or **Scan Server QR** (future)
+- **(+)** to add a remote node — **Scan node code** (primary), paste a code or an address, or **Add Cloud/Drone** (seed)
 - Each node: device icon, name, status (Online/Unknown/Unreachable), Peer ID (tap to copy), trash
 - This device always appears first
 
@@ -47,10 +47,37 @@ By the time the user reaches this screen:
 
 ## Add Node (implemented)
 
-- **Add Cloud/Drone** — `createDroneSeed()` (self-arms the authority key) produces a
-  base64url **seed**, shown in a copyable modal, to hand to a drone/server via cadre-cli.
-  This is the primary path for interfacing with a cadre drone node.
-- **Scan Server QR** (future) — scan QR/link → parse invite → dial the server.
+Three ways in, in order of preference:
+
+1. **Node code (claim)** — a node started with `CADRE_CLAIM_SECRET` shows a code
+   `sereus-join:1.…` (QR, link or text; cadre-host shows it as a QR).  It carries the
+   node's peer ID, addresses and one-time claim secret.  The code arrives by:
+   - **Scan node code** — in-app camera (`src/cadre/NodeCodeScanner.tsx`);
+   - **Paste** — the Add Node box accepts a code or an address; its button reads
+     "Add node" for a code, "Connect" for an address;
+   - **Link** — the system camera or a tapped `sereus-join:` link (Android; see
+     `global/deep-links.md`) opens the app on this screen with the code.
+
+   Every path shows an **approval prompt** first — your cadre (Network ID), owner
+   fingerprint (first 8 chars of the owner key; the node prints the same once it joins),
+   node (short peer ID), and reach ("from anywhere" vs "home Wi-Fi only").  A link can be
+   sent by anyone, so nothing is claimed without this approval.  On approve,
+   `claimNode` proves the secret, delivers the seed and only then authorizes the node; a
+   failure leaves nothing behind.  Failures are worded by kind (unreachable — with
+   home-network vs anywhere advice; refused — already claimed / wrong code / rate-limited /
+   couldn't save; other) and offer **Try again** when the same code can still work.  The
+   progress line notes slow addresses after 20 s (a claim to an unreachable node takes up
+   to ~2 min).  One claim at a time; a code that arrives during a prompt or claim is
+   dropped with a note.
+2. **Address (connect)** — a node started with `--listen-for-seeds --pin-owner-key <key>`
+   is added by its multiaddr: `addDrone` → `deliverSeed` → reconcile.  Needs the owner key
+   copied to the node (**Show this device's owner key**).
+3. **Add Cloud/Drone (seed)** — `createDroneSeed()` mints a seed shown in a copyable modal,
+   for a node whose address isn't known yet (`cadre start --seed`).
+
+The node-code pieces (`src/cadre/`: `nodeCode.ts`, `nodeCodeLink.ts`, `nodeCodeInbox.ts`,
+`NodeCodeScanner.tsx`) import no health code and return reason codes rather than text, so
+other Sereus RN apps can reuse them; they are candidates for `@serfab/cadre-rn`.
 
 ## Invite Guest (implemented, one-directional)
 

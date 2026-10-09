@@ -253,6 +253,19 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
 - [ ] Drone appears in My Nodes from `CadrePeer` query
 - [ ] Health data replicates (drone discovers strand from control DB)
 
+### Step 3b: Claim a node by its code (1.14 upgrade, 2026-10-08)
+
+- [x] Stack → cadre 1.14 / optimystic 1.12.1 (exact) / quereus 4.20.2 / p2p-fret 1.0.2.
+      1.14 binds control signatures to the party: phone and drones must match.
+- [x] `CadreService.claimNode(payload)` over `CadreNode.claimNode`; addresses persisted
+      as bootstrap nodes on acceptance
+- [x] Reusable kit in `src/cadre/` (code parsing, link inbox, scanner — candidates for cadre-rn)
+- [x] Scan (react-native-vision-camera 4.7, as chat), paste (Add Node box takes code or
+      address), Android `sereus-join:` link → approval prompt → claim
+- [ ] **Blocked on device:** a 1.12 control DB fails to open on 1.14
+      (`DROP TABLE … pendingjoin` refused by `Revocation.RowIsGone`) — wipe app data to test
+- [ ] End-to-end with a node started with `CADRE_CLAIM_SECRET` (uranus, after its 1.14 upgrade)
+
 ### Step 4: Add private-IP drone node
 
 Requires relay support (both phone and drone behind NAT).

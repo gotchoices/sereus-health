@@ -13,6 +13,24 @@ custom scheme, so it is *not* used for trusted web links.
 - Parsed in `src/mock/VariantContext.tsx`, routed in `App.tsx` (allow-list of screens).
 - Used by: scenario/screenshot tooling and reminder-notification taps.
 
+## 1b. Node codes — `sereus-join:` (Android)
+
+A cadre node waiting to be claimed shows a code `sereus-join:1.<base64url>`; the code is
+itself a URI.  Android registers the `sereus-join` scheme (intent filter in
+`AndroidManifest.xml`), so the stock camera, Google Lens or a tapped link offers to open
+it in Health (Android shows a chooser when several Sereus apps register it).
+
+- Caught by `src/cadre/nodeCodeInbox.ts` (started in `App.tsx`), which also finds a code
+  inside another URL's query or fragment (room for a future web landing page).
+  `App.tsx` routes to SereusConnections; the screen takes the code and shows the claim
+  approval prompt.  `VariantContext` ignores these links.
+- **Never logged**: the code carries the node's claim secret.
+- **iOS is left out on purpose** (same as the sereus reference app): when two iOS apps
+  register one custom scheme, which opens is undefined, so a code could land in a Sereus
+  app whose cadre the user didn't mean.  iOS users scan in the app.  A per-app wrapper
+  (`health://…?code=` or an https landing page) would fix that if the node offered one.
+- Native config: the intent filter takes a native rebuild to take effect.
+
 ## 2. Universal / App Links — path-based on `sereus.org` (app-side ready; server + iOS pending)
 
 The **standard for trusted web→app links** (e.g. a shared guest-invite link). This

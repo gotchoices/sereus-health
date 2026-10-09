@@ -48,6 +48,7 @@ import {
   type DurableSlot,
   type KeyId,
   type KeyStore,
+  type NodeClaimPayload,
 } from '@serfab/cadre-core';
 import { buildNoiseCrypto, DEFAULT_NOISE_CRYPTO_MODE } from '@serfab/cadre-rn/noise-crypto';
 // Strand bring-up helpers from the kit, so this app behaves like the RN reference
@@ -102,6 +103,12 @@ const STRAND_ID_KEY = '@sereus/healthStrandId';
 const STRAND_FOUNDED_KEY = '@sereus/healthStrandFounded';
 /** JSON array of bootstrap multiaddrs the user has added (Linux cadre nodes). */
 const BOOTSTRAP_NODES_KEY = '@sereus/bootstrapNodes';
+/**
+ * Upper bound on a claim.  claimNode dials each of the node's addresses in turn
+ * (114.5 s worst case at the default link budget when none answers), so this only
+ * catches a hang beyond that.
+ */
+const CLAIM_TIMEOUT_MS = 150_000;
 /** Guest invitation validity window (24h) — long enough for a doctor visit. */
 const INVITE_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
@@ -252,6 +259,8 @@ class CadreServiceImpl {
   private _partyId: string | null = null;
   private _strandId: string | null = null;
   private _authorityPublicKey: string | null = null;
+  /** One claim at a time (see claimNode). */
+  private claiming = false;
   private _startError: string | null = null;
   private _startPromise: Promise<void> | null = null;
   /**
@@ -714,6 +723,55 @@ class CadreServiceImpl {
         ` controlConnections=${this.node.getControlConnectionCount()}`,
     );
     return { peerId: dronePeerId, delivered, encodedSeed, reason };
+  }
+
+  /**
+   * Add a cadre node that is waiting to be claimed, from its decoded node code
+   * (`src/cadre/nodeCode.ts` → `readNodeCode`).  The node was started with
+   * `CADRE_CLAIM_SECRET` and shows the code as a QR/link; the user has approved.
+   *
+   * `claimNode` mints a seed, proves it holds the node's claim secret, delivers it, and
+   * only on acceptance writes the node's `CadrePeer` row and retains its addresses — so
+   * a refused or failed claim leaves nothing behind, and repeating it is safe.  The node
+   * then restarts once into this party and our reconcile passes reconnect to it.
+   *
+   * Throws `claimNode`'s errors untouched (`classifyClaimFailure` sorts them):
+   * `PeerUnreachableError`, `ClaimRefusedError`, or anything else.
+   *
+   * The code carries the claim secret: log the peer id only.
+   */
+  async claimNode(payload: NodeClaimPayload): Promise<void> {
+    if (this.claiming) throw new Error('A node is already being added');
+    this.claiming = true;
+    try {
+      await this.ensureStarted();
+      if (!this.node) throw new Error('CadreNode not running');
+      // The seed is owner-signed.
+      if (!this._authorityPublicKey) {
+        await this.createAuthorityKey(); // time-boxed; throws with a clear message
+      }
+
+      logger.info('Claiming node:', payload.peerId);
+      // Not CONTROL_OP_TIMEOUT_MS: claimNode dials each address in turn on its own
+      // limit, so an unreachable node legitimately takes ~2 minutes to report.
+      await withTimeout(this.node.claimNode(payload), CLAIM_TIMEOUT_MS, 'claimNode');
+      logger.info('✓ node accepted the claim');
+
+      // Same as connectToNode: dial these at our next start too.
+      const list = await this.getBootstrapNodes();
+      const added = payload.multiaddrs.filter((a) => !list.includes(a));
+      if (added.length > 0) {
+        await AsyncStorage.setItem(BOOTSTRAP_NODES_KEY, JSON.stringify([...list, ...added]));
+      }
+
+      await this.republishStrand();
+      logger.info(
+        `[pairing] claim node=${payload.peerId} accepted=true addrs=${payload.multiaddrs.length}` +
+          ` controlConnections=${this.node.getControlConnectionCount()}`,
+      );
+    } finally {
+      this.claiming = false;
+    }
   }
 
   /** Remove a previously-added bootstrap node (does not disconnect a live dial). */

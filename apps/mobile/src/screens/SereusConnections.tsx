@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -19,8 +19,27 @@ import {
   type SereusNode,
 } from '../data/sereusConnections';
 import { cadreService } from '../services/CadreService';
+import {
+  classifyClaimFailure,
+  isNodeCode,
+  nodeReach,
+  ownerFingerprint,
+  readNodeCode,
+  shortPeerId,
+  type ClaimFailure,
+  type NodeClaimPayload,
+  type NodeCodeProblem,
+} from '../cadre/nodeCode';
+import { nodeCodeInbox } from '../cadre/nodeCodeInbox';
+import { NodeCodeScanner } from '../cadre/NodeCodeScanner';
 import { spacing, typography, useTheme } from '../theme/useTheme';
 import { useT } from '../i18n/useT';
+
+/**
+ * When the claim progress line adds that some addresses aren't answering: a dead
+ * address costs up to ~21.5 s before the next is tried.
+ */
+const CLAIM_SLOW_HINT_MS = 20_000;
 
 /** A generated secret (node seed / guest invitation) to show for copy + transport. */
 type SecretResult = { title: string; body: string; value: string };
@@ -39,6 +58,14 @@ export default function SereusConnections(props: { onBack: () => void }) {
   const [secret, setSecret] = useState<SecretResult | null>(null);
   const [nodeModal, setNodeModal] = useState(false);
   const [addr, setAddr] = useState('');
+  const [busyText, setBusyText] = useState<string | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  // A decoded node code awaiting the user's approval (nothing is claimed before it).
+  const [pendingClaim, setPendingClaim] = useState<NodeClaimPayload | null>(null);
+  const [claiming, setClaiming] = useState(false);
+  const claimingRef = useRef(false);
+  const pendingRef = useRef(false);
+  pendingRef.current = pendingClaim !== null;
 
   const reload = useCallback(async () => {
     const data = await getSereusConnections();
@@ -79,6 +106,7 @@ export default function SereusConnections(props: { onBack: () => void }) {
   const runAction = useCallback(
     async (fn: () => Promise<void>) => {
       setBusy(true);
+      setBusyText(null);
       try {
         await fn();
       } catch (err) {
@@ -150,6 +178,119 @@ export default function SereusConnections(props: { onBack: () => void }) {
       }
     });
   };
+
+  // -- Node codes (claim a node that shows a sereus-join:1.… code) -----------
+
+  const codeProblemText = useCallback(
+    (problem: NodeCodeProblem) =>
+      problem === 'newer-version'
+        ? t('sereus.codeNewerVersion')
+        : problem === 'damaged'
+          ? t('sereus.codeDamaged')
+          : t('sereus.codeNotNodeCode'),
+    [t],
+  );
+
+  const claimFailureText = useCallback(
+    (failure: ClaimFailure) => {
+      if (failure.kind === 'unreachable') {
+        return failure.reach === 'home-network'
+          ? t('sereus.claimUnreachableHome')
+          : t('sereus.claimUnreachableAnywhere');
+      }
+      if (failure.kind === 'failed') return t('sereus.claimFailed');
+      switch (failure.refusal) {
+        case 'already-claimed':
+          return t('sereus.claimAlreadyClaimed');
+        case 'claim-proof-invalid':
+          return t('sereus.claimProofInvalid');
+        case 'claim-rate-limited':
+          return t('sereus.claimRateLimited');
+        case 'claim-not-persisted':
+          return t('sereus.claimNotPersisted');
+        default:
+          return t('sereus.claimRefused');
+      }
+    },
+    [t],
+  );
+
+  /** Decode a code (scanned, pasted or linked) and ask for approval. */
+  const handleCode = useCallback(
+    (text: string) => {
+      const reading = readNodeCode(text);
+      if (!reading.ok) {
+        Alert.alert(t('sereus.codeInvalidTitle'), codeProblemText(reading.problem));
+        return;
+      }
+      setNodeModal(false);
+      setScannerOpen(false);
+      setPendingClaim(reading.payload);
+    },
+    [t, codeProblemText],
+  );
+
+  const runClaim = useCallback(
+    async (payload: NodeClaimPayload) => {
+      claimingRef.current = true;
+      setClaiming(true);
+      setBusy(true);
+      setBusyText(t('sereus.claiming'));
+      const slowTimer = setTimeout(() => setBusyText(t('sereus.claimingSlow')), CLAIM_SLOW_HINT_MS);
+      try {
+        await cadreService.claimNode(payload);
+        setAddr('');
+        await reload().catch(() => {});
+        Alert.alert(t('sereus.claimedTitle'), t('sereus.claimedBody', { node: formatPeerId(payload.peerId) }));
+      } catch (err) {
+        const failure = classifyClaimFailure(err, payload);
+        console.warn(`[SereusConnections] claim of ${payload.peerId} failed (${failure.kind}):`, failure.detail);
+        const message = `${claimFailureText(failure)}\n\n${t('sereus.claimDetail', { detail: failure.detail })}`;
+        Alert.alert(
+          t('sereus.claimFailedTitle'),
+          message,
+          failure.canRetrySameCode
+            ? [
+                { text: t('sereus.close'), style: 'cancel' },
+                { text: t('sereus.tryAgain'), onPress: () => void runClaim(payload) },
+              ]
+            : [{ text: t('sereus.close') }],
+        );
+      } finally {
+        clearTimeout(slowTimer);
+        claimingRef.current = false;
+        setClaiming(false);
+        setBusy(false);
+        setBusyText(null);
+      }
+    },
+    [t, reload, claimFailureText],
+  );
+
+  const handleApproveClaim = () => {
+    const payload = pendingClaim;
+    setPendingClaim(null);
+    if (payload) void runClaim(payload);
+  };
+
+  // Codes opened from outside the app (system camera, a tapped sereus-join: link)
+  // wait in the inbox until this screen has loaded.  One claim at a time: a code
+  // that arrives during a prompt or a claim is dropped, so the prompt on screen is
+  // always for the code the user acted on.
+  useEffect(() => {
+    if (loading) return;
+    const takeLinked = () => {
+      const code = nodeCodeInbox.take();
+      if (!code) return;
+      if (claimingRef.current || pendingRef.current) {
+        Alert.alert(t('sereus.linkIgnored'));
+        return;
+      }
+      handleCode(code);
+    };
+    takeLinked();
+    return nodeCodeInbox.subscribe(takeLinked);
+  }, [loading, t, handleCode]);
 
   // Show this device's owner PUBLIC key so the user can configure the Linux node
   // to trust it (cadre start --pin-owner-key / CADRE_OWNER_KEYS).
@@ -322,6 +463,22 @@ export default function SereusConnections(props: { onBack: () => void }) {
     );
   };
 
+  /** Owner fingerprint for the claim prompt: the node prints the same 8 characters. */
+  const ownerFingerprintText = () => {
+    const key = cadreService.getOwnerPublicKey();
+    return key ? ownerFingerprint(key) : '—';
+  };
+
+  const renderFact = (label: string, value: string, note?: string) => (
+    <View style={styles.fact}>
+      <Text style={{ color: theme.textSecondary, ...typography.small, fontWeight: '700' }}>{label}</Text>
+      <Text selectable style={{ color: theme.textPrimary, ...typography.body }}>
+        {value}
+      </Text>
+      {note ? <Text style={{ color: theme.textSecondary, ...typography.small }}>{note}</Text> : null}
+    </View>
+  );
+
   const renderSectionHeader = (
     title: string,
     count: number,
@@ -450,6 +607,14 @@ export default function SereusConnections(props: { onBack: () => void }) {
         <View style={styles.overlay}>
           <View style={[styles.modal, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{t('sereus.addNode')}</Text>
+            <TouchableOpacity
+              onPress={() => setScannerOpen(true)}
+              style={[styles.modalBtn, styles.scanBtn, { backgroundColor: theme.accentPrimary }]}
+              testID="sereus-scan-node-code"
+            >
+              <Ionicons name="qr-code-outline" size={20} color="#fff" />
+              <Text style={styles.modalBtnText}>{t('sereus.scanNodeCode')}</Text>
+            </TouchableOpacity>
             <Text style={{ color: theme.textSecondary, ...typography.small }}>
               {t('sereus.connectBody')}
             </Text>
@@ -467,12 +632,15 @@ export default function SereusConnections(props: { onBack: () => void }) {
               ]}
             />
             <View style={styles.modalActions}>
+              {/* The box takes a node code or an address; the button follows what's in it. */}
               <TouchableOpacity
-                onPress={handleConnect}
+                onPress={() => (isNodeCode(addr) ? handleCode(addr) : handleConnect())}
                 disabled={!addr.trim()}
                 style={[styles.modalBtn, { backgroundColor: theme.accentPrimary, opacity: addr.trim() ? 1 : 0.4 }]}
               >
-                <Text style={styles.modalBtnText}>{t('sereus.connect')}</Text>
+                <Text style={styles.modalBtnText}>
+                  {isNodeCode(addr) ? t('sereus.useNodeCode') : t('sereus.connect')}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setNodeModal(false)}
@@ -487,12 +655,75 @@ export default function SereusConnections(props: { onBack: () => void }) {
               <Text style={{ color: theme.accentPrimary, ...typography.small }}>{t('sereus.showOwnerKey')}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleDroneSeed} style={styles.linkRow} hitSlop={HIT_SLOP}>
-              <Ionicons name="qr-code-outline" size={18} color={theme.accentPrimary} />
+              <Ionicons name="document-text-outline" size={18} color={theme.accentPrimary} />
               <Text style={{ color: theme.accentPrimary, ...typography.small }}>{t('sereus.addNodeDrone')}</Text>
             </TouchableOpacity>
           </View>
         </View>
       ) : null}
+
+      {/* Claim approval: nothing is claimed until the user agrees, because this is
+          where they see which cadre the node joins and whether it's reachable. */}
+      {pendingClaim ? (
+        <View style={styles.overlay}>
+          <View style={[styles.modal, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{t('sereus.claimPromptTitle')}</Text>
+            <Text style={{ color: theme.textSecondary, ...typography.small }}>{t('sereus.claimPromptBody')}</Text>
+            {renderFact(t('sereus.claimCadre'), formatPartyId(partyId))}
+            {renderFact(
+              t('sereus.claimOwner'),
+              ownerFingerprintText(),
+              t('sereus.claimOwnerNote'),
+            )}
+            {renderFact(t('sereus.claimNode'), shortPeerId(pendingClaim.peerId))}
+            {renderFact(
+              t('sereus.claimReach'),
+              nodeReach(pendingClaim.multiaddrs) === 'anywhere'
+                ? t('sereus.reachAnywhere')
+                : t('sereus.reachHomeNetwork'),
+            )}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                onPress={handleApproveClaim}
+                disabled={claiming}
+                style={[styles.modalBtn, { backgroundColor: theme.accentPrimary }]}
+                testID="sereus-approve-claim"
+              >
+                <Text style={styles.modalBtnText}>{t('sereus.claimApprove')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setPendingClaim(null)}
+                style={[styles.modalBtn, { backgroundColor: theme.border }]}
+                testID="sereus-cancel-claim"
+              >
+                <Text style={[styles.modalBtnText, { color: theme.textPrimary }]}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      <NodeCodeScanner
+        visible={scannerOpen}
+        onScanned={handleCode}
+        onClose={() => setScannerOpen(false)}
+        text={{
+          hint: t('sereus.scannerHint'),
+          otherCode: t('sereus.scannerOtherCode'),
+          waitingPermission: t('sereus.scannerWaitingPermission'),
+          permissionDenied: t('sereus.scannerPermissionDenied'),
+          noCamera: t('sereus.scannerNoCamera'),
+          allowCamera: t('sereus.scannerAllowCamera'),
+          openSettings: t('sereus.scannerOpenSettings'),
+          cancel: t('common.cancel'),
+        }}
+        colors={{
+          background: theme.background,
+          text: theme.textPrimary,
+          accent: theme.accentPrimary,
+          accentText: '#fff',
+        }}
+      />
 
       {/* Generated-secret modal (node seed / guest invitation / owner key) */}
       {secret ? (
@@ -534,7 +765,9 @@ export default function SereusConnections(props: { onBack: () => void }) {
         <View style={styles.overlay}>
           <View style={[styles.busyBox, { backgroundColor: theme.surface }]}>
             <ActivityIndicator color={theme.accentPrimary} />
-            <Text style={{ color: theme.textPrimary, marginTop: spacing[2] }}>{t('sereus.generating')}</Text>
+            <Text style={{ color: theme.textPrimary, marginTop: spacing[2], textAlign: 'center' }}>
+              {busyText ?? t('sereus.generating')}
+            </Text>
           </View>
         </View>
       ) : null}
@@ -633,5 +866,8 @@ const styles = StyleSheet.create({
     padding: spacing[4],
     borderRadius: 12,
     alignItems: 'center',
+    maxWidth: 320,
   },
+  scanBtn: { flex: 0, flexDirection: 'row', justifyContent: 'center', gap: spacing[2] },
+  fact: { gap: 2 },
 });
