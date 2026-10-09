@@ -243,6 +243,8 @@ const en: Dict = {
   'sereus.statusOnline': 'Connected',
   'sereus.statusUnknown': 'Unknown',
   'sereus.statusUnreachable': 'Not connected',
+  'sereus.copyKey': 'Copy owner key',
+  'sereus.copyPeerId': 'Copy peer ID',
   'sereus.copied': 'Copied to clipboard',
   'sereus.errorLoading': 'Failed to load connections.',
   'sereus.addKey': 'Add Key',

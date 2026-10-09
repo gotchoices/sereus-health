@@ -101,8 +101,9 @@ export default function SereusConnections(props: { onBack: () => void }) {
     }
   };
 
-  const handleCopyPeerId = (peerId: string) => {
-    Clipboard.setString(peerId);
+  /** Copy a full value (owner key or peer id) — the row shows it shortened. */
+  const handleCopyValue = (value: string) => {
+    Clipboard.setString(value);
     Alert.alert(t('sereus.copied'));
   };
 
@@ -235,9 +236,22 @@ export default function SereusConnections(props: { onBack: () => void }) {
       <Ionicons name={getKeyIcon(key.type)} size={20} color={theme.textPrimary} />
       <View style={{ flex: 1 }}>
         <Text style={[styles.name, { color: theme.textPrimary }]}>{key.type}</Text>
-        <Text style={{ color: theme.textSecondary, ...typography.small }}>
-          {key.protection} · {formatPeerId(key.publicKey)}
-        </Text>
+        <View style={styles.copyRow}>
+          <Text style={{ color: theme.textSecondary, ...typography.small }}>
+            {key.protection} ·{' '}
+          </Text>
+          <TouchableOpacity
+            onPress={() => handleCopyValue(key.publicKey)}
+            hitSlop={HIT_SLOP}
+            style={styles.copyRow}
+            accessibilityLabel={t('sereus.copyKey')}
+          >
+            <Text style={{ color: theme.textSecondary, ...typography.small }}>
+              {formatPeerId(key.publicKey)}
+            </Text>
+            <Ionicons name="copy-outline" size={14} color={theme.accentPrimary} />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -283,10 +297,16 @@ export default function SereusConnections(props: { onBack: () => void }) {
             <View style={[styles.dot, { backgroundColor: statusColor }]} />
             <Text style={{ color: theme.textSecondary, ...typography.small }}>{statusText}</Text>
             <Text style={{ color: theme.textSecondary, ...typography.small }}>·</Text>
-            <TouchableOpacity onPress={() => handleCopyPeerId(node.peerId)} hitSlop={HIT_SLOP}>
+            <TouchableOpacity
+              onPress={() => handleCopyValue(node.peerId)}
+              hitSlop={HIT_SLOP}
+              style={styles.copyRow}
+              accessibilityLabel={t('sereus.copyPeerId')}
+            >
               <Text style={{ color: theme.textSecondary, ...typography.small }}>
                 {formatPeerId(node.peerId)}
               </Text>
+              <Ionicons name="copy-outline" size={14} color={theme.accentPrimary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -599,6 +619,7 @@ const styles = StyleSheet.create({
     ...typography.small,
     fontFamily: 'monospace',
   },
+  copyRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[2], paddingVertical: spacing[1] },
   modalActions: { flexDirection: 'row', gap: spacing[2], marginTop: spacing[1] },
   modalBtn: {
