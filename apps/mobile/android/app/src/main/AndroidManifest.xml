@@ -16,6 +16,12 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
 
+    <!-- usesCleartextTraffic="true" in EVERY build type (React Native's usesCleartextTraffic
+         placeholder is false for release, which blocks ws://).  Cadre nodes are dialed over
+         plain ws://, but libp2p secures each connection with Noise, authenticated against the
+         peer ID pinned in the node's address — end-to-end encrypted without CA certificates,
+         as Sereus is designed.  The OS no longer enforces https for anything else: the app's
+         own HTTP calls (APIs, catalog downloads) must use https by convention. -->
     <application
       android:name=".MainApplication"
       android:label="@string/app_name"
@@ -23,7 +29,7 @@
       android:roundIcon="@mipmap/ic_launcher_round"
       android:allowBackup="false"
       android:theme="@style/AppTheme"
-      android:usesCleartextTraffic="${usesCleartextTraffic}"
+      android:usesCleartextTraffic="true"
       android:supportsRtl="true">
       <activity
         android:name=".MainActivity"

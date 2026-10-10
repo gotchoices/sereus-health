@@ -130,7 +130,7 @@ node learns the party from the claim.
    prompt, tap **Add to my cadre**. The node logs `✓ Claimed by owner <first 8 of key>`,
    restarts once into your party, and the phone shows it connected.
 
-Same transport rules as Option A step 3 (`/ws` only from an Android debug build).
+Plain `/ws` addresses work from every build (see the address notes in Option A step 3).
 
 ## Option A — cadre-cli drone, added by address
 
@@ -183,18 +183,24 @@ on screen:
 - Otherwise you get the **reason**, plus the seed to apply by hand on the node
   (`cadre start -c cadre.yaml --seed <seed>`). The node is already authorized.
 
-Which address form to use depends on the build:
+Address forms (each must end in `/p2p/<peerId>`):
 
-| Build | Address |
+| Node | Address |
 |---|---|
-| Any build, node with a hostname (`uranus.batemans.org`, `kjeib.com`) | `/dns4/<host>/tcp/<port>/wss/p2p/<peerId>` (TLS in front of the node's `/ws` listener) |
-| **Android debug** only, LAN | `/ip4/<lan-ip>/tcp/4002/ws/p2p/<peerId>` |
-| Emulator → node on this Mac | `/ip4/10.0.2.2/tcp/4002/ws/p2p/<peerId>` (Android debug) |
+| Hostname (`bateman.cc`, `kjeib.com`) | `/dns4/<host>/tcp/<port>/ws/p2p/<peerId>` |
+| LAN | `/ip4/<lan-ip>/tcp/<port>/ws/p2p/<peerId>` |
+| Emulator → node on this Mac | `/ip4/10.0.2.2/tcp/<port>/ws/p2p/<peerId>` |
 
-Android **release** builds disable cleartext traffic for every host, so plain
-`ws://` fails there even on the LAN. iOS allows `ws://` to local addresses
-(`NSAllowsLocalNetworking`) but not to public hostnames. The address must end in
-`/p2p/<peerId>`.
+Plain `ws://` is the normal case, in every build: libp2p encrypts each connection with
+Noise and authenticates it against the peer ID in the address, so TLS adds nothing and no
+certificate is needed. `/wss` still works if a node sits behind a TLS proxy.
+
+- **Android:** `usesCleartextTraffic="true"` in all build types (React Native's default is
+  false for release, which refused every `ws://` dial — "could not reach the node at any of
+  its addresses"). A release APK built before that change cannot reach a `/ws` node.
+- **iOS:** `NSAllowsArbitraryLoads=true` (it had allowed `ws://` to local addresses only),
+  plus a local-network permission prompt the first time the app dials a LAN node. Not yet
+  tested on an iPhone.
 
 For a log capture of a pairing attempt, uncomment the DEBUG line in
 `apps/mobile/src/debug-bootstrap.js`, rebuild, and watch

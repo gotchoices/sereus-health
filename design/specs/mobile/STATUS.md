@@ -269,6 +269,10 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
       CADRE_CLAIM_SECRET, reached at 10.0.2.2.  (A run on a heavily loaded machine stalled
       after the claim: phone too slow to answer the node's sync requests.)
 - [x] A code opened during first-run onboarding shows Sereus Connections over it
+- [x] Plain `ws://` allowed in release builds (2026-10-10): Android `usesCleartextTraffic="true"`
+      for every build type; iOS `NSAllowsArbitraryLoads=true` + `NSLocalNetworkUsageDescription`
+      (iOS untested).  libp2p's Noise handshake against the pinned peer ID secures the link;
+      the app's own HTTP must stay https by convention.  Hint/docs no longer say /wss is required.
 - [ ] In-app scanner on a real camera; uranus end to end
 
 ### Step 4: Add private-IP drone node

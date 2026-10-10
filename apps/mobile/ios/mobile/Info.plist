@@ -41,13 +41,19 @@
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- Cadre nodes are dialed over plain ws:// at arbitrary hosts and IPs.  libp2p secures each
+	     connection with Noise, authenticated against the peer ID pinned in the node's address:
+	     end-to-end encrypted without CA certificates, as Sereus is designed.  So arbitrary loads
+	     are allowed.  NSAllowsLocalNetworking is deliberately absent: iOS ignores
+	     NSAllowsArbitraryLoads when it is present.  The app's own HTTP calls (APIs, catalog
+	     downloads) must still use https by convention. -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<false/>
-		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Sereus Health connects directly to your own cadre nodes on this network (for example a home server) to sync your data.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
 	<key>RCTNewArchEnabled</key>
