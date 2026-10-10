@@ -102,14 +102,24 @@ sensitive (membership secrets / strand access) — share only over a trusted cha
 - **Guest** (unlink): revocation is not wired yet; the row is dropped from this view only,
   and the UI says so.
 
-## Loading (must never hang)
+## Loading (must never hang, never regress)
 
-Control-DB reads (`OwnerKey`, `CadrePeer`) go through a **consistent** read that needs a
-control-network quorum. On a **solo node** (no drone/cohort yet) that read blocks forever,
-so the data layer **time-boxes** each read (~5s, run concurrently) and renders with whatever
-returned. The screen therefore always shows the Network ID + "This device" + empty sections
-on first visit rather than sitting on a perpetual "Loading" spinner. Once a cohort exists,
-the reads return in well under the timeout.
+Control-DB reads (`OwnerKey`, `CadrePeer`) go through a **consistent** read that needs the
+control cohort.  On a solo node, or while the cohort reconnects (a relaunch, returning from
+the background), such a read can block, so the data layer **time-boxes** each read (~5s, run
+concurrently).
+
+- **Last-known snapshot**: the last completed lists of owner keys and members are kept
+  (memory + AsyncStorage, per party).  The screen renders the snapshot **immediately** on
+  entry — before the node has started — and refreshes in the background (small spinner in
+  the header).  A read that completes replaces the snapshot; a read that gives up falls back
+  to it, so the list **never shrinks** because the network was slow.  Only node **status**
+  (Connected / Not connected) waits on the network.
+- Removing a node also drops it from the snapshot.  Clear local data clears it.
+- Connection events come in bursts while the cadre reconnects: they are collapsed into one
+  refresh, and refreshes never overlap.
+- First visit with no snapshot: the screen shows Loading until the first refresh (always
+  bounded by the time-box).
 
 ## Connectivity
 

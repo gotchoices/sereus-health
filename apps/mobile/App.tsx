@@ -34,6 +34,8 @@ import {
 import GlobalActivityIndicator from './src/components/GlobalActivityIndicator';
 import { ThemeProvider } from './src/theme/useTheme';
 import { nodeCodeInbox } from './src/cadre/nodeCodeInbox';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CATALOG_SET_UP_KEY } from './src/db/reset';
 
 type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
 type Screen =
@@ -116,9 +118,10 @@ function AppContent() {
     // screen falls back to its own error/empty state.
     const STARTUP_DB_WAIT_MS = 20000;
     let settled = false;
-    const proceed = () => {
+    const proceed = (why: string) => {
       if (settled) return;
       settled = true;
+      console.info(`[startup] rendering the app (${why})`);
       if (alive) setCatalogChecked(true);
     };
     const timer = setTimeout(() => {
@@ -128,16 +131,27 @@ function AppContent() {
             'initialization continues in the background.',
         );
       }
-      proceed();
+      proceed('database wait timed out');
     }, STARTUP_DB_WAIT_MS);
+
+    // The gate exists only to decide first-run onboarding.  Once a catalog has been
+    // seen, later launches render at once: opening the strand can take many seconds
+    // while the cadre reconnects, and each screen shows its own loading state for
+    // the data it needs instead of the whole app sitting behind a spinner.
+    AsyncStorage.getItem(CATALOG_SET_UP_KEY)
+      .then((seen) => { if (seen === '1') proceed('catalog set up earlier'); })
+      .catch(() => {});
 
     ensureDatabaseInitialized()
       .then(() => getTypeCount())
-      // Only decide onboarding if the DB answered within the window; flipping
-      // to GettingStarted after the app has already rendered would be jarring.
-      .then((count) => { if (alive && !settled) setShowOnboarding(count === 0); })
+      .then((count) => {
+        if (count > 0) AsyncStorage.setItem(CATALOG_SET_UP_KEY, '1').catch(() => {});
+        // Only decide onboarding if the DB answered within the window; flipping
+        // to GettingStarted after the app has already rendered would be jarring.
+        if (alive && !settled) setShowOnboarding(count === 0);
+      })
       .catch(() => { /* if the check fails, fall through to the normal app */ })
-      .finally(() => { clearTimeout(timer); proceed(); });
+      .finally(() => { clearTimeout(timer); proceed('database ready'); });
     return () => { alive = false; clearTimeout(timer); };
   }, []);
 

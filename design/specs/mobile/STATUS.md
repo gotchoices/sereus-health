@@ -273,6 +273,15 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
       for every build type; iOS `NSAllowsArbitraryLoads=true` + `NSLocalNetworkUsageDescription`
       (iOS untested).  libp2p's Noise handshake against the pinned peer ID secures the link;
       the app's own HTTP must stay https by convention.  Hint/docs no longer say /wss is required.
+- [x] Responsiveness with cadre nodes (2026-10-10).  Measured on the emulator: cold start
+      ~18-21 s to DB ready with nodes up or down; ~11 s of it is strand catalog hydration
+      (`listTables` on the strand's schema collection) waiting on dials to the node's strand
+      peer before serving local blocks — upstream; a Node.js repro of the same flow re-opens
+      in ~0.1-0.3 s, so not yet isolated.  App-side: the startup gate no longer holds the
+      whole UI for the DB once a catalog has been seen (renders in ~1.4 s; screens show their
+      own loading); Sereus Connections renders a last-known snapshot at once and never lets a
+      read that gave up shrink the list.  Health uses no `db.watch()` yet (screens load on
+      mount) — follow-up, with `strandReactivity` as chat does.
 - [ ] In-app scanner on a real camera; uranus end to end
 
 ### Step 4: Add private-IP drone node

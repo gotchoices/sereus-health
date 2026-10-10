@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { createLogger } from '../util/logger';
 import { USE_OPTIMYSTIC } from './config';
 import { closeDatabase } from './index';
@@ -9,6 +10,9 @@ import {
   NODE_LOCAL_STRAND_ID,
   IDENTITY_DB_ID,
 } from '../services/CadreService';
+
+/** Set once a catalog has been seen, so later launches skip the onboarding gate (App.tsx). */
+export const CATALOG_SET_UP_KEY = '@health/catalogSetUp';
 
 const logger = createLogger('DB Reset');
 
@@ -34,6 +38,7 @@ export async function resetDatabaseForDev(): Promise<void> {
 
   await closeDatabase();
   resetInitializationState();
+  await AsyncStorage.removeItem(CATALOG_SET_UP_KEY);
 
   if (USE_OPTIMYSTIC) {
     // Read identifiers before clearing so we know which LevelDB directories
@@ -45,6 +50,7 @@ export async function resetDatabaseForDev(): Promise<void> {
       '@sereus/healthStrandId',
       '@sereus/healthStrandFounded',
       '@sereus/bootstrapNodes',
+      '@sereus/connectionsSnapshot', // CONNECTIONS_SNAPSHOT_KEY (data/sereusConnections.ts)
     ]);
 
     // Destroy the optimystic LevelDB directories: the identity store, the

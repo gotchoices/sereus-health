@@ -1,4 +1,5 @@
 import type { Database } from '@quereus/quereus';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { USE_QUEREUS } from '../db/config';
 import { getVariant } from '../mock';
 import { cadreService } from '../services/CadreService';
@@ -12,11 +13,15 @@ import { withTimeout } from '../services/cadreAsync';
  */
 const CONTROL_READ_TIMEOUT_MS = 5000;
 
-/** Drain a control-DB SELECT, giving up after a timeout so a solo node can't hang. */
+/**
+ * Drain a control-DB SELECT, giving up after a timeout so a solo node can't hang.
+ * `complete` is false when it gave up: the rows are then partial (usually none) and
+ * must not be taken as the table's contents.
+ */
 async function readControlRows(
   db: Database,
   sql: string,
-): Promise<Array<Record<string, unknown>>> {
+): Promise<{ rows: Array<Record<string, unknown>>; complete: boolean }> {
   const rows: Array<Record<string, unknown>> = [];
   try {
     await withTimeout(
@@ -30,8 +35,129 @@ async function readControlRows(
     // Solo node (read blocked) or table not present yet — render with what we have.
     console.warn(`[sereusConnections] control read gave up (${rows.length} rows so far): ${sql}:`,
       err instanceof Error ? err.message : err);
+    return { rows, complete: false };
   }
-  return rows;
+  return { rows, complete: true };
+}
+
+// ---------------------------------------------------------------------------
+// Last-known snapshot
+// ---------------------------------------------------------------------------
+//
+// Control-DB reads need the cohort, so while it reconnects (a relaunch, coming back
+// from the background) they can give up.  The membership itself rarely changes, so
+// the screen shows the last list it read and only the live status waits on the
+// network.  A read that completes replaces the snapshot; one that gives up never
+// shrinks it.
+
+/** Exported for reset.ts (Clear local data). */
+export const CONNECTIONS_SNAPSHOT_KEY = '@sereus/connectionsSnapshot';
+
+type ConnectionsSnapshot = {
+  partyId: string;
+  selfPeerId: string | null;
+  ownerKeys: string[];
+  peerIds: string[];
+};
+
+let memorySnapshot: ConnectionsSnapshot | null = null;
+
+async function loadSnapshot(): Promise<ConnectionsSnapshot | null> {
+  if (memorySnapshot) return memorySnapshot;
+  try {
+    const raw = await AsyncStorage.getItem(CONNECTIONS_SNAPSHOT_KEY);
+    const parsed = raw ? (JSON.parse(raw) as ConnectionsSnapshot) : null;
+    if (parsed && typeof parsed.partyId === 'string' && Array.isArray(parsed.peerIds) && Array.isArray(parsed.ownerKeys)) {
+      memorySnapshot = parsed;
+    }
+  } catch {
+    // unreadable — behave as if there were none
+  }
+  return memorySnapshot;
+}
+
+function saveSnapshot(snapshot: ConnectionsSnapshot): void {
+  memorySnapshot = snapshot;
+  AsyncStorage.setItem(CONNECTIONS_SNAPSHOT_KEY, JSON.stringify(snapshot)).catch(() => {});
+}
+
+/** Drop a node from the snapshot (after removing it), so a stale read can't bring it back. */
+export async function forgetCachedNode(peerId: string): Promise<void> {
+  const snapshot = await loadSnapshot();
+  if (snapshot?.peerIds.includes(peerId)) {
+    saveSnapshot({ ...snapshot, peerIds: snapshot.peerIds.filter((p) => p !== peerId) });
+  }
+}
+
+/** Build screen data from member/key lists plus the live connection state. */
+function buildData(
+  partyId: string | null,
+  selfPeerId: string | null,
+  ownerKeys: string[],
+  peerIds: string[],
+  stale: boolean,
+): SereusConnectionsData {
+  const keys: AuthorityKey[] = ownerKeys.map((key): AuthorityKey => ({
+    id: key,
+    // Phase 2+: store type/protection in a local metadata table. For now,
+    // default to vault/biometric since that's the only implemented key path.
+    type: 'vault',
+    protection: 'biometric',
+    publicKey: key,
+  }));
+
+  // Live state: which nodes hold a control-network connection to us right now.
+  // 'online' = connected; 'unreachable' = authorized but not connected.
+  const connected = cadreService.getConnectedControlPeerIds();
+  const cadreNodes: SereusNode[] = peerIds.map((peerId): SereusNode => {
+    const isSelf = peerId === selfPeerId;
+    return {
+      id: peerId,
+      // Phase 3+: store display name, device type, added-at in local metadata.
+      name: isSelf ? 'This device' : formatPeerId(peerId),
+      type: 'cadre',
+      deviceType: isSelf ? 'phone' : 'server',
+      status: isSelf || connected.has(peerId) ? 'online' : 'unreachable',
+      peerId,
+      addedAt: new Date().toISOString(),
+    };
+  });
+
+  // Always surface THIS device first, even before it has voucher-registered
+  // itself as a CadrePeer (which it can't on a solo node). Matches the screen
+  // spec ("this device always appears first").
+  if (selfPeerId) {
+    const at = cadreNodes.findIndex((n) => n.peerId === selfPeerId);
+    const self: SereusNode = at >= 0 ? cadreNodes.splice(at, 1)[0] : {
+      id: selfPeerId,
+      name: 'This device',
+      type: 'cadre',
+      deviceType: 'phone',
+      status: 'online',
+      peerId: selfPeerId,
+      addedAt: new Date().toISOString(),
+    };
+    cadreNodes.unshift(self);
+  }
+
+  // ---- Strand guests -----------------------------------------------------
+  // Phase 4+: query Strand table + local metadata for guest membership.
+  const guestNodes: SereusNode[] = [];
+
+  return { partyId, keys, cadreNodes, guestNodes, stale };
+}
+
+/**
+ * The last-known list, without starting the node or touching the network — for an
+ * instant first render.  Null when nothing has been read yet (or in mock mode).
+ */
+export async function getCachedSereusConnections(): Promise<SereusConnectionsData | null> {
+  if (!USE_QUEREUS) return null;
+  const snapshot = await loadSnapshot();
+  if (!snapshot) return null;
+  // A snapshot from a party this device no longer serves (after Clear local data) is useless.
+  if (cadreService.partyId && cadreService.partyId !== snapshot.partyId) return null;
+  return buildData(snapshot.partyId, cadreService.peerId ?? snapshot.selfPeerId, snapshot.ownerKeys, snapshot.peerIds, true);
 }
 
 // ---------------------------------------------------------------------------
@@ -61,6 +187,8 @@ export type SereusConnectionsData = {
   keys: AuthorityKey[];
   cadreNodes: SereusNode[];
   guestNodes: SereusNode[];
+  /** True when some of it came from the last-known snapshot rather than a completed read. */
+  stale?: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -115,66 +243,29 @@ async function loadCadreData(): Promise<SereusConnectionsData> {
   // Control-DB reads are time-boxed (see readControlRows): on a solo node they
   // block on quorum and would otherwise hang the screen forever. Run both
   // concurrently so the worst-case wait is one timeout, not two.
-  const [ownerRows, peerRows] = await Promise.all([
+  const [owners, peers] = await Promise.all([
     readControlRows(db, 'SELECT Key FROM CadreControl.OwnerKey'),
     readControlRows(db, 'SELECT PeerId, Multiaddr FROM CadreControl.CadrePeer'),
   ]);
 
-  // ---- Owner keys -------------------------------------------------------
-  const keys: AuthorityKey[] = ownerRows.map((row): AuthorityKey => ({
-    id: String(row.Key),
-    // Phase 2+: store type/protection in a local metadata table. For now,
-    // default to vault/biometric since that's the only implemented key path.
-    type: 'vault',
-    protection: 'biometric',
-    publicKey: String(row.Key),
-  }));
+  const partyId = cadreService.partyId;
+  const selfPeerId = cadreService.peerId ?? null;
+  const previous = await loadSnapshot();
+  const usable = previous && previous.partyId === partyId ? previous : null;
 
-  // ---- Cadre peers (nodes) -----------------------------------------------
-  // Live state: which nodes hold a control-network connection to us right now.
-  // 'online' = connected; 'unreachable' = authorized but not connected.
-  const connected = cadreService.getConnectedControlPeerIds();
-  const cadreNodes: SereusNode[] = peerRows.map((row): SereusNode => {
-    const peerId = String(row.PeerId);
-    const isSelf = peerId === cadreService.peerId;
-    return {
-      id: peerId,
-      // Phase 3+: store display name, device type, added-at in local metadata.
-      name: isSelf ? 'This device' : formatPeerId(peerId),
-      type: 'cadre',
-      deviceType: isSelf ? 'phone' : 'server',
-      status: isSelf || connected.has(peerId) ? 'online' : 'unreachable',
-      peerId,
-      addedAt: new Date().toISOString(),
-    };
-  });
+  // A completed read is the truth; one that gave up falls back to what we knew.
+  const ownerKeys = owners.complete
+    ? owners.rows.map((row) => String(row.Key))
+    : usable?.ownerKeys ?? owners.rows.map((row) => String(row.Key));
+  const peerIds = peers.complete
+    ? peers.rows.map((row) => String(row.PeerId))
+    : usable?.peerIds ?? peers.rows.map((row) => String(row.PeerId));
 
-  // Always surface THIS device first, even before it has voucher-registered
-  // itself as a CadrePeer (which it can't on a solo node). Matches the screen
-  // spec ("this device always appears first").
-  const myPeerId = cadreService.peerId;
-  if (myPeerId && !cadreNodes.some((n) => n.peerId === myPeerId)) {
-    cadreNodes.unshift({
-      id: myPeerId,
-      name: 'This device',
-      type: 'cadre',
-      deviceType: 'phone',
-      status: 'online',
-      peerId: myPeerId,
-      addedAt: new Date().toISOString(),
-    });
+  if (partyId && (owners.complete || peers.complete)) {
+    saveSnapshot({ partyId, selfPeerId, ownerKeys, peerIds });
   }
 
-  // ---- Strand guests -----------------------------------------------------
-  // Phase 4+: query Strand table + local metadata for guest membership.
-  const guestNodes: SereusNode[] = [];
-
-  return {
-    partyId: cadreService.partyId,
-    keys,
-    cadreNodes,
-    guestNodes,
-  };
+  return buildData(partyId, selfPeerId, ownerKeys, peerIds, !(owners.complete && peers.complete));
 }
 
 // ---------------------------------------------------------------------------

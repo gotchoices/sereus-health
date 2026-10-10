@@ -247,6 +247,7 @@ const en: Dict = {
   'sereus.copyPeerId': 'Copy peer ID',
   'sereus.copied': 'Copied to clipboard',
   'sereus.errorLoading': 'Failed to load connections.',
+  'sereus.refreshing': 'Refreshing',
   'sereus.addKey': 'Add Key',
   'sereus.addKeyStub': 'Key creation will be available in a future update.',
   'sereus.keyVault': 'Local Vault',

@@ -12,10 +12,13 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {
+  forgetCachedNode,
   formatPartyId,
   formatPeerId,
+  getCachedSereusConnections,
   getSereusConnections,
   type AuthorityKey,
+  type SereusConnectionsData,
   type SereusNode,
 } from '../data/sereusConnections';
 import { cadreService } from '../services/CadreService';
@@ -40,6 +43,9 @@ import { useT } from '../i18n/useT';
  * address costs up to ~21.5 s before the next is tried.
  */
 const CLAIM_SLOW_HINT_MS = 20_000;
+
+/** Connection events arrive in bursts while the cadre reconnects: one refresh per burst. */
+const CONNECTION_EVENT_DEBOUNCE_MS = 750;
 
 /** A generated secret (node seed / guest invitation) to show for copy + transport. */
 type SecretResult = { title: string; body: string; value: string };
@@ -67,21 +73,64 @@ export default function SereusConnections(props: { onBack: () => void }) {
   const pendingRef = useRef(false);
   pendingRef.current = pendingClaim !== null;
 
-  const reload = useCallback(async () => {
-    const data = await getSereusConnections();
+  // Refreshing happens in the background: the screen shows the last-known list at
+  // once (getCachedSereusConnections) and a refresh only replaces what it actually
+  // read (the data layer never lets a read that gave up shrink the list).
+  const [refreshing, setRefreshing] = useState(false);
+  // The node is running and a refresh has completed: connection events can be heard.
+  const [ready, setReady] = useState(false);
+  const hasDataRef = useRef(false);
+  const reloadInFlight = useRef<Promise<void> | null>(null);
+  const reloadAgain = useRef(false);
+
+  const applyData = useCallback((data: SereusConnectionsData) => {
+    hasDataRef.current = true;
     setPartyId(data.partyId);
     setKeys(data.keys ?? []);
     setCadre(data.cadreNodes ?? []);
     setGuests(data.guestNodes ?? []);
   }, []);
 
+  /** Refresh from the control DB.  One at a time; a request during one runs once more after it. */
+  const reload = useCallback((): Promise<void> => {
+    if (reloadInFlight.current) {
+      reloadAgain.current = true;
+      return reloadInFlight.current;
+    }
+    const run = (async () => {
+      setRefreshing(true);
+      try {
+        do {
+          reloadAgain.current = false;
+          applyData(await getSereusConnections());
+        } while (reloadAgain.current);
+      } finally {
+        reloadInFlight.current = null;
+        setRefreshing(false);
+      }
+    })();
+    reloadInFlight.current = run;
+    return run;
+  }, [applyData]);
+
   useEffect(() => {
     let alive = true;
-    setLoading(true);
     setError(null);
+    // Instant: the last-known list, without waiting for the node or the network.
+    getCachedSereusConnections()
+      .then((cached) => {
+        if (alive && cached && !hasDataRef.current) {
+          applyData(cached);
+          setLoading(false);
+        }
+      })
+      .catch(() => {});
     reload()
+      .then(() => {
+        if (alive) setReady(true);
+      })
       .catch(() => {
-        if (alive) setError(t('sereus.errorLoading'));
+        if (alive && !hasDataRef.current) setError(t('sereus.errorLoading'));
       })
       .finally(() => {
         if (alive) setLoading(false);
@@ -89,18 +138,26 @@ export default function SereusConnections(props: { onBack: () => void }) {
     return () => {
       alive = false;
     };
-  }, [t, reload]);
+  }, [t, reload, applyData]);
 
-  // Live node status: refresh the list whenever a control-network peer
-  // connects or disconnects, so a pairing that drops is visible, not silent.
-  // Subscribes once the node is running (after the first load).
+  // Live node status: refresh whenever a control-network peer connects or
+  // disconnects, so a pairing that drops is visible, not silent.  Events come in
+  // bursts while the cadre reconnects, so they are collapsed into one refresh.
   useEffect(() => {
-    if (loading) return;
+    if (!ready) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
     const unsubscribe = cadreService.onControlConnectionChange(() => {
-      reload().catch(() => {});
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        reload().catch(() => {});
+      }, CONNECTION_EVENT_DEBOUNCE_MS);
     });
-    return unsubscribe;
-  }, [loading, reload]);
+    return () => {
+      if (timer) clearTimeout(timer);
+      unsubscribe();
+    };
+  }, [ready, reload]);
 
   /** Run a cadre mutation with a busy spinner + honest error surfacing. */
   const runAction = useCallback(
@@ -345,6 +402,7 @@ export default function SereusConnections(props: { onBack: () => void }) {
               // Signed CadrePeer delete + forget its addresses (CadreService.removeNode).
               void runAction(async () => {
                 await cadreService.removeNode(node.peerId);
+                await forgetCachedNode(node.peerId);
                 await reload();
                 Alert.alert(t('sereus.removedTitle'), t('sereus.removedBody', { node: formatPeerId(node.peerId) }));
               });
@@ -537,7 +595,12 @@ export default function SereusConnections(props: { onBack: () => void }) {
         <Text style={[styles.headerTitle, { color: theme.textPrimary }]} numberOfLines={1}>
           {t('sereus.title')}
         </Text>
-        <View style={styles.headerIcon} />
+        <View style={styles.headerIcon}>
+          {/* Refreshing in the background; what is shown is the last-known list. */}
+          {refreshing && !loading ? (
+            <ActivityIndicator size="small" color={theme.textSecondary} accessibilityLabel={t('sereus.refreshing')} />
+          ) : null}
+        </View>
       </View>
 
       {loading ? (
