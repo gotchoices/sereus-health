@@ -282,7 +282,12 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
       own loading); Sereus Connections renders a last-known snapshot at once and never lets a
       read that gave up shrink the list.  Health uses no `db.watch()` yet (screens load on
       mount) — follow-up, with `strandReactivity` as chat does.
-- [ ] In-app scanner on a real camera; uranus end to end
+- [x] 1.15 wave (2026-10-12): cadre 1.15 / optimystic 1.13.0.  Fixes our optimystic#34:
+      strand open 10.5-11.4 s -> 0.6-0.9 s on the emulator with the node up, down or
+      restarted (Node repro 14 s -> 0.08 s).  Kit's native-crypto replaces our local copy.
+      Node removal uses `removeMachine` (node stops itself when it hears); device icon from
+      the signed `Profile`.  Wipe required (1.15 control schema change).
+- [ ] In-app scanner on a real camera; uranus end to end (uranus must move to 1.15)
 
 ### Step 4: Add private-IP drone node
 

@@ -49,6 +49,8 @@ import {
   type KeyId,
   type KeyStore,
   type NodeClaimPayload,
+  type MachineRemovalRefusal,
+  type MachineRemovalResult,
 } from '@serfab/cadre-core';
 import { buildNoiseCrypto, DEFAULT_NOISE_CRYPTO_MODE } from '@serfab/cadre-rn/noise-crypto';
 // Strand bring-up helpers from the kit, so this app behaves like the RN reference
@@ -160,6 +162,14 @@ const HEALTH_SCHEMA_DDL = extractInnerDDL(SCHEMA_SQL);
 // ---------------------------------------------------------------------------
 
 type EventHandler<T> = (payload: T) => void;
+
+/** `removeNode` was refused by cadre-core's removal plan; `reason` says why. */
+export class NodeRemovalRefusedError extends Error {
+  constructor(readonly reason: MachineRemovalRefusal) {
+    super(`Node removal refused: ${reason}`);
+    this.name = 'NodeRemovalRefusedError';
+  }
+}
 
 /** Outcome of enrolling a remote cadre node (see `connectToNode`). */
 export type AddNodeResult = {
@@ -775,24 +785,38 @@ class CadreServiceImpl {
   }
 
   /**
-   * Remove a node from the cadre: `removePeer` signs and deletes its `CadrePeer` row
-   * (which also takes it out of the membership gate and forgets cadre-core's retained
-   * dial target), then we drop its addresses from our own bootstrap list so the next
-   * start doesn't dial it.
+   * Remove a node from the cadre with cadre-core's `removeMachine` (1.15): in one owner-signed
+   * transaction its `CadrePeer` row, its `OwnerKey` row if its key is an owner, its push token
+   * and every invitation it could come back through, each with a `Revocation` tombstone; cadre-
+   * core then forgets it as a dial target and hangs up its control connection.  We also drop
+   * its addresses from our own bootstrap list so the next start doesn't dial it.
    *
-   * With the node offline and no other member connected, the delete commits on this
-   * phone only (cadre-core logs it as committed while alone); that is enough to stop
-   * this phone treating it as a member.
+   * Devices the removed machine had vouched (only possible if its key was an owner) are
+   * re-vouched under this device's key first, so they stay trusted.  A refusal
+   * (`not-an-owner`, `self`, `last-owner`) throws `NodeRemovalRefusedError`.
+   *
+   * With the node offline and no other member connected, the transaction commits on this
+   * phone only (cadre-core re-issues it when the cohort grows), which is enough for this
+   * phone to stop treating it as a member.
    */
-  async removeNode(peerId: string): Promise<void> {
-    if (peerId === this.peerId) throw new Error('This device cannot remove itself');
+  async removeNode(peerId: string): Promise<MachineRemovalResult> {
+    if (peerId === this.peerId) throw new NodeRemovalRefusedError('self');
     await this.ensureStarted();
     if (!this.node) throw new Error('CadreNode not running');
     if (!this._authorityPublicKey) {
-      await this.createAuthorityKey(); // the delete is owner-signed
+      await this.createAuthorityKey(); // the removal is owner-signed
     }
     logger.info('Removing node:', peerId);
-    await withTimeout(this.node.removePeer(peerId), CONTROL_OP_TIMEOUT_MS, 'removePeer');
+    const node = this.node;
+    const result = await withTimeout(
+      (async () => {
+        const plan = await node.planMachineRemoval(peerId);
+        if (plan.refusal) throw new NodeRemovalRefusedError(plan.refusal);
+        return node.removeMachine(peerId, { revouch: plan.dependents });
+      })(),
+      CONTROL_OP_TIMEOUT_MS,
+      'removeMachine',
+    );
 
     const list = await this.getBootstrapNodes();
     const kept = list.filter((a) => peerIdFromMultiaddr(a) !== peerId);
@@ -800,9 +824,13 @@ class CadreServiceImpl {
       await AsyncStorage.setItem(BOOTSTRAP_NODES_KEY, JSON.stringify(kept));
     }
     logger.info(
-      `[pairing] removed node=${peerId} bootstrapAddrsDropped=${list.length - kept.length}` +
-        ` controlConnections=${this.node.getControlConnectionCount()}`,
+      `[pairing] removed node=${peerId} peer=${result.removedPeer} ownerKey=${result.removedOwnerKey}` +
+        ` invitationsWithdrawn=${result.withdrawnInvitations.length}` +
+        ` revouched=${result.revouched.owners.length + result.revouched.peers.length}` +
+        ` bootstrapAddrsDropped=${list.length - kept.length}` +
+        ` controlConnections=${node.getControlConnectionCount()}`,
     );
+    return result;
   }
 
   /** Remove a previously-added bootstrap node (does not disconnect a live dial). */

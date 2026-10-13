@@ -21,7 +21,7 @@ import {
   type SereusConnectionsData,
   type SereusNode,
 } from '../data/sereusConnections';
-import { cadreService } from '../services/CadreService';
+import { cadreService, NodeRemovalRefusedError } from '../services/CadreService';
 import {
   classifyClaimFailure,
   isNodeCode,
@@ -401,7 +401,15 @@ export default function SereusConnections(props: { onBack: () => void }) {
             if (isCadre) {
               // Signed CadrePeer delete + forget its addresses (CadreService.removeNode).
               void runAction(async () => {
-                await cadreService.removeNode(node.peerId);
+                try {
+                  await cadreService.removeNode(node.peerId);
+                } catch (err) {
+                  if (err instanceof NodeRemovalRefusedError) {
+                    Alert.alert(t('sereus.removeRefusedTitle'), t(`sereus.removeRefused.${err.reason}`));
+                    return;
+                  }
+                  throw err;
+                }
                 await forgetCachedNode(node.peerId);
                 await reload();
                 Alert.alert(t('sereus.removedTitle'), t('sereus.removedBody', { node: formatPeerId(node.peerId) }));

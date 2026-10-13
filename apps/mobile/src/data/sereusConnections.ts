@@ -58,6 +58,8 @@ type ConnectionsSnapshot = {
   selfPeerId: string | null;
   ownerKeys: string[];
   peerIds: string[];
+  /** Each machine's self-published node profile ('transaction' = an app, 'storage' = an always-on node). */
+  profiles?: Record<string, string | null>;
 };
 
 let memorySnapshot: ConnectionsSnapshot | null = null;
@@ -96,6 +98,7 @@ function buildData(
   ownerKeys: string[],
   peerIds: string[],
   stale: boolean,
+  profiles: Record<string, string | null> = {},
 ): SereusConnectionsData {
   const keys: AuthorityKey[] = ownerKeys.map((key): AuthorityKey => ({
     id: key,
@@ -116,7 +119,8 @@ function buildData(
       // Phase 3+: store display name, device type, added-at in local metadata.
       name: isSelf ? 'This device' : formatPeerId(peerId),
       type: 'cadre',
-      deviceType: isSelf ? 'phone' : 'server',
+      // 'transaction' is an app on a phone; 'storage' (or not published yet) an always-on node.
+      deviceType: isSelf || profiles[peerId] === 'transaction' ? 'phone' : 'server',
       status: isSelf || connected.has(peerId) ? 'online' : 'unreachable',
       peerId,
       addedAt: new Date().toISOString(),
@@ -157,7 +161,7 @@ export async function getCachedSereusConnections(): Promise<SereusConnectionsDat
   if (!snapshot) return null;
   // A snapshot from a party this device no longer serves (after Clear local data) is useless.
   if (cadreService.partyId && cadreService.partyId !== snapshot.partyId) return null;
-  return buildData(snapshot.partyId, cadreService.peerId ?? snapshot.selfPeerId, snapshot.ownerKeys, snapshot.peerIds, true);
+  return buildData(snapshot.partyId, cadreService.peerId ?? snapshot.selfPeerId, snapshot.ownerKeys, snapshot.peerIds, true, snapshot.profiles);
 }
 
 // ---------------------------------------------------------------------------
@@ -245,7 +249,7 @@ async function loadCadreData(): Promise<SereusConnectionsData> {
   // concurrently so the worst-case wait is one timeout, not two.
   const [owners, peers] = await Promise.all([
     readControlRows(db, 'SELECT Key FROM CadreControl.OwnerKey'),
-    readControlRows(db, 'SELECT PeerId, Multiaddr FROM CadreControl.CadrePeer'),
+    readControlRows(db, 'SELECT PeerId, Profile FROM CadreControl.CadrePeer'),
   ]);
 
   const partyId = cadreService.partyId;
@@ -260,12 +264,15 @@ async function loadCadreData(): Promise<SereusConnectionsData> {
   const peerIds = peers.complete
     ? peers.rows.map((row) => String(row.PeerId))
     : usable?.peerIds ?? peers.rows.map((row) => String(row.PeerId));
+  const profiles: Record<string, string | null> = peers.complete
+    ? Object.fromEntries(peers.rows.map((row) => [String(row.PeerId), row.Profile == null ? null : String(row.Profile)]))
+    : usable?.profiles ?? {};
 
   if (partyId && (owners.complete || peers.complete)) {
-    saveSnapshot({ partyId, selfPeerId, ownerKeys, peerIds });
+    saveSnapshot({ partyId, selfPeerId, ownerKeys, peerIds, profiles });
   }
 
-  return buildData(partyId, selfPeerId, ownerKeys, peerIds, !(owners.complete && peers.complete));
+  return buildData(partyId, selfPeerId, ownerKeys, peerIds, !(owners.complete && peers.complete), profiles);
 }
 
 // ---------------------------------------------------------------------------

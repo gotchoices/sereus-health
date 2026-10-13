@@ -20,13 +20,12 @@ import './src/debug-bootstrap';
 
 // 1. The kit's Hermes polyfills — first library import, always.
 import '@serfab/cadre-rn/polyfills';
-// 2. Native SHA-256/512 + Ed25519 (react-native-quick-crypto), replacing the
-//    kit's pure-JS `crypto.subtle.digest`.  MUST come after the kit's polyfills
-//    (quick-crypto's readable-stream reads globals they install).  Optimystic
-//    hashes every block through this, so in pure JS it dominates the JS thread —
-//    see the file header for the measurements.  Goes away when the kit's
-//    `feat-rn-kit-native-digest` lands.
-import './src/polyfills/native-crypto';
+// 2. Native Ed25519 + SHA-256/512 behind `crypto.subtle` (react-native-quick-crypto),
+//    the kit's since sereus 1.15 (it replaced our local copy of chat's fix).  Right
+//    after the kit's polyfills and before anything imports libp2p: @libp2p/crypto
+//    picks WebCrypto or pure-JS Ed25519 once, when it loads (169 ms vs 0.72 ms per
+//    verify on a Galaxy S7).
+import '@serfab/cadre-rn/polyfills/native-crypto';
 // 3. Health-specific: RN 0.82's native TextDecoder rejects `{ fatal: true }`.
 import './src/polyfills/textdecoder-fatal';
 // 4. react-native-webrtc's registerGlobals(), for @libp2p/webrtc.

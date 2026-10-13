@@ -23,7 +23,8 @@ Party ID with tap-to-copy. Show as much as fits on a single line.
 ### My Nodes
 
 - **(+)** to add a remote node — **Scan node code** (primary), paste a code or an address, or **Add Cloud/Drone** (seed)
-- Each node: device icon, name, status (Online/Unknown/Unreachable), Peer ID (tap to copy), trash
+- Each node: device icon (phone for an app, server for an always-on node — from the machine's
+  signed `Profile`), name, status (Connected/Not connected), Peer ID (tap to copy), trash
 - This device always appears first
 
 ### Strand Guests
@@ -93,12 +94,14 @@ sensitive (membership secrets / strand access) — share only over a trusted cha
 
 ## Remove
 
-- **Node** (trash; not shown on This device): confirm, then `removePeer` — an owner-signed
-  delete of the node's `CadrePeer` row, which also drops it from the membership gate and
-  from cadre-core's dial targets — and remove its addresses from the app's bootstrap list.
-  With the node offline and no other member connected, the delete commits on this device
-  only (cadre-core logs it), which is enough for this device to stop treating it as a
-  member.  The node keeps its copy of the data until it is reset on its machine.
+- **Node** (trash; not shown on This device): confirm, then cadre-core's `removeMachine`
+  (1.15) — one owner-signed transaction removing the machine's `CadrePeer` row, its
+  `OwnerKey` if it was an owner, its push token and any invitation it could come back
+  through, each with a revocation tombstone.  Devices it had vouched are re-vouched under
+  this device's key first.  Its addresses leave the app's bootstrap list.  A refusal
+  (not an owner / itself / the last owner) is explained.  A node that is reachable learns
+  it was removed and stops itself (cadre-cli keeps a `removed.<party>.json` marker); one
+  that is offline keeps its copy of the data until reset on its machine.
 - **Guest** (unlink): revocation is not wired yet; the row is dropped from this view only,
   and the UI says so.
 
