@@ -14,6 +14,7 @@
 import type { Database } from '@quereus/quereus';
 import { USE_OPTIMYSTIC } from './config';
 import { createLogger } from '../util/logger';
+import { instrumentDatabase } from './perf';
 
 const logger = createLogger('DB');
 
@@ -43,7 +44,7 @@ async function initOptimystic(): Promise<Database> {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { cadreService } = require('../services/CadreService');
   await cadreService.ensureStarted();
-  const db: Database = cadreService.getHealthDatabase();
+  const db: Database = instrumentDatabase(cadreService.getHealthDatabase());
   await db.exec("PRAGMA schema_path = 'app,main'");
   dbInstance = db;
   logger.info('Database ready (optimystic strand)');

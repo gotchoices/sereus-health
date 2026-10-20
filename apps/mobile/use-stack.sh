@@ -76,31 +76,31 @@ pj_path = os.path.join(APP_DIR, 'package.json')
 # `use-stack.sh npm` reproduces the committed package.json byte for byte, so a
 # local -> npm round-trip is a no-op instead of a surprise diff.
 #
-# NOTE: pinned snapshot for the 1.15 wave (2026-10-12): cadre 1.15 / optimystic
-# 1.13.0 / quereus 4.20.2 / p2p-fret 1.0.2.  cadre-core 1.15 REQUIRES optimystic
-# ^1.13.0, so those two move together -- do not bump one alone.  1.15 changed the
-# control schema again (parties from 1.14 must be recreated): phone and drones must
-# run the same wave.  `strand-proto`
+# NOTE: pinned snapshot for the 1.17 wave (2026-10-19): cadre 1.17 / optimystic
+# 1.15.0 / quereus 4.20.3 / p2p-fret 1.1.0.  cadre-core 1.17 REQUIRES optimystic
+# ^1.15.0, so those two move together -- do not bump one alone.  1.17 refuses a
+# control store written by 1.16 or earlier (ControlStoreIncompatibleError): recreate
+# the party on every machine; phone and drones must run the same wave.  `strand-proto`
 # was removed upstream (formation is native in cadre-core).  `quereus-plugin-crypto`
 # and `quereus-plugin-optimystic` are no longer direct deps (cadre-core composes
 # them via @serfab/quereus-plugin-sereus) but stay in `resolutions` so one
 # version wins tree-wide -- as does `quereus-plugin-sereus` itself.
 PACKAGES = collections.OrderedDict([
-    ('@optimystic/db-core',                  ('../../../optimystic/packages/db-core',                  '^1.13.0', '1.13.0', True,  True)),
-    ('@optimystic/db-p2p',                   ('../../../optimystic/packages/db-p2p',                   '^1.13.0', '1.13.0', True,  True)),
-    ('@optimystic/db-p2p-storage-rn',        ('../../../optimystic/packages/db-p2p-storage-rn',        '^1.13.0', '1.13.0', True,  True)),
-    ('@optimystic/quereus-plugin-crypto',    ('../../../optimystic/packages/quereus-plugin-crypto',    '^1.13.0', '1.13.0', False, True)),
-    ('@optimystic/quereus-plugin-optimystic',('../../../optimystic/packages/quereus-plugin-optimystic','^1.13.0', '1.13.0', False, True)),
-    ('@serfab/quereus-plugin-sereus',        ('../../../sereus/packages/quereus-plugin-sereus',        '^1.15.0', None,     False, True)),
-    ('@quereus/quereus',                     ('../../../quereus/packages/quereus',                     '^4.20.2', None,     True,  True)),
-    ('@quereus/isolation',                   ('../../../quereus/packages/quereus-isolation',           '^4.20.2', None,     True,  True)),
-    ('@quereus/store',                       ('../../../quereus/packages/quereus-store',               '^4.20.2', None,     True,  True)),
-    ('@quereus/plugin-leveldb',              ('../../../quereus/packages/quereus-plugin-leveldb',      '^4.20.2', None,     False, True)),
-    ('p2p-fret',                             ('../../../fret/packages/fret',                           '^1.0.2',  None,     True,  True)),
+    ('@optimystic/db-core',                  ('../../../optimystic/packages/db-core',                  '^1.15.0', '1.15.0', True,  True)),
+    ('@optimystic/db-p2p',                   ('../../../optimystic/packages/db-p2p',                   '^1.15.0', '1.15.0', True,  True)),
+    ('@optimystic/db-p2p-storage-rn',        ('../../../optimystic/packages/db-p2p-storage-rn',        '^1.15.0', '1.15.0', True,  True)),
+    ('@optimystic/quereus-plugin-crypto',    ('../../../optimystic/packages/quereus-plugin-crypto',    '^1.15.0', '1.15.0', False, True)),
+    ('@optimystic/quereus-plugin-optimystic',('../../../optimystic/packages/quereus-plugin-optimystic','^1.15.0', '1.15.0', False, True)),
+    ('@serfab/quereus-plugin-sereus',        ('../../../sereus/packages/quereus-plugin-sereus',        '^1.17.0', None,     False, True)),
+    ('@quereus/quereus',                     ('../../../quereus/packages/quereus',                     '^4.20.3', None,     True,  True)),
+    ('@quereus/isolation',                   ('../../../quereus/packages/quereus-isolation',           '^4.20.3', None,     True,  True)),
+    ('@quereus/store',                       ('../../../quereus/packages/quereus-store',               '^4.20.3', None,     True,  True)),
+    ('@quereus/plugin-leveldb',              ('../../../quereus/packages/quereus-plugin-leveldb',      '^4.20.3', None,     False, True)),
+    ('p2p-fret',                             ('../../../fret/packages/fret',                           '^1.1.0',  None,     True,  True)),
     # dep-only ser packages (never in resolutions)
-    ('@quereus/plugin-react-native-leveldb', ('../../../quereus/packages/quereus-plugin-react-native-leveldb', '^4.20.2', None, True, False)),
-    ('@serfab/cadre-core',                   ('../../../sereus/packages/cadre-core',                   '^1.15.0', None,     True,  False)),
-    ('@serfab/cadre-rn',                     ('../../../sereus/packages/cadre-rn',                     '^1.15.0', None,     True,  False)),
+    ('@quereus/plugin-react-native-leveldb', ('../../../quereus/packages/quereus-plugin-react-native-leveldb', '^4.20.3', None, True, False)),
+    ('@serfab/cadre-core',                   ('../../../sereus/packages/cadre-core',                   '^1.17.0', None,     True,  False)),
+    ('@serfab/cadre-rn',                     ('../../../sereus/packages/cadre-rn',                     '^1.17.0', None,     True,  False)),
 ])
 NAMES = set(PACKAGES)
 SENTINEL = '@serfab/cadre-core'  # its spec tells us the current mode
@@ -200,9 +200,9 @@ if echo "$REPORT" | grep -q '^__CHANGED__'; then
       echo "Next: verify wiring with  bash stack-check"
       echo "      (run ../../../pull-stack.sh first if it reports stale builds)"
     else
-      echo "Next (npm mode): the 1.15 wave — cadre 1.15 / optimystic 1.13.0 /"
-      echo "      quereus 4.20.2 / p2p-fret 1.0.2.  cadre-core 1.15 requires"
-      echo "      optimystic ^1.13.0.  For iOS also run:  cd ios && pod install"
+      echo "Next (npm mode): the 1.17 wave — cadre 1.17 / optimystic 1.15.0 /"
+      echo "      quereus 4.20.3 / p2p-fret 1.1.0.  cadre-core 1.17 requires"
+      echo "      optimystic ^1.15.0.  For iOS also run:  cd ios && pod install"
     fi
     exit $IRC
   else
@@ -212,7 +212,7 @@ if echo "$REPORT" | grep -q '^__CHANGED__'; then
       echo "  2. bash stack-check      # confirm portal wiring + built targets"
     else
       echo "  2. cd ios && pod install # (iOS native deps)"
-      echo "     Note: the 1.15 wave — cadre 1.15 requires optimystic ^1.13.0,"
+      echo "     Note: the 1.17 wave — cadre 1.17 requires optimystic ^1.15.0,"
       echo "     so those two always move together."
     fi
   fi

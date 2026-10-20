@@ -101,13 +101,13 @@ export async function getCategoriesWithCounts(typeName: string): Promise<Categor
   if (!typeRow) return [];
   const typeId = typeRow.id as string;
 
-  // Item counts per category — one grouped query, not a per-category subquery.
+  // Item counts per category: one grouped scan of `items` alone (only this Type's categories
+  // are looked up below).  Not joined to `categories`: on the optimystic strand that join plans
+  // as a per-item lookup, slow and slower with every connected node (see db/stats.ts PERF).
   const counts = new Map<string, number>();
   for await (const r of db.eval(`
-    SELECT i.category_id AS id, count(*) AS n
-    FROM items i JOIN categories c ON c.id = i.category_id
-    WHERE c.type_id = ? GROUP BY i.category_id
-  `, [typeId])) {
+    SELECT category_id AS id, count(*) AS n FROM items GROUP BY category_id
+  `)) {
     if (r.id != null) counts.set(r.id as string, (r.n as number) || 0);
   }
 

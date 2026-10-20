@@ -4,6 +4,7 @@ import { USE_QUEREUS } from '../db/config';
 import { getVariant } from '../mock';
 import { cadreService } from '../services/CadreService';
 import { withTimeout } from '../services/cadreAsync';
+import { perfSql } from '../db/perf';
 
 /**
  * How long to wait on a control-DB read before rendering without it. On a SOLO
@@ -23,6 +24,7 @@ async function readControlRows(
   sql: string,
 ): Promise<{ rows: Array<Record<string, unknown>>; complete: boolean }> {
   const rows: Array<Record<string, unknown>> = [];
+  const started = Date.now();
   try {
     await withTimeout(
       (async () => {
@@ -35,8 +37,10 @@ async function readControlRows(
     // Solo node (read blocked) or table not present yet — render with what we have.
     console.warn(`[sereusConnections] control read gave up (${rows.length} rows so far): ${sql}:`,
       err instanceof Error ? err.message : err);
+    perfSql(Date.now() - started, `${rows.length}!gaveup`, `[control] ${sql}`);
     return { rows, complete: false };
   }
+  perfSql(Date.now() - started, rows.length, `[control] ${sql}`);
   return { rows, complete: true };
 }
 

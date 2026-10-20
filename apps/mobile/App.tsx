@@ -36,6 +36,7 @@ import { ThemeProvider } from './src/theme/useTheme';
 import { nodeCodeInbox } from './src/cadre/nodeCodeInbox';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CATALOG_SET_UP_KEY } from './src/db/reset';
+import { perfMark } from './src/db/perf';
 
 type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
 type Screen =
@@ -77,6 +78,8 @@ export default function App() {
 
 function AppContent() {
   const { route, params, linkSeq } = useVariantParams();
+  // The deep link last applied to navigation (see the deep-link effect below).
+  const [appliedLinkSeq, setAppliedLinkSeq] = useState(0);
 
   const [tab, setTab] = useState<Tab>('home');
 
@@ -190,6 +193,10 @@ function AppContent() {
   // own inbox subscription handles it (navigating again would remount it).
   const screenRef = useRef(screen);
   screenRef.current = screen;
+  // Dev-only timing (src/db/perf.ts): mark every screen change, including remounts by deep link.
+  useEffect(() => {
+    perfMark(`screen ${screen} seq=${appliedLinkSeq}`);
+  }, [screen, appliedLinkSeq]);
   useEffect(() => {
     nodeCodeInbox.start(Linking);
     return nodeCodeInbox.subscribe(() => {
@@ -333,11 +340,15 @@ function AppContent() {
 
     // Deep link resets stack to the target screen (legacy behavior).
     setScreenStack([target]);
+    // Applied together with the stack (one render), so a deep link remounts the screen
+    // once.  Keying on `linkSeq` directly remounted it twice — once when the link arrived,
+    // again when the stack changed — and the discarded first copy's queries kept running.
+    setAppliedLinkSeq(linkSeq);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linkSeq, params, route]);
 
   // Force remount after each deep link so screens re-run their data loads with the latest mock variant.
-  const dlKey = `dl-${linkSeq}`;
+  const dlKey = `dl-${appliedLinkSeq}`;
   // Also remount on stack changes so returning to a previous screen refreshes its data.
   const navKey = `${dlKey}-nav-${screenStack.join('>')}`;
 

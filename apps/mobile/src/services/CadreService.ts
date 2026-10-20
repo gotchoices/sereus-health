@@ -49,6 +49,8 @@ import {
   type KeyId,
   type KeyStore,
   type NodeClaimPayload,
+  ed25519KeyPairFromLibp2p,
+  type Ed25519KeyPair,
   type MachineRemovalRefusal,
   type MachineRemovalResult,
 } from '@serfab/cadre-core';
@@ -269,6 +271,8 @@ class CadreServiceImpl {
   private _partyId: string | null = null;
   private _strandId: string | null = null;
   private _authorityPublicKey: string | null = null;
+  /** The owner key pair, derived from the node identity at start. */
+  private ownerKeyPair: Ed25519KeyPair | null = null;
   /** One claim at a time (see claimNode). */
   private claiming = false;
   private _startError: string | null = null;
@@ -318,13 +322,7 @@ class CadreServiceImpl {
    * strand.  Never exposes private material.  Null before genesis.
    */
   getOwnerPublicKey(): string | null {
-    if (!this.node) return null;
-    try {
-      return this.node.getIdentityOwnerKey().publicKeyB64;
-    } catch (err) {
-      logger.warn('getOwnerPublicKey unavailable:', err);
-      return null;
-    }
+    return this.ownerKeyPair?.publicKeyB64 ?? null;
   }
 
   // -----------------------------------------------------------------------
@@ -363,6 +361,10 @@ class CadreServiceImpl {
       // Keychain-backed `keyStore` (the reference app's model) — see STATUS.md.
       const identityDb = this.getOrOpenDb(IDENTITY_DB_ID);
       const privateKey = await loadOrCreateRNPeerKey(identityDb);
+      // Single-key model: the owner key is derived from the node identity (cadre-core
+      // dropped `getIdentityOwnerKey` in 1.17, whose kits now keep a separate owner key in
+      // a key-store slot — see STATUS.md).
+      this.ownerKeyPair = ed25519KeyPairFromLibp2p(privateKey);
       logger.info('Loaded peer identity');
 
       // Node-local records live in their own LevelDB so clearing them cannot
@@ -528,6 +530,8 @@ class CadreServiceImpl {
           // null is legal (consent-seated strands record no trustworthy signer)
           // and is what we fall back to if owner genesis hasn't completed.
           FounderOwnerKey: this._authorityPublicKey,
+          // Health always founds its own strand on this device.
+          FounderPeerId: this.node.peerId?.toString() ?? null,
         },
         sAppConfig: {
           id: SAPP_ID,
@@ -564,13 +568,15 @@ class CadreServiceImpl {
    */
   private async runOwnerGenesis(): Promise<string> {
     if (!this.node) throw new Error('CadreNode not running');
-    const { privateKeyB64, publicKeyB64 } = this.node.getIdentityOwnerKey();
+    if (!this.ownerKeyPair) throw new Error('Owner key not loaded');
+    const { privateKeyB64, publicKeyB64 } = this.ownerKeyPair;
 
     const controlDb = this.node.getControlDatabase();
     if (!controlDb) throw new Error('Control database not available');
 
     const inserted = await controlDb.ensureOwnerKey(publicKeyB64);
-    this.node.initializeSeedBootstrap(privateKeyB64);
+    // Wires a software owner signer over the key (once per node: skip when already wired).
+    if (!this.node.getOwnerSigner()) await this.node.initializeSeedBootstrap(privateKeyB64);
     this._authorityPublicKey = publicKeyB64;
 
     logger.info(
@@ -620,12 +626,7 @@ class CadreServiceImpl {
   async exportAuthorityPrivateKey(): Promise<string | null> {
     await this.ensureStarted();
     if (!this.node) return null;
-    try {
-      return this.node.getIdentityOwnerKey().privateKeyB64;
-    } catch (err) {
-      logger.warn('exportAuthorityPrivateKey failed:', err);
-      return null;
-    }
+    return this.ownerKeyPair?.privateKeyB64 ?? null;
   }
 
   // -----------------------------------------------------------------------
@@ -785,15 +786,12 @@ class CadreServiceImpl {
   }
 
   /**
-   * Remove a node from the cadre with cadre-core's `removeMachine` (1.15): in one owner-signed
-   * transaction its `CadrePeer` row, its `OwnerKey` row if its key is an owner, its push token
-   * and every invitation it could come back through, each with a `Revocation` tombstone; cadre-
-   * core then forgets it as a dial target and hangs up its control connection.  We also drop
-   * its addresses from our own bootstrap list so the next start doesn't dial it.
-   *
-   * Devices the removed machine had vouched (only possible if its key was an owner) are
-   * re-vouched under this device's key first, so they stay trusted.  A refusal
-   * (`not-an-owner`, `self`, `last-owner`) throws `NodeRemovalRefusedError`.
+   * Remove a node from the cadre with cadre-core's `removeMachine`: in one owner-signed
+   * transaction its `CadrePeer` row, its push token and every invitation it could come back
+   * through, each with a `Revocation` tombstone; cadre-core then forgets it as a dial target
+   * and hangs up its control connection.  (Since 1.17 a machine's owner key, if it had one,
+   * is separate: `removeOwner`.)  We also drop its addresses from our own bootstrap list so
+   * the next start doesn't dial it.  A refusal throws `NodeRemovalRefusedError`.
    *
    * With the node offline and no other member connected, the transaction commits on this
    * phone only (cadre-core re-issues it when the cohort grows), which is enough for this
@@ -812,7 +810,7 @@ class CadreServiceImpl {
       (async () => {
         const plan = await node.planMachineRemoval(peerId);
         if (plan.refusal) throw new NodeRemovalRefusedError(plan.refusal);
-        return node.removeMachine(peerId, { revouch: plan.dependents });
+        return node.removeMachine(peerId);
       })(),
       CONTROL_OP_TIMEOUT_MS,
       'removeMachine',
@@ -824,9 +822,8 @@ class CadreServiceImpl {
       await AsyncStorage.setItem(BOOTSTRAP_NODES_KEY, JSON.stringify(kept));
     }
     logger.info(
-      `[pairing] removed node=${peerId} peer=${result.removedPeer} ownerKey=${result.removedOwnerKey}` +
+      `[pairing] removed node=${peerId} peer=${result.removedPeer}` +
         ` invitationsWithdrawn=${result.withdrawnInvitations.length}` +
-        ` revouched=${result.revouched.owners.length + result.revouched.peers.length}` +
         ` bootstrapAddrsDropped=${list.length - kept.length}` +
         ` controlConnections=${node.getControlConnectionCount()}`,
     );

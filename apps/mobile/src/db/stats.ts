@@ -44,26 +44,33 @@ async function countMap(db: Awaited<ReturnType<typeof getDatabase>>, sql: string
   return m;
 }
 
-/** All active items (across every category) and bundles for a Type — for the logging item picker. */
+/** All active items (across every category) and bundles for a Type — for the logging item picker.
+ *
+ *  PERF: every query here reads ONE table, with the per-type filtering done in JS.  On the
+ *  optimystic strand a join plans as a nested loop — a scan of one table plus a primary-key
+ *  lookup into the other per row — and each lookup costs a block read whose coordinator
+ *  routing grows with every connected cadre node (optimystic: per-read cohort assembly).
+ *  Measured in Node on the real backup (tmp/query-perf): the joined usage count took
+ *  126 ms solo and 325-372 ms with two nodes; these single-table scans take 2-9 ms either way. */
 export async function getItemsForType(typeId: string): Promise<TypeItemRow[]> {
   const db = await getDatabase();
 
-  // Items (flat) + one grouped usage-count query, joined in JS.
-  const itemRows: any[] = [];
-  for await (const r of db.eval(`
-    SELECT i.id AS itemId, i.name AS itemName, c.id AS categoryId, c.name AS categoryName
-    FROM items i JOIN categories c ON c.id = i.category_id
-    WHERE c.type_id = ?
-  `, [typeId])) {
-    itemRows.push(r);
+  // The Type's categories (few rows), then every item, kept when its category is one of them.
+  const categoryNames = new Map<string, string>();
+  for await (const r of db.eval(`SELECT id, name FROM categories WHERE type_id = ?`, [typeId])) {
+    categoryNames.set(r.id as string, r.name as string);
   }
+  const itemRows: any[] = [];
+  for await (const r of db.eval(`SELECT id AS itemId, name AS itemName, category_id AS categoryId FROM items`)) {
+    const categoryName = categoryNames.get(r.categoryId as string);
+    if (categoryName !== undefined) itemRows.push({ ...r, categoryName });
+  }
+  // Usage per item across all entries; only this Type's items are looked up below.
   const itemUsage = await countMap(db, `
-    SELECT lei.item_id AS id, count(*) AS n
-    FROM log_entry_items lei JOIN items i ON i.id = lei.item_id JOIN categories c ON c.id = i.category_id
-    WHERE c.type_id = ? GROUP BY lei.item_id
-  `, [typeId]);
+    SELECT item_id AS id, count(*) AS n FROM log_entry_items GROUP BY item_id
+  `, []);
 
-  // Bundles (flat) + one grouped usage-count query.
+  // Bundles (flat) + usage per bundle across all entries.
   const bundleRows: any[] = [];
   for await (const r of db.eval(`
     SELECT b.id AS bundleId, b.name AS bundleName FROM bundles b WHERE b.type_id = ?
@@ -71,10 +78,9 @@ export async function getItemsForType(typeId: string): Promise<TypeItemRow[]> {
     bundleRows.push(r);
   }
   const bundleUsage = await countMap(db, `
-    SELECT lei.source_bundle_id AS id, count(*) AS n
-    FROM log_entry_items lei JOIN bundles b ON b.id = lei.source_bundle_id
-    WHERE b.type_id = ? GROUP BY lei.source_bundle_id
-  `, [typeId]);
+    SELECT source_bundle_id AS id, count(*) AS n FROM log_entry_items
+    WHERE source_bundle_id IS NOT NULL GROUP BY source_bundle_id
+  `, []);
 
   const combined: TypeItemRow[] = [
     ...itemRows.map((r) => ({

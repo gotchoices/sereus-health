@@ -287,7 +287,19 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
       restarted (Node repro 14 s -> 0.08 s).  Kit's native-crypto replaces our local copy.
       Node removal uses `removeMachine` (node stops itself when it hears); device icon from
       the signed `Profile`.  Wipe required (1.15 control schema change).
-- [ ] In-app scanner on a real camera; uranus end to end (uranus must move to 1.15)
+- [x] 1.17 wave (2026-10-19): cadre 1.17 / optimystic 1.15.0 / quereus 4.20.3 / p2p-fret 1.1.0.
+      `getIdentityOwnerKey` gone (owner key now derived via `ed25519KeyPairFromLibp2p`; the kits
+      moved to a separate owner key in a key-store slot — TODO consider adopting), strand rows need
+      `FounderPeerId`, `removeMachine(peerId)` no longer handles owner keys.  Wipe required.
+- [x] Query performance (2026-10-19, real backup: 172 items / 177 entries / 479 links).  Joined
+      queries with a filter on the inner table planned as nested loops with a block read per row on
+      the strand, and every block read gets costlier with each connected node (optimystic re-assembles
+      the serving cohort per read).  Rewrote them as single-table scans (db/stats.ts, db/catalog.ts):
+      Node harness 126-372 ms -> 2-9 ms regardless of nodes; emulator New entry 8.7-9.5 s -> 1.0-2.3 s
+      (1-3 nodes), Catalog 2.0-2.2 s -> 0.7-2.3 s.  Writes: ~45 ms solo, 0.3-0.8 s with 2-3 nodes,
+      1.5-2.5 s at 150 ms RTT.  Tools: src/db/perf.ts + scripts/perf/screen-timings.sh (HEALTH_PERF=1),
+      tmp/query-perf harness.  Upstream drafts in tmp/ (not posted).
+- [ ] In-app scanner on a real camera; uranus end to end (uranus must move to 1.17)
 
 ### Step 4: Add private-IP drone node
 

@@ -12,3 +12,7 @@ if (!globalThis.process.env) globalThis.process.env = {};
 // libp2p dials, alongside the app's own `[CadreService] [pairing] …` line.
 // Then: adb -s <device> logcat -v time | grep -E "ReactNativeJS"
 //globalThis.process.env.DEBUG = 'sereus:cadre:*,optimystic:db-p2p:*';
+
+// Query timing (src/db/perf.ts): logs `[perf] sql …` per query and `[perf] screen …` per
+// screen change.  Uncomment for a timing run (scripts/perf/screen-timings.sh).
+//globalThis.process.env.HEALTH_PERF = '1';
