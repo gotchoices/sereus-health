@@ -44,6 +44,7 @@ async function countMap(db: Awaited<ReturnType<typeof getDatabase>>, sql: string
   return m;
 }
 
+// STACK-WORKAROUND(W1): single-table queries instead of the natural join (docs/stack-workarounds.md).
 /** All active items (across every category) and bundles for a Type — for the logging item picker.
  *
  *  PERF: every query here reads ONE table, with the per-type filtering done in JS.  On the

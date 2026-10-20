@@ -137,6 +137,7 @@ function AppContent() {
       proceed('database wait timed out');
     }, STARTUP_DB_WAIT_MS);
 
+    // STACK-WORKAROUND(W3): render without waiting for the strand (docs/stack-workarounds.md).
     // The gate exists only to decide first-run onboarding.  Once a catalog has been
     // seen, later launches render at once: opening the strand can take many seconds
     // while the cadre reconnects, and each screen shows its own loading state for

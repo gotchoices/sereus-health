@@ -6,6 +6,7 @@ import { cadreService } from '../services/CadreService';
 import { withTimeout } from '../services/cadreAsync';
 import { perfSql } from '../db/perf';
 
+// STACK-WORKAROUND(W2): time-boxed control reads + last-known snapshot (docs/stack-workarounds.md).
 /**
  * How long to wait on a control-DB read before rendering without it. On a SOLO
  * node (no control cohort) a consistent read has no quorum and blocks forever, so

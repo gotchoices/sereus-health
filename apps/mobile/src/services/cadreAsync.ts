@@ -11,6 +11,7 @@
 export const AUTHORITY_GENESIS_TIMEOUT_MS = 20_000;
 
 /** Bound a one-off control-network operation before failing fast (UI-triggered). */
+// STACK-WORKAROUND(W5): app-side time-boxes on control operations (docs/stack-workarounds.md).
 export const CONTROL_OP_TIMEOUT_MS = 15_000;
 
 /**

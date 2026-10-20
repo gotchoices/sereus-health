@@ -101,6 +101,7 @@ export async function getCategoriesWithCounts(typeName: string): Promise<Categor
   if (!typeRow) return [];
   const typeId = typeRow.id as string;
 
+  // STACK-WORKAROUND(W1): see docs/stack-workarounds.md.
   // Item counts per category: one grouped scan of `items` alone (only this Type's categories
   // are looked up below).  Not joined to `categories`: on the optimystic strand that join plans
   // as a per-item lookup, slow and slower with every connected node (see db/stats.ts PERF).

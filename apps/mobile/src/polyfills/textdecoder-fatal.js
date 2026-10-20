@@ -1,3 +1,4 @@
+// STACK-WORKAROUND(W4): remove when @serfab/cadre-rn/polyfills covers it (docs/stack-workarounds.md).
 /* global globalThis */
 /**
  * TextDecoder `{ fatal: true }` fix — the one patch health needs that

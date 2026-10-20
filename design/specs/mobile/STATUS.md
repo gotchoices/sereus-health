@@ -298,7 +298,8 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
       Node harness 126-372 ms -> 2-9 ms regardless of nodes; emulator New entry 8.7-9.5 s -> 1.0-2.3 s
       (1-3 nodes), Catalog 2.0-2.2 s -> 0.7-2.3 s.  Writes: ~45 ms solo, 0.3-0.8 s with 2-3 nodes,
       1.5-2.5 s at 150 ms RTT.  Tools: src/db/perf.ts + scripts/perf/screen-timings.sh (HEALTH_PERF=1),
-      tmp/query-perf harness.  Upstream drafts in tmp/ (not posted).
+      tmp/query-perf harness.  Upstream: optimystic#44 (join plans), optimystic#45 (per-read routing).
+      Workarounds tracked in docs/stack-workarounds.md (STACK-WORKAROUND markers) for back-out.
 - [ ] In-app scanner on a real camera; uranus end to end (uranus must move to 1.17)
 
 ### Step 4: Add private-IP drone node
