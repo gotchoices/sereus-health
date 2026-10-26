@@ -37,6 +37,7 @@ import { nodeCodeInbox } from './src/cadre/nodeCodeInbox';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CATALOG_SET_UP_KEY } from './src/db/reset';
 import { perfMark } from './src/db/perf';
+import './src/db/perfWrite'; // dev-only: health://perf/write when HEALTH_PERF=1
 
 type Tab = 'home' | 'assistant' | 'catalog' | 'settings';
 type Screen =

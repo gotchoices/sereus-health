@@ -300,7 +300,15 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
       1.5-2.5 s at 150 ms RTT.  Tools: src/db/perf.ts + scripts/perf/screen-timings.sh (HEALTH_PERF=1),
       tmp/query-perf harness.  Upstream: optimystic#44 (join plans), optimystic#45 (per-read routing).
       Workarounds tracked in docs/stack-workarounds.md (STACK-WORKAROUND markers) for back-out.
-- [ ] In-app scanner on a real camera; uranus end to end (uranus must move to 1.17)
+- [x] Node-scaling follow-ups on 1.18 (2026-10-23, tmp/query-perf-118):
+      one node: the phone's strand connects ~50-60 s after a claim; until then writes stay on the
+      phone, then catch up at once (no loss).  The per-read penalty starts with the FIRST connected
+      node (corrected on optimystic#45).  Writes: 7 collections per entry -> 28/56/126 cluster requests
+      for 1/2/3 nodes, ~8/8/12 RTTs per write (prepared streams serve only 20-30% of the concurrent
+      per-collection requests); measurements added to optimystic#42, whose batching fix is blocked on
+      a maintainer decision.  Phone-side background CPU in Node: <=1% idle and after reads at 0-3 nodes
+      (not the cause of the device's wall-vs-query gap; confirm on the S7, 478db6f0, over USB).
+- [ ] In-app scanner on a real camera; uranus end to end (uranus must move to 1.17+)
 
 ### Step 4: Add private-IP drone node
 

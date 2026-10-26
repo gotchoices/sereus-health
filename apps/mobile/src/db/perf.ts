@@ -22,6 +22,19 @@ const now: () => number = (() => {
   return perf ? () => perf.now() : () => Date.now();
 })();
 
+// Event-loop stall probe: when timing is on, log every stretch the JS thread was blocked for
+// more than 150 ms (`[perf] stall <ms>`), so a screen's wait can be split into its queries and
+// whatever else held the thread.
+if (PERF_ENABLED) {
+  let last = now();
+  setInterval(() => {
+    const t = now();
+    const lag = t - last - 50;
+    if (lag > 150) console.info(`[perf] stall ${lag.toFixed(0)}`);
+    last = t;
+  }, 50);
+}
+
 function shortSql(sql: string): string {
   return sql.replace(/\s+/g, ' ').trim().slice(0, 90);
 }

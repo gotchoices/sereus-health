@@ -26,8 +26,12 @@ for line in open(log, errors='replace'):
         if cur and cur['screen'] == name and t - cur['t0'] < 1500:
             continue
         counts[name] = counts.get(name, 0) + 1
-        cur = {'screen': name, 'visit': counts[name], 't0': t, 'n': 0, 'sum': 0.0, 'max': 0.0, 'last': t}
+        cur = {'screen': name, 'visit': counts[name], 't0': t, 'n': 0, 'sum': 0.0, 'max': 0.0, 'last': t, 'stall': 0.0}
         visits.append(cur)
+        continue
+    st = re.search(r"\[perf\] stall (\d+)", line)
+    if st and cur:
+        cur['stall'] += float(st.group(1))
         continue
     q = re.search(r"\[perf\] sql (\d+) rows=(\S+) (.*)$", line)
     if q and cur:
@@ -39,9 +43,9 @@ for line in open(log, errors='replace'):
         queries.append((ms, cur['screen'], q.group(2), q.group(3).rstrip("'").strip()[:80]))
 
 print(f"\n== {label}   (host load {load})")
-print(f"{'screen':<20}{'visit':>6}{'queries':>9}{'sum ms':>9}{'max ms':>9}{'wall ms':>9}")
+print(f"{'screen':<20}{'visit':>6}{'queries':>9}{'sum ms':>9}{'max ms':>9}{'wall ms':>9}{'stall ms':>10}")
 for v in visits:
-    print(f"{v['screen']:<20}{v['visit']:>6}{v['n']:>9}{v['sum']:>9.0f}{v['max']:>9.0f}{v['last'] - v['t0']:>9.0f}")
+    print(f"{v['screen']:<20}{v['visit']:>6}{v['n']:>9}{v['sum']:>9.0f}{v['max']:>9.0f}{v['last'] - v['t0']:>9.0f}{v['stall']:>10.0f}")
 print("\nslowest queries:")
 for ms, scr, rows, sql in sorted(queries, reverse=True)[:10]:
     print(f"  {ms:>6.0f} ms  {scr:<18} rows={rows:<10} {sql}")

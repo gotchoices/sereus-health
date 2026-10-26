@@ -15,4 +15,4 @@ if (!globalThis.process.env) globalThis.process.env = {};
 
 // Query timing (src/db/perf.ts): logs `[perf] sql …` per query and `[perf] screen …` per
 // screen change.  Uncomment for a timing run (scripts/perf/screen-timings.sh).
-//globalThis.process.env.HEALTH_PERF = '1';
+globalThis.process.env.HEALTH_PERF = '1'; // TEMP: S7 timing run
