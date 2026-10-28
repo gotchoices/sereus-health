@@ -2,38 +2,59 @@
 
 Apps rely on [@serfab/cadre-core](https://github.com/gotchoices/sereus.git) for cadre and strand management.
 
-For architecture, enrollment flows, and API details, see `sereus/docs/cadre-architecture.md`.
+For architecture, enrollment flows, and API details, see `sereus/docs/architecture.md`.
 
 ## Storage Architecture
 
 Health data is stored in an **optimystic strand database** managed by CadreNode.
 On first run the app auto-generates a party ID and starts a local health
-strand via `addStrand()`. No authority key or networking setup is required
-for local storage — the user logs data immediately.
+strand. No authority key or networking setup is required for local storage —
+the user logs data immediately.
 
-The owner key, strand publication, and CadrePeer registration happen on the
-founder path at first start (owner genesis + `publishStrand`); adding a remote
-node's bootstrap address then replicates health data to it automatically. Under
-cadre-core 0.12 there is no longer a per-strand `mode` ('bootstrap'/'networked') —
-solo/local commit is automatic, so a strand does not need to be torn down and
-re-added when a peer appears.
+The owner key and strand publication happen at first start; adding a cadre
+node then replicates health data to it automatically. A strand works alone and
+with nodes alike: nothing is torn down or re-added when a node appears.
 
-Storage: the health strand and the control/node-local repos are all backed by
-`LevelDBRawStorage` (`@optimystic/db-p2p-storage-rn`) over the `rn-leveldb`
-native module — an internal optimystic block store, distinct from the legacy
-per-table direct-LevelDB layout (`db/config.ts` Mode B).
+Storage: the health strand and the control/node-local stores are optimystic
+block stores over the `rn-leveldb` native module.
+
+## Write Outcomes and Sync Status
+
+A save completes on this device: the record is stored locally and is visible
+everywhere in the app at once. Sharing it with the user's other cadre machines
+happens afterwards, in the background, and does not hold up the user. A cadre is
+a distributed database, not a backup: "synced" below means held by the cadre, and
+**backup** means only the deliberate export ([import-export.md](import-export.md)).
+
+Every saved change is in one of these states:
+
+| State | Meaning for the user |
+|---|---|
+| **On this device only** | Saved here and in use, but no other cadre machine holds it yet. Losing this device now would lose it. |
+| **Synced** | At least one other machine in the cadre holds it. It survives losing this device. |
+| **Not saved** | The cadre refused the change (rare: for example a conflicting edit from another of the user's devices). It is no longer shown as data, and the user is told what was not saved and why. |
+
+Rules:
+
+- A change moves only forward: on this device only → synced, or on this device
+  only → not saved. Synced is final.
+- With no cadre nodes, every change stays on this device only. That is the normal
+  state of a solo user, not an error.
+- A change that is on this device only survives the app being closed or the
+  device restarting, and keeps syncing afterwards.
+- A change is never reported as not saved silently, and never committed twice.
+- The app shows these states (see mobile `global/async-activity.md` → Sync
+  status); it does not compute them. How the stack determines them, and what it
+  guarantees, is Sereus's to define: `sereus/docs/strands.md` → "A commit's
+  durability" (and its offline-mode successor once released).
 
 ## Implementation References
 
 - **CadreNode API**: `sereus/packages/cadre-core/README.md`
-- **Control database schema**: `sereus/docs/cadre-architecture.md` — `AuthorityKey`, `CadrePeer`, `Strand` tables; query via Quereus SQL (`db.eval()`)
-- **Storage**: `@optimystic/db-p2p` `IRawStorage`; RN: `@optimystic/db-p2p-storage-rn` (`MMKVRawStorage`)
-- **Enrollment flows**: `sereus/docs/cadre-architecture.md` — seed bootstrap, four modes (phone→drone, server→phone, server→drone, phone→phone via relay)
-- **RN transports** (cadre-core 0.12): `webSockets()` + `circuitRelayTransport()` + `webRTC()`
-  (no TCP in RN). WebSockets dials a reachable node; circuit-relay dials `/p2p-circuit`
-  reservations through a relay-enabled node; webRTC upgrades a relayed connection to a direct
-  path. `metro.config.js` forces the `browser` variants of `@libp2p/crypto`/`@libp2p/webrtc`,
-  and `index.js` installs `react-native-webrtc`'s globals.
+- **Control database schema**: `sereus/docs/architecture.md` — `CadrePeer`, `Strand` and related tables; query via Quereus SQL (`db.eval()`)
+- **Commit durability**: `sereus/docs/strands.md` → "A commit's durability"
+- **Enrollment flows**: `sereus/docs/architecture.md` → "Enrollment and Bootstrap"
+- **RN transports**: WebSockets, circuit relay and WebRTC (no TCP on React Native); see `metro.config.js` and `index.js`
 
 ## Core Concepts
 

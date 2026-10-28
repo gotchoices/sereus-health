@@ -9,7 +9,14 @@ See `domain/cadre.md` for concepts, implementation references, and enrollment pa
 ## Layout
 
 - Header: "Sereus Connections"
-- Sections: Network ID, My Keys, My Nodes, Strand Guests
+- Sections: Network ID, Sync, My Keys, My Nodes, Strand Guests
+
+### Sync
+
+The detail behind the app-wide sync status line (`global/async-activity.md` → Sync status):
+how many changes are on this device only, the oldest one's time, and any changes not
+saved. "All changes synced" when nothing is waiting; with no cadre nodes, a single line
+that data is only on this device, with the add-node action beside it.
 
 ### Network ID
 

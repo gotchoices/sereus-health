@@ -308,6 +308,25 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
       per-collection requests); measurements added to optimystic#42, whose batching fix is blocked on
       a maintainer decision.  Phone-side background CPU in Node: <=1% idle and after reads at 0-3 nodes
       (not the cause of the device's wall-vs-query gap; confirm on the S7, 478db6f0, over USB).
+- [x] 1.19 wave (2026-10-26): cadre 1.19 / optimystic 1.19.0 / quereus 4.20.3 / p2p-fret 1.2.1 (from
+      1.17 / 1.15.0).  No API changes needed; stores written by 1.15 open without a wipe (emulator).
+      Every machine of a party must run 1.19 together (block pushes between 1.19 and 1.18 are dropped).
+      Brings optimystic#42 (one pend/commit per write: 2 nodes 56 -> 8 cluster requests), #44 (hash-join
+      plans), #45/#40 (peer-record cache: reads flat with 1 node), #48, and sereus#51 (faster Hermes
+      TextDecoder/structuredClone; S7 write 7.1-7.7 s -> 1.4-1.6 s with our patch, shipped version not yet
+      timed) and sereus#52.  Node harness (tmp/query-perf-119): at 2 nodes after writes the join plans
+      flip back to nested loops (20 -> 450-550 ms), reported on optimystic#44, so W1 stays.  Offline
+      nodes: the first write after a restart waits ~20-40 s for the batched pend to give up on them, then
+      succeeds (1.15 failed it after 24 s).
+      S7 release build, 0/1/2/3 cadre-cli 1.19 nodes (USB): write 1.1-1.3 / 2.1-2.7 / 3.1-4.5 / 2.0-4.9 s
+      (1.17: 4.4-4.8 / 9.3-11.8 / 19.5-23.5 / 41-49 s); History 1.2-1.3 / 1.2-1.4 / 1.3-1.5 / 1.3-1.6 s;
+      New entry 1.3 / 1.5-1.6 / 1.75 / 1.8-1.9 s.  Levels off after 2 nodes: usable.  S7 debug solo write
+      2.3-2.8 s (draft for sereus#51 in tmp/).  A cadre-cli 1.19 node crashed (uncaught yamux
+      `StreamStateError` in sendGoAway) when the third node joined; not yet reproduced or reported.
+      2026-10-27: two nodes restarting together each commit their CadrePeer self-record while alone,
+      forking the block; every later CadrePeer write is rejected (content-digest-mismatch) and adding
+      a node tears (index committed, table not).  Node-only repro, filed as sereus#53.  Also seen: a
+      node removed on 1.19 stays in the phone's known strand members (consequence unproven, not filed).
 - [ ] In-app scanner on a real camera; uranus end to end (uranus must move to 1.17+)
 
 ### Step 4: Add private-IP drone node
