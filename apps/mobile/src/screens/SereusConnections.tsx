@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import SyncSummary from '../components/SyncSummary';
 import {
   ActivityIndicator,
   Alert,
@@ -644,6 +645,14 @@ export default function SereusConnections(props: { onBack: () => void }) {
             </Text>
             <Ionicons name="copy-outline" size={18} color={theme.textSecondary} />
           </TouchableOpacity>
+
+          {/* Sync (screens/sereus-connections.md → Sync) */}
+          <View style={styles.sectionHeader}>
+            <Text style={{ color: theme.textSecondary, ...typography.small, fontWeight: '700', flex: 1 }}>
+              {t('sync.sectionTitle')}
+            </Text>
+          </View>
+          <SyncSummary hasNodes={cadre.length > 1} />
 
           {/* My Keys */}
           {renderSectionHeader(t('sereus.myKeys'), keys.length, handleAddKey)}

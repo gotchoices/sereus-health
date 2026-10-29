@@ -16,6 +16,8 @@ import { getGraphs, saveGraph, deleteGraph, type Graph } from './src/data/graphs
 import GraphView from './src/screens/GraphView';
 import Settings from './src/screens/Settings';
 import SereusConnections from './src/screens/SereusConnections';
+import { onChangeFailed } from './src/sync/pendingChanges';
+import { useT } from './src/i18n/useT';
 import Reminders from './src/screens/Reminders';
 import BackupRestore from './src/screens/BackupRestore';
 import Assistant from './src/screens/Assistant';
@@ -78,6 +80,7 @@ export default function App() {
 }
 
 function AppContent() {
+  const t = useT();
   const { route, params, linkSeq } = useVariantParams();
   // The deep link last applied to navigation (see the deep-link effect below).
   const [appliedLinkSeq, setAppliedLinkSeq] = useState(0);
@@ -207,6 +210,15 @@ function AppContent() {
       setScreenStack(['Settings', 'SereusConnections']);
     });
   }, []);
+
+  // A background save the cadre refused is reported from whichever screen is open
+  // (global/async-activity.md → Sync status → Not saved). It also stays listed under
+  // Sereus Connections → Sync until dismissed.
+  useEffect(() => onChangeFailed((c) => {
+    Alert.alert(t('sync.notSavedTitle'), t('sync.notSavedBody', { reason: c.error ?? '' }), [
+      { text: t('sync.dismiss') },
+    ]);
+  }), [t]);
 
   const pushScreen = (next: Screen) => setScreenStack((prev) => [...prev, next]);
   const popScreen = () =>
@@ -499,6 +511,10 @@ function AppContent() {
       onNavigateTab={resetToTabRoot}
       activeTab={tab}
       onImportBuiltinCatalog={() => setShowOnboarding(true)}
+      onOpenSync={() => {
+        setTab('settings');
+        setScreenStack(['Settings', 'SereusConnections']);
+      }}
     />
   );
 }

@@ -2,6 +2,7 @@ import { getDatabase } from './index';
 import { newUuid } from '../util/id';
 import { toDbDatetime, fromDbDatetime, captureUtcOffsetMinutes } from '../util/datetime';
 import { noteLogActivity } from '../services/reminders/notifications';
+import { withWrite } from '../sync/writeLane';
 
 export interface LogEntry {
   id: string;
@@ -43,6 +44,9 @@ export interface CreateLogEntryInput {
    * passes the value from the backup so the original zone survives a device move.
    */
   eventUtcOffsetMinutes?: number | null;
+  /** Entry id to use; generated when absent. A background save picks it up front so the UI can
+   *  show the entry before it is written, and a replay after a restart can tell whether it landed. */
+  id?: string;
   items: Array<{
     itemId: string;
     sourceBundleId: string | null;
@@ -50,9 +54,31 @@ export interface CreateLogEntryInput {
   }>;
 }
 
+/** The written transaction: its entry id, and its `StampId()` (null where the backend has none). */
+export interface LogWrite {
+  entryId: string;
+  txId: string | null;
+}
+
+/** `StampId()` of the open transaction, for durability tracking; null if the backend lacks it. */
+async function stampOf(db: Awaited<ReturnType<typeof getDatabase>>): Promise<string | null> {
+  try {
+    const row = await db.get('SELECT StampId() AS tx');
+    return (row?.tx as string | undefined) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Create a log entry (serialized with every other write). */
 export async function createLogEntry(input: CreateLogEntryInput): Promise<string> {
+  return (await withWrite(() => createLogEntryTx(input))).entryId;
+}
+
+/** Create a log entry from inside the write lane (src/sync/writeLane.ts). */
+export async function createLogEntryTx(input: CreateLogEntryInput): Promise<LogWrite> {
   const db = await getDatabase();
-  const entryId = newUuid();
+  const entryId = input.id ?? newUuid();
 
   await db.exec('BEGIN');
   try {
@@ -81,10 +107,11 @@ export async function createLogEntry(input: CreateLogEntryInput): Promise<string
       }
     }
 
+    const txId = await stampOf(db);
     await db.exec('COMMIT');
     // Logging resets the inactivity nudge (fire-and-forget; never block the write).
     noteLogActivity().catch(() => {});
-    return entryId;
+    return { entryId, txId };
   } catch (e) {
     await db.exec('ROLLBACK');
     throw e;
@@ -103,6 +130,13 @@ export async function createLogEntry(input: CreateLogEntryInput): Promise<string
  * batches we yield to the event loop so a progress UI can paint.
  */
 export async function createLogEntriesBulk(
+  inputs: CreateLogEntryInput[],
+  opts?: { chunkSize?: number; onProgress?: (done: number, total: number) => void },
+): Promise<{ added: number; errors: string[] }> {
+  return withWrite(() => createLogEntriesBulkTx(inputs, opts));
+}
+
+async function createLogEntriesBulkTx(
   inputs: CreateLogEntryInput[],
   opts?: { chunkSize?: number; onProgress?: (done: number, total: number) => void },
 ): Promise<{ added: number; errors: string[] }> {
@@ -159,7 +193,13 @@ export async function createLogEntriesBulk(
   return { added, errors };
 }
 
+/** Update a log entry (serialized with every other write). */
 export async function updateLogEntry(entryId: string, input: CreateLogEntryInput): Promise<void> {
+  await withWrite(() => updateLogEntryTx(entryId, input));
+}
+
+/** Update a log entry from inside the write lane. */
+export async function updateLogEntryTx(entryId: string, input: CreateLogEntryInput): Promise<LogWrite> {
   const db = await getDatabase();
 
   await db.exec('BEGIN');
@@ -193,14 +233,22 @@ export async function updateLogEntry(entryId: string, input: CreateLogEntryInput
       }
     }
 
+    const txId = await stampOf(db);
     await db.exec('COMMIT');
+    return { entryId, txId };
   } catch (e) {
     await db.exec('ROLLBACK');
     throw e;
   }
 }
 
+/** Delete a log entry (serialized with every other write). */
 export async function deleteLogEntry(entryId: string): Promise<void> {
+  await withWrite(() => deleteLogEntryTx(entryId));
+}
+
+/** Delete a log entry from inside the write lane. Deleting an entry that is gone is a no-op. */
+export async function deleteLogEntryTx(entryId: string): Promise<LogWrite> {
   const db = await getDatabase();
 
   // Delete children first (their FKs reference log_entries with no ON DELETE
@@ -212,7 +260,9 @@ export async function deleteLogEntry(entryId: string): Promise<void> {
     await db.exec('DELETE FROM log_entry_quantifier_values WHERE entry_id = ?', [entryId]);
     await db.exec('DELETE FROM log_entry_items WHERE entry_id = ?', [entryId]);
     await db.exec('DELETE FROM log_entries WHERE id = ?', [entryId]);
+    const txId = await stampOf(db);
     await db.exec('COMMIT');
+    return { entryId, txId };
   } catch (e) {
     await db.exec('ROLLBACK');
     throw e;

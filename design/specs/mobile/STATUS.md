@@ -327,6 +327,17 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
       forking the block; every later CadrePeer write is rejected (content-digest-mismatch) and adding
       a node tears (index committed, table not).  Node-only repro, filed as sereus#53.  Also seen: a
       node removed on 1.19 stays in the phone's known strand members (consequence unproven, not filed).
+- [x] Asynchronous saves + sync status (2026-10-28; specs: domain/cadre.md → Write Outcomes,
+      global/async-activity.md → Sync status, sereus-connections.md → Sync).  Every write runs in one
+      FIFO lane (`src/sync/writeLane.ts`); log-entry save/delete return at once and run in the
+      background (`src/sync/pendingChanges.ts`), shown immediately in History by an overlay with
+      per-entry markers, an app-wide status line and a Sync section on Sereus Connections; a refused
+      save raises an alert.  Durability from cadre-core 1.19 (`commitDurability`, `strand:commit-held`).
+      Interim journal + replay is STACK-WORKAROUND(W6), to be replaced by optimystic offline mode.
+      Not yet: Re-enter for a not-saved entry (alert has OK only); markers for written-but-unsynced
+      changes do not survive a restart (cadre-core keeps durability in memory); catalog/item/bundle
+      editors still await their writes (now serialized through the lane).
+- [ ] Device check of async saves on the S7 (ask first; it is shared with another context)
 - [ ] In-app scanner on a real camera; uranus end to end (uranus must move to 1.17+)
 
 ### Step 4: Add private-IP drone node

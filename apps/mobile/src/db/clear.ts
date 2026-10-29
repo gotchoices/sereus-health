@@ -1,3 +1,5 @@
+import { withWrite } from '../sync/writeLane';
+import { discardAll } from '../sync/pendingChanges';
 import { getDatabase } from './index';
 
 // Child → parent order so foreign keys stay satisfied at every step.
@@ -22,7 +24,7 @@ const CLEAR_ORDER = [
  * a relaunch. Used by backup **Replace** mode (clear, then import) so the restore
  * can run in the same session.
  */
-export async function clearAllData(): Promise<void> {
+async function clearAllDataTx(): Promise<void> {
   const db = await getDatabase();
   await db.exec('BEGIN');
   try {
@@ -35,3 +37,10 @@ export async function clearAllData(): Promise<void> {
     throw e;
   }
 }
+
+/** `clearAllData`, serialized with every other write (src/sync/writeLane.ts). */
+export const clearAllData: typeof clearAllDataTx = async (...args) => {
+  // Saves still queued would otherwise write into the cleared database.
+  await discardAll();
+  return withWrite(() => clearAllDataTx(...args));
+};

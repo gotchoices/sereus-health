@@ -10,7 +10,11 @@ import {
   View,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { getLogHistoryPage, type LogEntry, type LogCursor } from '../data/logHistory';
+import { getLogHistoryEntry, getLogHistoryPage, type LogEntry, type LogCursor } from '../data/logHistory';
+import SyncStatusLine from '../components/SyncStatusLine';
+import { onChangeCommitted } from '../sync/pendingChanges';
+import { newestFirst, overlayHistory } from '../sync/historyOverlay';
+import { usePendingChanges } from '../sync/usePendingChanges';
 import { getTypeCount } from '../data/catalogImport';
 import { track } from '../util/activity';
 import { spacing, typography, useTheme } from '../theme/useTheme';
@@ -25,6 +29,8 @@ export default function LogHistory(props: {
   onOpenGraphs: () => void;
   onNavigateTab: (tab: Tab) => void;
   onImportBuiltinCatalog?: () => void;
+  /** Open the sync detail (Sereus Connections) from the status line. */
+  onOpenSync?: () => void;
   activeTab: Tab;
 }) {
   const theme = useTheme();
@@ -38,6 +44,27 @@ export default function LogHistory(props: {
   const [error, setError] = useState<string | null>(null);
   const [filterVisible, setFilterVisible] = useState(false);
   const [filterText, setFilterText] = useState('');
+  const pending = usePendingChanges();
+
+  // A background save landed: patch that one row from the database instead of reloading the
+  // list (the overlay already showed the change; this swaps in the stored row).
+  useEffect(() => onChangeCommitted(({ kind, entryId }) => {
+    if (kind === 'delete') {
+      setEntries((prev) => prev.filter((e) => e.id !== entryId));
+      return;
+    }
+    getLogHistoryEntry(entryId)
+      .then((row) => {
+        setEntries((prev) => {
+          const rest = prev.filter((e) => e.id !== entryId);
+          if (!row) return rest;
+          const next = [...rest, row];
+          next.sort(newestFirst);
+          return next;
+        });
+      })
+      .catch((err) => console.error('[LogHistory] Failed to refresh a saved entry', err));
+  }), []);
 
   // Initial load: first page (global spinner) + catalog-empty check.
   useEffect(() => {
@@ -85,11 +112,15 @@ export default function LogHistory(props: {
       .finally(() => setLoadingMore(false));
   }, [cursor, hasMore, loading, loadingMore]);
 
+  // Pending changes overlay the stored rows: a saved entry shows at once, a deleted one hides.
+  const overlay = useMemo(() => overlayHistory(entries, pending), [entries, pending]);
+
   const filtered = useMemo(() => {
     // Global filter rule: when filter UI is hidden, retain the text but do not filter the list.
     const q = (filterVisible ? filterText : '').trim().toLowerCase();
-    if (!q) return entries;
-    return entries.filter((e) => {
+    const rows = overlay.rows;
+    if (!q) return rows;
+    return rows.filter((e) => {
       if (e.type.toLowerCase().includes(q)) return true;
       if (e.timestamp.toLowerCase().includes(q)) return true;
       if (e.comment?.toLowerCase().includes(q)) return true;
@@ -97,7 +128,7 @@ export default function LogHistory(props: {
       if (e.bundles?.some((b) => b.toLowerCase().includes(q))) return true;
       return false;
     });
-  }, [entries, filterText, filterVisible]);
+  }, [overlay, filterText, filterVisible]);
 
   const formatTimestamp = (iso: string) => {
     const d = new Date(iso);
@@ -139,6 +170,19 @@ export default function LogHistory(props: {
           <Text style={[styles.timestamp, { color: theme.textSecondary }]} numberOfLines={1}>
             {formatTimestamp(item.timestamp)}
           </Text>
+          {overlay.marks.get(item.id) ? (
+            <View
+              style={styles.syncMark}
+              accessible
+              accessibilityLabel={overlay.marks.get(item.id) === 'local' ? t('sync.markLocal') : t('sync.markSaving')}
+            >
+              <Ionicons
+                name={overlay.marks.get(item.id) === 'local' ? 'cloud-offline-outline' : 'time-outline'}
+                size={14}
+                color={theme.textSecondary}
+              />
+            </View>
+          ) : null}
 
           <TouchableOpacity
             style={styles.cloneButton}
@@ -216,6 +260,8 @@ export default function LogHistory(props: {
           </TouchableOpacity>
         </View>
       </View>
+
+      <SyncStatusLine onPress={props.onOpenSync} />
 
       {/* Filter bar */}
       {filterVisible ? (
@@ -319,6 +365,7 @@ export default function LogHistory(props: {
 }
 
 const styles = StyleSheet.create({
+  syncMark: { marginLeft: 4 },
   container: { flex: 1 },
   header: {
     paddingHorizontal: spacing[3],

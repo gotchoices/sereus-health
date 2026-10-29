@@ -10,6 +10,7 @@
  * Actions reference catalog entities by NAME; we resolve names → ids against the
  * live DB, which reflects earlier actions in the same transaction.
  */
+import { withWrite } from '../sync/writeLane';
 import { getDatabase } from '../db';
 import { newUuid } from '../util/id';
 import { toDbDatetime, captureUtcOffsetMinutes } from '../util/datetime';
@@ -364,7 +365,7 @@ async function executeAction(db: Db, a: PlanAction): Promise<ActionResult> {
  * Execute the selected actions of an approved plan in one transaction.
  * All-or-nothing: a hard error rolls back everything.
  */
-export async function executePlan(plan: ActionPlan, selectedIds: Set<string>): Promise<ExecuteResult> {
+async function executePlanTx(plan: ActionPlan, selectedIds: Set<string>): Promise<ExecuteResult> {
   const actions = plan.actions.filter((a) => selectedIds.has(a.actionId));
   if (actions.length === 0) return { ok: true, results: [] };
 
@@ -401,3 +402,6 @@ export function summarizeExecution(result: ExecuteResult): string {
   for (const n of notes) lines.push(`• ${n.title}: ${n.detail}`);
   return lines.join('\n');
 }
+
+/** `executePlan`, serialized with every other write (src/sync/writeLane.ts). */
+export const executePlan: typeof executePlanTx = (...args) => withWrite(() => executePlanTx(...args));

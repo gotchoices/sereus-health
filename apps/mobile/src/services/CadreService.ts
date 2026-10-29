@@ -45,6 +45,8 @@ import {
   type CadreNodeEvents,
   type ControlDatabase,
   type StrandInstance,
+  type StrandCommitDurability,
+  type StrandCommitHeld,
   type DurableSlot,
   type KeyId,
   type KeyStore,
@@ -284,6 +286,8 @@ class CadreServiceImpl {
    * exactly once.  Closed in `stop()`.
    */
   private readonly openDbs = new Map<string, OptimysticDb>();
+  /** Listeners for "a health-strand commit is now held by the rest of its cohort" (see onCommitHeld). */
+  private readonly commitHeldHandlers = new Set<(transactionId: string) => void>();
 
   /** Whether the CadreNode is running. */
   get isRunning(): boolean {
@@ -461,6 +465,14 @@ class CadreServiceImpl {
 
       logger.info('Creating CadreNode...');
       this.node = new CadreNode(config);
+      // Forward "held elsewhere" for the health strand to whoever tracks sync status
+      // (src/sync/pendingChanges.ts). Attached per node, so a restarted node keeps reporting.
+      this.node.on('strand:commit-held', (e: StrandCommitHeld) => {
+        if (e.strandId !== this._strandId) return;
+        for (const h of this.commitHeldHandlers) {
+          try { h(e.transactionId); } catch (err) { logger.warn('commit-held handler failed:', err); }
+        }
+      });
       logger.info('Starting CadreNode...');
       await this.node.start();
       logger.info('CadreNode started. Peer ID:', this.node.peerId?.toString());
@@ -990,6 +1002,24 @@ class CadreServiceImpl {
       throw new Error('Health strand not initialized. Call ensureStarted() first.');
     }
     return this.healthStrand.database.getDatabase();
+  }
+
+  /**
+   * What cadre knows about one health-strand commit, by its `StampId()`: whether another
+   * cadre machine holds it, and whether `onCommitHeld` will report it later. Undefined when
+   * the strand is not open or the commit is unknown (wrote nothing, or too long ago).
+   */
+  commitDurability(transactionId: string): StrandCommitDurability | undefined {
+    return this.healthStrand?.database?.commitDurability(transactionId);
+  }
+
+  /**
+   * Subscribe to health-strand commits becoming held by the rest of their cohort (the
+   * `followed` commits of `commitDurability`). Survives node restarts. Returns an unsubscribe.
+   */
+  onCommitHeld(handler: (transactionId: string) => void): () => void {
+    this.commitHeldHandlers.add(handler);
+    return () => { this.commitHeldHandlers.delete(handler); };
   }
 
   /** Return the control database (for Sereus Connections screen). */

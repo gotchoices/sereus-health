@@ -19,21 +19,18 @@ import { track } from '../util/activity';
 import ComboField from '../components/ComboField';
 import {
   createInlineItem,
-  createLogEntry,
-  deleteLogEntry,
   EditEntryMode,
-  getBundleItemIds,
   getCategoriesForTypeName,
   getEditEntry,
   getItemQuantifiers,
   getItemsForType,
   getTypeStats,
   ItemQuantifierDef,
-  SaveItem,
   StatRow,
   TypeItem,
-  updateLogEntry,
 } from '../data/editEntry';
+import { submitLogChange } from '../sync/pendingChanges';
+import { newUuid } from '../util/id';
 
 const logger = createLogger('EditEntry');
 
@@ -182,41 +179,32 @@ export default function EditEntry(props: { mode: EditEntryMode; entryId?: string
 
   const canSave = !!typeId && !!timestamp && addedItems.length > 0;
 
+  // Save and Delete hand the change to the background (src/sync/pendingChanges.ts) and close
+  // at once; History shows the change immediately and marks it until it is written and synced
+  // (global/async-activity.md → Sync status). Bundle expansion happens in the background too.
   const onPressSave = async () => {
     setError(null);
     try {
-      const items: SaveItem[] = [];
-      for (const a of addedItems) {
-        if (a.isBundle) {
-          const memberIds = await track(getBundleItemIds(a.id));
-          for (const mid of memberIds) items.push({ itemId: mid, sourceBundleId: a.id, quantifiers: [] });
-        } else {
-          const quantifiers = Object.entries(a.values).map(([quantifierId, value]) => ({ quantifierId, value }));
-          items.push({ itemId: a.id, sourceBundleId: null, quantifiers });
-        }
-      }
-      // Dedup by itemId, MERGING rather than keeping-first: an item can appear
-      // both via a bundle expansion (no quantifiers) and as a direct add (with
-      // quantifier values). Keep whichever occurrence carries quantifiers, and
-      // prefer a direct add (null bundle) for provenance — so values aren't lost
-      // just because the bundle happened to be listed first.
-      const byId = new Map<string, SaveItem>();
-      for (const it of items) {
-        const prev = byId.get(it.itemId);
-        if (!prev) {
-          byId.set(it.itemId, it);
-          continue;
-        }
-        byId.set(it.itemId, {
-          itemId: it.itemId,
-          sourceBundleId: prev.sourceBundleId === null || it.sourceBundleId === null ? null : prev.sourceBundleId,
-          quantifiers: prev.quantifiers.length ? prev.quantifiers : it.quantifiers,
-        });
-      }
-      const deduped = Array.from(byId.values());
-      const payload = { timestamp, typeId, comment: comment || null, items: deduped };
-      if (props.mode === 'edit' && props.entryId) await track(updateLogEntry(props.entryId, payload));
-      else await track(createLogEntry(payload));
+      const entryId = props.mode === 'edit' && props.entryId ? props.entryId : newUuid();
+      const draft = {
+        timestamp,
+        typeId,
+        comment: comment || null,
+        items: addedItems.map((a) => ({ id: a.id, isBundle: a.isBundle, values: a.values })),
+      };
+      const bundles = addedItems.filter((a) => a.isBundle).map((a) => a.name);
+      const preview = {
+        id: entryId,
+        timestamp,
+        type: typeName,
+        items: addedItems.filter((a) => !a.isBundle).map((a) => a.name),
+        bundles: bundles.length ? bundles : undefined,
+        comment: comment || undefined,
+      };
+      await submitLogChange(
+        props.mode === 'edit' && props.entryId ? { kind: 'update', entryId, draft } : { kind: 'create', entryId, draft },
+        preview,
+      );
       props.onBack();
     } catch (e) {
       logger.error('save failed', e);
@@ -229,7 +217,7 @@ export default function EditEntry(props: { mode: EditEntryMode; entryId?: string
     Alert.alert(t('editEntry.deleteTitle'), t('editEntry.deleteConfirm'), [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('common.delete'), style: 'destructive', onPress: async () => {
-        try { await track(deleteLogEntry(props.entryId!)); props.onBack(); } catch { setError(t('editEntry.errorSaving')); }
+        try { await submitLogChange({ kind: 'delete', entryId: props.entryId! }); props.onBack(); } catch { setError(t('editEntry.errorSaving')); }
       } },
     ]);
   };

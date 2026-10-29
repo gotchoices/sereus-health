@@ -1,3 +1,4 @@
+import { withWrite } from '../sync/writeLane';
 import type { Database } from '@quereus/quereus';
 import { getDatabase } from './index';
 import { newUuid } from '../util/id';
@@ -44,7 +45,7 @@ async function getOrCreateItem(db: Database, itemName: string, categoryId: strin
   return { id, created: true };
 }
 
-export async function insertCatalogItem(input: InsertCatalogItemInput): Promise<string> {
+async function insertCatalogItemTx(input: InsertCatalogItemInput): Promise<string> {
   const db = await getDatabase();
   const typeId = await getOrCreateType(db, input.typeName);
   const categoryId = await getOrCreateCategory(db, input.categoryName, typeId);
@@ -130,14 +131,14 @@ export async function getCategoriesWithCounts(typeName: string): Promise<Categor
 }
 
 /** Create a category under a Type (idempotent by unique `(type_id, name)`). */
-export async function createCategory(typeName: string, name: string): Promise<string> {
+async function createCategoryTx(typeName: string, name: string): Promise<string> {
   const db = await getDatabase();
   const typeId = await getOrCreateType(db, typeName);
   return getOrCreateCategory(db, name, typeId);
 }
 
 /** Rename a category. Throws `duplicate-name` if the target name already exists in the Type. */
-export async function renameCategory(categoryId: string, newName: string): Promise<void> {
+async function renameCategoryTx(categoryId: string, newName: string): Promise<void> {
   const db = await getDatabase();
   const curStmt = await db.prepare('SELECT type_id FROM categories WHERE id = ?');
   const cur = await curStmt.get([categoryId]);
@@ -153,7 +154,7 @@ export async function renameCategory(categoryId: string, newName: string): Promi
 }
 
 /** Retire (hide from future selection) or restore a category. */
-export async function setCategoryRetired(categoryId: string, retired: boolean): Promise<void> {
+async function setCategoryRetiredTx(categoryId: string, retired: boolean): Promise<void> {
   const db = await getDatabase();
   await db.exec('UPDATE categories SET retired_at = ? WHERE id = ?', [
     retired ? new Date().toISOString() : null,
@@ -165,7 +166,7 @@ export async function setCategoryRetired(categoryId: string, retired: boolean): 
  * Hard-delete a category. Only permitted when empty (no items reference it) —
  * otherwise throws `not-empty` and the caller should retire instead (rules.md).
  */
-export async function deleteCategory(categoryId: string): Promise<void> {
+async function deleteCategoryTx(categoryId: string): Promise<void> {
   const db = await getDatabase();
   const cntStmt = await db.prepare('SELECT count(*) AS n FROM items WHERE category_id = ?');
   const cnt = await cntStmt.get([categoryId]);
@@ -228,7 +229,7 @@ export async function getItemDetail(itemId: string): Promise<{
   };
 }
 
-export async function upsertItem(input: {
+async function upsertItemTx(input: {
   id?: string;
   name: string;
   description?: string | null;
@@ -406,7 +407,7 @@ export async function getTypeCount(): Promise<number> {
  * reused, not duplicated. `dryRun: true` computes the add/skip counts without
  * writing (for preview-before-commit); `dryRun: false` writes in one transaction.
  */
-export async function importCanonicalCatalog(
+async function importCanonicalCatalogTx(
   cat: CanonicalCatalog,
   opts: { dryRun: boolean },
 ): Promise<CatalogImportResult> {
@@ -531,7 +532,7 @@ export async function importCanonicalCatalog(
  * Members are replaced via point-delete (a scanning DELETE that removes rows
  * trips Quereus's "Path is invalid due to mutation of the tree").
  */
-export async function upsertBundle(input: {
+async function upsertBundleTx(input: {
   id?: string;
   name: string;
   typeName: string;
@@ -626,3 +627,27 @@ export async function getAllCatalogBundles(): Promise<Array<{ id: string; name: 
 }
 
 
+
+/** `insertCatalogItem`, serialized with every other write (src/sync/writeLane.ts). */
+export const insertCatalogItem: typeof insertCatalogItemTx = (...args) => withWrite(() => insertCatalogItemTx(...args));
+
+/** `createCategory`, serialized with every other write (src/sync/writeLane.ts). */
+export const createCategory: typeof createCategoryTx = (...args) => withWrite(() => createCategoryTx(...args));
+
+/** `renameCategory`, serialized with every other write (src/sync/writeLane.ts). */
+export const renameCategory: typeof renameCategoryTx = (...args) => withWrite(() => renameCategoryTx(...args));
+
+/** `setCategoryRetired`, serialized with every other write (src/sync/writeLane.ts). */
+export const setCategoryRetired: typeof setCategoryRetiredTx = (...args) => withWrite(() => setCategoryRetiredTx(...args));
+
+/** `deleteCategory`, serialized with every other write (src/sync/writeLane.ts). */
+export const deleteCategory: typeof deleteCategoryTx = (...args) => withWrite(() => deleteCategoryTx(...args));
+
+/** `upsertItem`, serialized with every other write (src/sync/writeLane.ts). */
+export const upsertItem: typeof upsertItemTx = (...args) => withWrite(() => upsertItemTx(...args));
+
+/** `importCanonicalCatalog`, serialized with every other write (src/sync/writeLane.ts). */
+export const importCanonicalCatalog: typeof importCanonicalCatalogTx = (...args) => withWrite(() => importCanonicalCatalogTx(...args));
+
+/** `upsertBundle`, serialized with every other write (src/sync/writeLane.ts). */
+export const upsertBundle: typeof upsertBundleTx = (...args) => withWrite(() => upsertBundleTx(...args));

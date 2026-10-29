@@ -19,6 +19,21 @@ const en: Dict = {
   'common.back': 'Back',
   'common.retry': 'Retry',
 
+  // Sync status (design/specs/mobile/global/async-activity.md → Sync status)
+  'sync.waitingCount': '{count} waiting to sync',
+  'sync.notSavedCount': '{count} not saved',
+  'sync.markLocal': 'On this device only',
+  'sync.markSaving': 'Saving',
+  'sync.notSavedTitle': 'Entry not saved',
+  'sync.notSavedBody': 'A change could not be saved, so it was removed: {reason}',
+  'sync.reEnter': 'Re-enter',
+  'sync.dismiss': 'OK',
+  'sync.sectionTitle': 'Sync',
+  'sync.allSynced': 'All changes synced',
+  'sync.onlyThisDevice': 'Your data is only on this device. Add a node to sync it across your cadre.',
+  'sync.waitingDetail': '{count} on this device only, oldest from {time}',
+  'sync.notSavedItem': 'Not saved: {what}',
+
   'gettingStarted.welcomeTitle': 'Welcome to Sereus Health',
   'gettingStarted.welcomeBody': 'Log what you do and how you feel to find what helps. First, set up your catalog.',
   'gettingStarted.onlineTitle': 'Import from sereus.org',

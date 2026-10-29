@@ -5,6 +5,7 @@
  * or via applySchema() for leveldb).  This module ensures seeds are applied
  * once before first query.
  */
+import { restorePendingChanges } from '../sync/pendingChanges';
 import { getDatabase } from './index';
 import { applyProductionSeeds } from './schema';
 import { createLogger } from '../util/logger';
@@ -81,6 +82,9 @@ export async function ensureDatabaseInitialized(): Promise<void> {
 
       isInitialized = true;
       logger.info('DB ready');
+      // Re-submit saves an earlier run journaled but never wrote (closed mid-save). Runs in the
+      // background through the write lane; never delays startup.
+      restorePendingChanges().catch((e) => logger.warn('restoring unsaved changes failed:', e));
     } catch (e) {
       logger.error('DB init failed:', e);
       throw e;

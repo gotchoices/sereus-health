@@ -1,6 +1,6 @@
 import { USE_QUEREUS } from '../db/config';
 import { ensureDatabaseInitialized } from '../db/init';
-import { getAllLogEntries, getLogEntriesPage, type LogEntry as DbLogEntry, type LogCursor } from '../db/logEntries';
+import { getAllLogEntries, getLogEntriesPage, getLogEntryById, type LogEntry as DbLogEntry, type LogCursor } from '../db/logEntries';
 import { getVariant } from '../mock';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -104,3 +104,14 @@ export async function getLogHistoryPage(
 }
 
 
+
+/**
+ * One entry as History renders it, or null if it does not exist (deleted, or never written).
+ * Used to patch a single row in after a background save lands, instead of reloading the list.
+ */
+export async function getLogHistoryEntry(entryId: string): Promise<LogEntry | null> {
+  if (!USE_QUEREUS) return null;
+  await ensureDatabaseInitialized();
+  const e = await getLogEntryById(entryId);
+  return e ? toDataEntry(e) : null;
+}
