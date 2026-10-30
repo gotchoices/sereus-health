@@ -16,6 +16,8 @@ const logger = createLogger('DB Init');
 // start with an EMPTY database and guide the user to import a starter catalog via
 // the LogHistory / ConfigureCatalog empty states.  Flip to true only to restore the
 // old demo auto-seed (dev/demo convenience).
+// NOTE: the production seeds use fixed ids ('type-activity', …). The schema tags every `id`
+// "optimystic.fresh" (generated per insert); re-enabling these seeds would make that tag false.
 const AUTO_SEED_FIRST_RUN = false;
 
 let initPromise: Promise<void> | null = null;

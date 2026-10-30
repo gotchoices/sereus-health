@@ -47,6 +47,9 @@ import {
   type StrandInstance,
   type StrandCommitDurability,
   type StrandCommitHeld,
+  type StrandOfflineQueue,
+  type StrandOfflineStatus,
+  type StrandQueueState,
   type DurableSlot,
   type KeyId,
   type KeyStore,
@@ -288,6 +291,11 @@ class CadreServiceImpl {
   private readonly openDbs = new Map<string, OptimysticDb>();
   /** Listeners for "a health-strand commit is now held by the rest of its cohort" (see onCommitHeld). */
   private readonly commitHeldHandlers = new Set<(transactionId: string) => void>();
+  /** Listeners for the health strand's offline queue (see onOfflineStatus / onQueueState). */
+  private readonly offlineStatusHandlers = new Set<(e: StrandOfflineStatus) => void>();
+  private readonly queueStateHandlers = new Set<(e: StrandQueueState) => void>();
+  /** Each strand's offline journal, one per scope (cadre-core asks again on every rebuild). */
+  private readonly offlineJournals = new Map<string, InstanceType<typeof LevelDBKVStore>>();
 
   /** Whether the CadreNode is running. */
   get isRunning(): boolean {
@@ -423,6 +431,24 @@ class CadreServiceImpl {
           // opaque and already safe as a database-name segment: use it verbatim.
           provider: (scope: string) => new LevelDBRawStorage(this.getOrOpenDb(scope)),
         },
+        // Offline mode (sereus 1.19.1 / optimystic 1.20): a health-strand commit resolves once
+        // the transaction is journaled on this phone, and the cadre gets it in the background, in
+        // order, never committed alone while known members are unreachable.  The journal lives in
+        // the strand's own LevelDB under the store's default prefix — as @serfab/cadre-rn's phone
+        // node keeps it — so adopting createPhoneNode later reads the same journal.  Sereus's own
+        // Strand tables stay network-acknowledged (tagged by Sereus).  See domain/cadre.md →
+        // Write Outcomes, and src/sync/pendingChanges.ts for how the app follows the queue.
+        strandOffline: {
+          journal: (scope: string) => {
+            let journal = this.offlineJournals.get(scope);
+            if (!journal) {
+              journal = new LevelDBKVStore(this.getOrOpenDb(scope));
+              this.offlineJournals.set(scope, journal);
+            }
+            return journal;
+          },
+          initialMode: 'offline',
+        },
         network: {
           // RN requires explicit transports (no TCP).
           //   webSockets           — dial a reachable node over /ws
@@ -467,6 +493,18 @@ class CadreServiceImpl {
       this.node = new CadreNode(config);
       // Forward "held elsewhere" for the health strand to whoever tracks sync status
       // (src/sync/pendingChanges.ts). Attached per node, so a restarted node keeps reporting.
+      this.node.on('strand:offline-status', (e: StrandOfflineStatus) => {
+        if (e.strandId !== this._strandId) return;
+        for (const h of this.offlineStatusHandlers) {
+          try { h(e); } catch (err) { logger.warn('offline-status handler failed:', err); }
+        }
+      });
+      this.node.on('strand:queue-state', (e: StrandQueueState) => {
+        if (e.strandId !== this._strandId) return;
+        for (const h of this.queueStateHandlers) {
+          try { h(e); } catch (err) { logger.warn('queue-state handler failed:', err); }
+        }
+      });
       this.node.on('strand:commit-held', (e: StrandCommitHeld) => {
         if (e.strandId !== this._strandId) return;
         for (const h of this.commitHeldHandlers) {
@@ -960,6 +998,7 @@ class CadreServiceImpl {
       }
     }
     this.openDbs.clear();
+    this.offlineJournals.clear(); // they share the LevelDB handles closed above
     this._startPromise = null;
   }
 
@@ -1011,6 +1050,23 @@ class CadreServiceImpl {
    */
   commitDurability(transactionId: string): StrandCommitDurability | undefined {
     return this.healthStrand?.database?.commitDurability(transactionId);
+  }
+
+  /** The health strand's offline queue (entries, status, outcomes), or undefined before it opens. */
+  offlineQueue(): StrandOfflineQueue | undefined {
+    return this.healthStrand?.database?.offline;
+  }
+
+  /** Every status of every health-strand transaction in the offline queue. Survives node restarts. */
+  onOfflineStatus(handler: (e: StrandOfflineStatus) => void): () => void {
+    this.offlineStatusHandlers.add(handler);
+    return () => { this.offlineStatusHandlers.delete(handler); };
+  }
+
+  /** The health strand's offline queue state (also emitted once after a restart restores the queue). */
+  onQueueState(handler: (e: StrandQueueState) => void): () => void {
+    this.queueStateHandlers.add(handler);
+    return () => { this.queueStateHandlers.delete(handler); };
   }
 
   /**

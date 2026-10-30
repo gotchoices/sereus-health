@@ -16,7 +16,6 @@ When a stack release lands, check each entry's **Back out when** and **Check** l
 | W3 | Startup renders without waiting for the DB (catalog flag + 20 s cap) | strand open that is fast and never hangs | `App.tsx` |
 | W4 | Local TextDecoder `{ fatal: true }` polyfill | cadre-rn polyfills covering RN 0.82's native TextDecoder | `src/polyfills/textdecoder-fatal.js` |
 | W5 | Time-boxed control operations (genesis, publish, claim, remove) | control writes/reads that cannot wedge | `src/services/CadreService.ts`, `src/services/cadreAsync.ts` |
-| W6 | App-side journal + replay of background log-entry saves | optimystic offline mode (journal, `entries()`, `onStatus`) exposed by cadre for strand databases | `src/sync/pendingChanges.ts` |
 
 ## W1 — Single-table count queries instead of joins
 
@@ -100,25 +99,14 @@ error, in every cohort state.
 **Check.** Exercise claim / remove / publish with nodes up, down and paused; none should need the
 app-side timeout to return.
 
-## W6 — App-side journal for background saves
+## Backed out
 
-**What.** `src/sync/pendingChanges.ts` journals each background log-entry save to AsyncStorage
-before the editor closes, replays journaled saves that never committed at the next start, and
-follows each commit's durability (`commitDurability`, `strand:commit-held`) to drive the sync
-markers.
-
-**Why.** Saves now run in the background so the UI never waits on a slow commit, but until the
-stack queues them itself, a save that is still running when the app is killed would be lost. And
-cadre-core keeps a commit's durability only in memory, so a change written but not yet held
-elsewhere loses its "on this device only" marker on restart.
-
-**Back out when** cadre exposes optimystic's offline mode for strand databases (optimystic 1.20:
-`plugin.offline` with a `journal`, `entries()`, `onStatus`, `outcomes()`). Then: enter offline mode,
-drop the AsyncStorage journal and replay, and drive the store from `onStatus` / `entries()` — the
-write lane, the History overlay and the UI stay as they are.
-
-**Check.** Save an entry with nodes unreachable, kill the app, restart: the entry is present and
-still marked until a node returns, with no app-side journal involved.
+- **W6 — App-side journal for background saves** (2026-10-28 → 2026-10-29). Replaced by Sereus
+  1.19.1's offline mode for strand databases (optimystic 1.20.1): the stack journals each queued
+  transaction and reports its statuses, so `src/sync/pendingChanges.ts` now follows the queue. What
+  stays is app-level, not a workaround: a small journal for the moment between Save and the local
+  commit (while the change waits in the app's write lane, where the stack cannot see it), and a map
+  from queued transaction to History entry so markers come back after a restart.
 
 ## Not workarounds, but adoption debt
 

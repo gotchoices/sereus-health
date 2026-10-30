@@ -337,7 +337,16 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
       Not yet: Re-enter for a not-saved entry (alert has OK only); markers for written-but-unsynced
       changes do not survive a restart (cadre-core keeps durability in memory); catalog/item/bundle
       editors still await their writes (now serialized through the lane).
+- [x] Offline mode (2026-10-29): cadre 1.19.1 / optimystic 1.20.1 / quereus 4.21.1.  Health strand
+      runs in offline mode (`CadreNodeConfig.strandOffline`, journal in the strand's LevelDB);
+      `src/sync/pendingChanges.ts` follows the stack's queue (`strand:offline-status`), W6 backed out.
+      Generated `id` columns tagged `"optimystic.fresh"`.  S7 release build: solo save returns in
+      ~0.2 s (local commit ~0.76 s); with 2 nodes 0.55-1.2 s, synced in 10-13 s; with nodes down a
+      save commits locally in ~0.24 s, keeps its marker across a kill/restart, the app reopens in
+      seconds, and the change drains 35 s after the nodes return.  sereus#53 still reproduces on
+      1.19.1 (Node repro).
 - [ ] Device check of async saves on the S7 (ask first; it is shared with another context)
+      — done 2026-10-29 with the offline-mode build (above).
 - [ ] In-app scanner on a real camera; uranus end to end (uranus must move to 1.17+)
 
 ### Step 4: Add private-IP drone node

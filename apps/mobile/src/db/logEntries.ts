@@ -76,7 +76,7 @@ export async function createLogEntry(input: CreateLogEntryInput): Promise<string
 }
 
 /** Create a log entry from inside the write lane (src/sync/writeLane.ts). */
-export async function createLogEntryTx(input: CreateLogEntryInput): Promise<LogWrite> {
+export async function createLogEntryTx(input: CreateLogEntryInput, onTxId?: (txId: string) => void): Promise<LogWrite> {
   const db = await getDatabase();
   const entryId = input.id ?? newUuid();
 
@@ -108,6 +108,9 @@ export async function createLogEntryTx(input: CreateLogEntryInput): Promise<LogW
     }
 
     const txId = await stampOf(db);
+    // Offline mode reports the transaction's first status from inside the COMMIT: let the
+    // caller match the id to its change first.
+    if (txId) onTxId?.(txId);
     await db.exec('COMMIT');
     // Logging resets the inactivity nudge (fire-and-forget; never block the write).
     noteLogActivity().catch(() => {});
@@ -199,7 +202,7 @@ export async function updateLogEntry(entryId: string, input: CreateLogEntryInput
 }
 
 /** Update a log entry from inside the write lane. */
-export async function updateLogEntryTx(entryId: string, input: CreateLogEntryInput): Promise<LogWrite> {
+export async function updateLogEntryTx(entryId: string, input: CreateLogEntryInput, onTxId?: (txId: string) => void): Promise<LogWrite> {
   const db = await getDatabase();
 
   await db.exec('BEGIN');
@@ -234,6 +237,9 @@ export async function updateLogEntryTx(entryId: string, input: CreateLogEntryInp
     }
 
     const txId = await stampOf(db);
+    // Offline mode reports the transaction's first status from inside the COMMIT: let the
+    // caller match the id to its change first.
+    if (txId) onTxId?.(txId);
     await db.exec('COMMIT');
     return { entryId, txId };
   } catch (e) {
@@ -248,7 +254,7 @@ export async function deleteLogEntry(entryId: string): Promise<void> {
 }
 
 /** Delete a log entry from inside the write lane. Deleting an entry that is gone is a no-op. */
-export async function deleteLogEntryTx(entryId: string): Promise<LogWrite> {
+export async function deleteLogEntryTx(entryId: string, onTxId?: (txId: string) => void): Promise<LogWrite> {
   const db = await getDatabase();
 
   // Delete children first (their FKs reference log_entries with no ON DELETE
@@ -261,6 +267,9 @@ export async function deleteLogEntryTx(entryId: string): Promise<LogWrite> {
     await db.exec('DELETE FROM log_entry_items WHERE entry_id = ?', [entryId]);
     await db.exec('DELETE FROM log_entries WHERE id = ?', [entryId]);
     const txId = await stampOf(db);
+    // Offline mode reports the transaction's first status from inside the COMMIT: let the
+    // caller match the id to its change first.
+    if (txId) onTxId?.(txId);
     await db.exec('COMMIT');
     return { entryId, txId };
   } catch (e) {

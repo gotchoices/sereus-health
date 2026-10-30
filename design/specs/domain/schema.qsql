@@ -14,9 +14,13 @@
 --     in the ORIGINATING zone rather than the viewer's current zone.
 --   - retired_at stays ISO-8601 UTC TEXT for now (may migrate to DATETIME later).
 
+-- Primary-key ids are UUIDs the app generates for every insert, so they are tagged
+-- "optimystic.fresh": an offline-queued insert under one cannot collide with another
+-- machine's and is reported assured (domain/cadre.md → Write Outcomes).  Child tables
+-- keyed by (entry_id, …) are not tagged: an edit re-inserts an existing entry's rows.
 declare schema main {
   table types (
-    id text primary key,
+    id text primary key with tags ("optimystic.fresh" = true),
     name text unique,
     color text null,
     display_order integer default 0,
@@ -24,7 +28,7 @@ declare schema main {
   );
 
   table categories (
-    id text primary key,
+    id text primary key with tags ("optimystic.fresh" = true),
     type_id text,
     name text,
     retired_at text null,
@@ -33,7 +37,7 @@ declare schema main {
   );
 
   table items (
-    id text primary key,
+    id text primary key with tags ("optimystic.fresh" = true),
     category_id text,
     name text,
     description text null,
@@ -43,7 +47,7 @@ declare schema main {
   );
 
   table item_quantifiers (
-    id text primary key,
+    id text primary key with tags ("optimystic.fresh" = true),
     item_id text,
     name text,
     min_value real null,
@@ -55,7 +59,7 @@ declare schema main {
   );
 
   table bundles (
-    id text primary key,
+    id text primary key with tags ("optimystic.fresh" = true),
     type_id text,
     name text,
     retired_at text null,
@@ -64,7 +68,7 @@ declare schema main {
   );
 
   table bundle_members (
-    id text primary key,
+    id text primary key with tags ("optimystic.fresh" = true),
     bundle_id text,
     item_id text null,
     member_bundle_id text null,
@@ -79,7 +83,7 @@ declare schema main {
   );
 
   table log_entries (
-    id text primary key,
+    id text primary key with tags ("optimystic.fresh" = true),
     timestamp datetime,
     type_id text,
     comment text null,

@@ -11,15 +11,17 @@
  * `health://perf/submit` saves the same way through the background path the editor uses
  * (src/sync/pendingChanges.ts) and logs
  *
- *   [perf] submit ack=<ms> commit=<ms> items=3
+ *   [perf] submit ack=<ms> commit=<ms> synced=<ms|pending> items=3
  *
- * — `ack` is what the user waits for (the editor closes), `commit` is when the write landed.
+ * — `ack` is what the user waits for (the editor closes), `commit` is when the write landed on
+ * this device, `synced` when the change left the pending store (held by the cadre, or solo);
+ * `pending` if that took longer than five minutes.
  */
 import { Linking } from 'react-native';
 import { PERF_ENABLED } from './perf';
 import { getDatabase } from './index';
 import { createLogEntry } from './logEntries';
-import { onChangeCommitted, submitLogChange } from '../sync/pendingChanges';
+import { getPendingChanges, onChangeCommitted, subscribePendingChanges, submitLogChange } from '../sync/pendingChanges';
 import { newUuid } from '../util/id';
 
 const WRITE_LINK = 'health://perf/write';
@@ -52,7 +54,14 @@ async function timedSubmit(): Promise<void> {
     { id: entryId, timestamp, type: choice.typeName, items: choice.picked.map((p) => p.name), comment: 'perf-write' },
   );
   const ack = Date.now() - t0;
-  console.info(`[perf] submit ack=${ack} commit=${await committed} items=${choice.picked.length}`);
+  const settled = (): boolean => !getPendingChanges().some((c) => c.intent.entryId === entryId && c.state !== 'done');
+  const synced = new Promise<string>((resolve) => {
+    const timer = setTimeout(() => { off(); resolve('pending'); }, 300_000);
+    const check = () => { if (settled()) { clearTimeout(timer); off(); resolve(String(Date.now() - t0)); } };
+    const off = subscribePendingChanges(check);
+  });
+  const commit = await committed;
+  console.info(`[perf] submit ack=${ack} commit=${commit} synced=${await synced} items=${choice.picked.length}`);
 }
 
 async function timedWrite(): Promise<void> {
