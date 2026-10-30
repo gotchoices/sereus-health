@@ -1,0 +1,17 @@
+{
+  "name": "health-stack-bench",
+  "private": true,
+  "type": "module",
+  "description": "Node-only bench for the Sereus stack under Sereus Health's schema and workload (see README.md)",
+  "dependencies": {
+    "@serfab/cadre-core": "1.19.1",
+    "@serfab/cadre-cli": "1.19.1",
+    "@optimystic/db-p2p": "1.20.1",
+    "@optimystic/db-p2p-storage-fs": "1.20.1",
+    "@quereus/quereus": "4.21.1",
+    "@libp2p/crypto": "5.1.23",
+    "@libp2p/websockets": "10.1.21",
+    "js-yaml": "4.1.0"
+  },
+  "overrides": { "@quereus/quereus": "4.21.1" }
+}
