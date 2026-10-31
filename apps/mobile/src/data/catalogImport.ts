@@ -6,6 +6,7 @@
  *
  * Catalogs are FETCHED, not bundled (design/specs/mobile/global/general.md).
  */
+import { withBulkWrite } from '../sync/bulkWrite';
 import { pick, types as pickerTypes, errorCodes, isErrorWithCode } from '@react-native-documents/picker';
 import RNFS from 'react-native-fs';
 import yaml from 'js-yaml';
@@ -94,7 +95,7 @@ export function previewCatalogImport(cat: CanonicalCatalog): Promise<CatalogImpo
   return importCanonicalCatalog(cat, { dryRun: true });
 }
 
-/** Commit the import (transactional). */
+/** Commit the import (transactional). A bulk write: runs with the strand online (see withBulkWrite). */
 export function commitCatalogImport(cat: CanonicalCatalog): Promise<CatalogImportResult> {
-  return importCanonicalCatalog(cat, { dryRun: false });
+  return withBulkWrite(() => importCanonicalCatalog(cat, { dryRun: false }));
 }

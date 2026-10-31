@@ -1052,6 +1052,36 @@ class CadreServiceImpl {
     return this.healthStrand?.database?.commitDurability(transactionId);
   }
 
+  /**
+   * Run a bulk write (catalog import, backup restore) with the health strand in online mode, then
+   * put it back in offline mode.  Offline mode queues every transaction and sends them one by one,
+   * which costs each small transaction several times an online commit and leaves later saves waiting
+   * behind the import (tools/stack-bench: ~68-118 ms vs ~14 ms per row, backlog drained at ~80 ms
+   * each).  Stays offline when the queue is waiting for an unreachable cadre: an online commit would
+   * then fail, and the offline queue still delivers the import later.
+   */
+  async withStrandOnline<T>(fn: () => Promise<T>): Promise<T> {
+    const node = this.node;
+    const strandId = this._strandId;
+    const queue = this.offlineQueue();
+    const waitingForCohort = (() => {
+      try { return queue?.queueState().waitingFor === 'cohort'; } catch { return false; }
+    })();
+    if (!node || !strandId || !queue || waitingForCohort) return fn();
+    let switched = false;
+    try {
+      if (node.getStrandOfflineMode(strandId) === 'offline') {
+        node.setStrandOfflineMode(strandId, 'online');
+        switched = true;
+      }
+      return await fn();
+    } finally {
+      if (switched) {
+        try { node.setStrandOfflineMode(strandId, 'offline'); } catch (err) { logger.warn('restoring offline mode failed:', err); }
+      }
+    }
+  }
+
   /** The health strand's offline queue (entries, status, outcomes), or undefined before it opens. */
   offlineQueue(): StrandOfflineQueue | undefined {
     return this.healthStrand?.database?.offline;

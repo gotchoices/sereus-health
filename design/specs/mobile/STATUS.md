@@ -345,6 +345,16 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
       save commits locally in ~0.24 s, keeps its marker across a kill/restart, the app reopens in
       seconds, and the change drains 35 s after the nodes return.  sereus#53 still reproduces on
       1.19.1 (Node repro).
+- [x] Stack bench + offline-mode costs (2026-10-30; `tools/stack-bench/`, Node only).  Offline mode
+      costs a small transaction ~5x a synchronous one (68 vs 14 ms/row; 118 with a file journal) and
+      drains at ~80 ms each, so bulk imports now run with the strand online (`withBulkWrite` →
+      `CadreService.withStrandOnline`): S7 debug restore 178 s, vs ~7 min with offline mode on.  The
+      Node sync time with 2 nodes is 0.5-1 s; on the S7 it is ~13 s: ~2 s to the local commit, ~2.7 s
+      before the queue sends, ~5 s pend round, ~3.4 s commit round, the JS thread busy ~40% (block
+      decoding in the kit's TextDecoder polyfill 2.4-2.8 s, peer-store localeCompare 0.8 s).  Offline
+      mode also fails an autocommit insert ("Path is invalid due to mutation of the tree") with a
+      journal that resolves immediately (repro in tools/stack-bench/repros; draft issue in tmp/,
+      not filed).
 - [ ] Device check of async saves on the S7 (ask first; it is shared with another context)
       — done 2026-10-29 with the offline-mode build (above).
 - [ ] In-app scanner on a real camera; uranus end to end (uranus must move to 1.17+)

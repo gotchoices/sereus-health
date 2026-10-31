@@ -1,4 +1,5 @@
 import { USE_QUEREUS } from '../db/config';
+import { withBulkWrite } from '../sync/bulkWrite';
 import { ensureDatabaseInitialized } from '../db/init';
 import {
   getAllCatalogBundles,
@@ -223,6 +224,14 @@ function logKey(timestampUtc: string, typeName: string, itemNames: string[]): st
 export async function importBackup(
   backupData: BackupData,
   options: ImportOptions = { mode: 'merge' },
+): Promise<ImportPreview> {
+  // A restore is a bulk write: run it with the strand online (see withBulkWrite). A preview writes nothing.
+  return options.dryRun ? importBackupImpl(backupData, options) : withBulkWrite(() => importBackupImpl(backupData, options));
+}
+
+async function importBackupImpl(
+  backupData: BackupData,
+  options: ImportOptions,
 ): Promise<ImportPreview> {
   const preview = emptyPreview();
 
