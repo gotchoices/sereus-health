@@ -296,6 +296,14 @@ class CadreServiceImpl {
   private readonly queueStateHandlers = new Set<(e: StrandQueueState) => void>();
   /** Each strand's offline journal, one per scope (cadre-core asks again on every rebuild). */
   private readonly offlineJournals = new Map<string, InstanceType<typeof LevelDBKVStore>>();
+  /**
+   * Each scope's block storage, one per scope.  Since optimystic 1.23 it carries its own read cache
+   * and a second one over the same handle throws while the first is open, so every request for a
+   * scope gets this one (as @serfab/cadre-rn's phone storage keeps it).
+   */
+  private readonly blockStores = new Map<string, InstanceType<typeof LevelDBRawStorage>>();
+  /** The node-local records' store (trusted owners, bootstrap peers, …), closed on stop. */
+  private nodeLocalKv: InstanceType<typeof LevelDBKVStore> | null = null;
 
   /** Whether the CadreNode is running. */
   get isRunning(): boolean {
@@ -391,7 +399,8 @@ class CadreServiceImpl {
       //   joinedStrands    strands joined from ANOTHER party.  A `privateKey`
       //                    node has no keyStore, so the store is injected here.
       const nodeLocalDb = this.getOrOpenDb(NODE_LOCAL_STRAND_ID);
-      const nodeLocalKv = new LevelDBKVStore(nodeLocalDb, 'sereus:node-local:');
+      const nodeLocalKv = this.nodeLocalKv ?? new LevelDBKVStore(nodeLocalDb, 'sereus:node-local:');
+      this.nodeLocalKv = nodeLocalKv;
       const partyId = this._partyId;
       const slot = (name: string) => kvStoreSlot(nodeLocalKv, `${name}.${partyId}`);
       const trustedOwnerStore = await PersistentTrustedOwnerStore.open(slot(TRUSTED_OWNERS_KV), partyId);
@@ -429,7 +438,14 @@ class CadreServiceImpl {
           // `scope` is cadre-core's storage scope key — `control-<hex>` for the
           // control network, the (lowercase) strand id for a strand.  It is
           // opaque and already safe as a database-name segment: use it verbatim.
-          provider: (scope: string) => new LevelDBRawStorage(this.getOrOpenDb(scope)),
+          provider: (scope: string) => {
+            let storage = this.blockStores.get(scope);
+            if (!storage) {
+              storage = new LevelDBRawStorage(this.getOrOpenDb(scope));
+              this.blockStores.set(scope, storage);
+            }
+            return storage;
+          },
         },
         // Offline mode (sereus 1.19.1 / optimystic 1.20): a health-strand commit resolves once
         // the transaction is journaled on this phone, and the cadre gets it in the background, in
@@ -987,9 +1003,25 @@ class CadreServiceImpl {
       await this.node.stop();
       this.node = null;
     }
-    // Close every LevelDB handle so rn-leveldb's per-name lock is released.
-    // Without this, `LevelDB.destroyDB(name)` from `resetDatabaseForDev`
-    // would throw "DB is open" on the very next call.
+    // The stores over the handles first: each holds its unflushed writes in memory and applies
+    // them on close (the node never closes a storage it was handed).  Then every LevelDB handle,
+    // so rn-leveldb's per-name lock is released.  Without this, `LevelDB.destroyDB(name)` from
+    // `resetDatabaseForDev` would throw "DB is open" on the very next call.
+    const stores: Array<[string, { close(): Promise<void> }]> = [
+      ...[...this.offlineJournals].map(([scope, j]): [string, { close(): Promise<void> }] => [`journal ${scope}`, j]),
+      ...[...this.blockStores].map(([scope, b]): [string, { close(): Promise<void> }] => [`blocks ${scope}`, b]),
+      ...(this.nodeLocalKv ? [['node-local store', this.nodeLocalKv] as [string, { close(): Promise<void> }]] : []),
+    ];
+    for (const [what, store] of stores) {
+      try {
+        await store.close();
+      } catch (e) {
+        logger.warn(`close ${what} failed:`, e);
+      }
+    }
+    this.offlineJournals.clear();
+    this.blockStores.clear();
+    this.nodeLocalKv = null;
     for (const [strandId, db] of this.openDbs) {
       try {
         await db.close();
@@ -998,7 +1030,6 @@ class CadreServiceImpl {
       }
     }
     this.openDbs.clear();
-    this.offlineJournals.clear(); // they share the LevelDB handles closed above
     this._startPromise = null;
   }
 

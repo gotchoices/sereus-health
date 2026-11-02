@@ -38,9 +38,14 @@ loops, secondary indexes unused) and [optimystic#45](https://github.com/gotchoic
 **Back out when** the original joined SQL runs within about 2× of the rewrites, solo and with
 2–3 nodes.
 
-**Check.** `cd tmp/query-perf && SYNTH=1 MODES=memory,strand NODES=2 WRITES=0 node query-perf.mjs`
-(needs a cadre-cli path in `CADRE`). The table lists the original queries next to the `REWRITE`
-ones. The original SQL is also in that harness's `QUERIES`.
+**Check.** `cd tools/stack-bench && SYNTH=1 MODES=memory,strand NODES=2 WRITES=0 node bench.mjs`.
+The table lists the original queries next to the `REWRITE` ones; the original SQL is in its
+`QUERIES`.
+
+**Status (2026-11-01, sereus 1.20.0 / optimystic 1.23.0 / quereus 4.24.0).** Back-out condition met
+in Node: the joined item usage count takes 21–25 ms solo and with 1–2 nodes (the rewrite's three
+queries ~11–13 ms), category item counts 6 ms (rewrite ~4 ms), and the joins on the strand now match
+the same joins on memory tables. Not yet backed out or measured on a phone.
 
 ## W2 — Time-boxed control reads and a last-known snapshot (Sereus Connections)
 

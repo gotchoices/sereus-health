@@ -514,6 +514,21 @@ for (const mode of MODES) {
       console.log(`[strand + ${k} node${k > 1 ? 's' : ''}]  (settled ${(Date.now() - t) / 1000}s; phone strand connections: ${opened.strand.libp2pNode?.getConnections().length ?? '?'})`);
       await timeAll(db, l.ids, `strand+${k}`);
     }
+    // DOWN_WRITE=1 (with OFFLINE=1): then stop every node and write once more. Offline mode must
+    // keep that transaction queued while its cohort is unreachable; report what the queue did.
+    if (process.env.DOWN_WRITE && OFFLINE && NODES) {
+      for (const p of procs) p.kill('SIGTERM');
+      await sleep(Number(process.env.DOWN_MS ?? 10000));
+      console.log(`[every node stopped]  phone strand connections: ${opened.strand.libp2pNode?.getConnections().length ?? '?'}`);
+      const seen = [];
+      const onStatus = ({ status }) => { if (status?.transactionId === lastTx) seen.push(status.kind === 'queued' ? `queued(${status.waitingFor ?? '-'})` : status.kind); };
+      opened.node.on('strand:offline-status', onStatus);
+      const ack = await timeWrite(db, l.ids);
+      await sleep(Number(process.env.DOWN_WATCH_MS ?? 30000));
+      const d = opened.strand.database.commitDurability(lastTx);
+      const q = opened.strand.database.offline?.queueState?.();
+      console.log(`  DOWN WRITE ack ${ack.toFixed(0)} ms; statuses [${seen.join(' → ')}]; durability ${d ? `heldElsewhere=${d.heldElsewhere} cohort=${d.report?.durability?.overall?.cohort}` : 'none'}; queue size=${q?.size} waitingFor=${q?.waitingFor}`);
+    }
   }
   await close();
 }

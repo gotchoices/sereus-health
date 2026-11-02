@@ -357,8 +357,24 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
       The S7's ~2.7 s before the queue sends is CPU, not a wait: block decoding in JS (~740 ms;
       RN storage reads bytes via getBuf + TextDecoder polyfill, rn-leveldb's getStr could do it
       natively) — filed optimystic#51 — plus structuredClone copies, cohort lookup and digests.
-- [ ] Device check of async saves on the S7 (ask first; it is shared with another context)
-      — done 2026-10-29 with the offline-mode build (above).
+- [x] Sereus 1.20.0 / optimystic 1.23.0 / quereus 4.24.0 (2026-11-01).  Every machine moves
+      together; the S7's cadre was wiped and restored (a cadre forked on 1.19.x stays forked).
+      `CadreService` keeps one `LevelDBRawStorage` per scope (1.23 refuses a second read cache over
+      one handle) and closes block stores, journals and the node-local store before their LevelDB
+      handles on stop (each holds unflushed writes until closed).  Refusal text via cadre-core's
+      `describeThrown`.  S7 release, 2 cadre-cli 1.20 nodes: save returns 0.33-0.42 s, local commit
+      ~1.0 s, synced 5.8-7.0 s (was 10-13 s); restore of the backup 97 s solo.  Optimystic#50 and
+      #51 fixed; the W1 joins meet their back-out condition in Node (docs/stack-workarounds.md).
+      Testing over USB needs every port a node listens on reversed, including its strand's
+      ephemeral ports: with only the control ports, the phone joins the party but commits its
+      strand alone (cohort 1), which the app correctly reports as synced.
+- [x] Device check of async saves on the S7 (2026-10-29 offline-mode build; 2026-11-01 on 1.20):
+      nodes down → saves, an edit and a delete of still-local entries stay "on this device only"
+      with markers; the app killed mid-save recovers each change (replayed before COMMIT, followed
+      in the queue after); the queue drains when the nodes return; a refused save (dev link
+      `health://perf/refuse`) raises the alert and stays "not saved" until dismissed in Sync.
+      Fixed: a change killed between COMMIT and its tracking record lost its marker (the pre-commit
+      journal now keeps the transaction id).
 - [ ] In-app scanner on a real camera; uranus end to end (uranus must move to 1.17+)
 
 ### Step 4: Add private-IP drone node

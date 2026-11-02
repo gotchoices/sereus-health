@@ -37,6 +37,7 @@ the cadre), like chat's CLI.
 | `IDLE_MS`, `IDLE_PROFILE`, `POSTQ_MS` | idle / after-query background load |
 | `REPL_CHECK=1` | check replication of a marker row to each node |
 | `OFFLINE=1` | the phone's strand in **offline mode**, as health runs it: writes then report `ack` (save returned), `sent` (the cadre committed it) and `held` (every member holds it); `SYNC_WAIT_MS` bounds the wait |
+| `DOWN_WRITE=1` | with `OFFLINE=1` and `NODES`: at the end, stop every node and write once more, reporting the queue statuses and durability (offline mode should keep it queued); `DOWN_MS`, `DOWN_WATCH_MS` |
 | `JOURNAL=file\|mem\|mem-pause` | offline journal: a file store (default, what a Node host uses), or diagnostic in-memory variants (`mem` never yields; `mem-pause` pauses 1 ms per flush) |
 
 ## Other scripts

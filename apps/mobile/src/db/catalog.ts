@@ -93,8 +93,8 @@ export interface CategoryRow {
  * All categories for a Type — including empty and retired ones — with item
  * counts. This is the only surface that can see empty categories (the Items
  * view groups by category implicitly, so a category with zero items is
- * otherwise invisible). Uses a scalar subquery rather than GROUP BY to avoid
- * Quereus's duplicate-`id`-in-scope error.
+ * otherwise invisible). Counts come from a grouped join and are matched in JS, so an
+ * empty category still gets its row.
  */
 export async function getCategoriesWithCounts(typeName: string): Promise<CategoryRow[]> {
   const db = await getDatabase();
@@ -102,14 +102,13 @@ export async function getCategoriesWithCounts(typeName: string): Promise<Categor
   if (!typeRow) return [];
   const typeId = typeRow.id as string;
 
-  // STACK-WORKAROUND(W1): see docs/stack-workarounds.md.
-  // Item counts per category: one grouped scan of `items` alone (only this Type's categories
-  // are looked up below).  Not joined to `categories`: on the optimystic strand that join plans
-  // as a per-item lookup, slow and slower with every connected node (see db/stats.ts PERF).
   const counts = new Map<string, number>();
   for await (const r of db.eval(`
-    SELECT category_id AS id, count(*) AS n FROM items GROUP BY category_id
-  `)) {
+    SELECT i.category_id AS id, count(*) AS n
+    FROM items i JOIN categories c ON c.id = i.category_id
+    WHERE c.type_id = ?
+    GROUP BY i.category_id
+  `, [typeId])) {
     if (r.id != null) counts.set(r.id as string, (r.n as number) || 0);
   }
 

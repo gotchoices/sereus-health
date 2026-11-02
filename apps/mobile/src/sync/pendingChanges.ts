@@ -69,7 +69,7 @@ export interface PendingChange {
   error?: string;
 }
 
-type JournalRecord = Pick<PendingChange, 'key' | 'intent' | 'preview' | 'queuedAt'>;
+type JournalRecord = Pick<PendingChange, 'key' | 'intent' | 'preview' | 'queuedAt' | 'txId'>;
 /** A queued transaction's entry, kept across restarts; the draft is dropped (the stack holds the rows). */
 type TrackedRecord = { key: string; kind: ChangeIntent['kind']; entryId: string; preview?: HistoryRow; queuedAt: number };
 
@@ -141,7 +141,7 @@ export async function discardAll(): Promise<void> {
 function persist(): void {
   const journal: JournalRecord[] = changes
     .filter((c) => c.state === 'saving')
-    .map(({ key, intent, preview, queuedAt }) => ({ key, intent, preview, queuedAt }));
+    .map(({ key, intent, preview, queuedAt, txId }) => ({ key, intent, preview, queuedAt, txId }));
   const tracked: Record<string, TrackedRecord> = {};
   for (const c of changes) {
     if (c.state === 'local' && c.txId) {
@@ -177,7 +177,7 @@ function schedule(change: PendingChange, gen: number): void {
     })
     .catch((e: unknown) => {
       if (gen !== generation) return;
-      fail(change.key, e instanceof Error ? e.message : String(e));
+      fail(change.key, describeError(e));
     });
 }
 
@@ -201,6 +201,18 @@ async function write(intent: ChangeIntent, onTxId: (txId: string) => void): Prom
   return intent.kind === 'create'
     ? (await createLogEntryTx({ ...input, id: intent.entryId }, onTxId)).txId
     : (await updateLogEntryTx(intent.entryId, input, onTxId)).txId;
+}
+
+/**
+ * Text for a refusal: cadre-core's `describeThrown` (sereus 1.20), which also describes a thrown
+ * value that is not an `Error` (an event object reads `[object Object]` otherwise).  Required
+ * lazily, as CadreService is, so the plain-Quereus build and the unit tests do not load the stack.
+ */
+function describeError(e: unknown): string {
+  if (USE_OPTIMYSTIC) {
+    try { return (require('@serfab/cadre-core') as { describeThrown(v: unknown): string }).describeThrown(e); } catch { /* below */ }
+  }
+  return e instanceof Error ? e.message : String(e);
 }
 
 function fail(key: string, message: string): void {
@@ -258,6 +270,7 @@ function queueStatus(txId: string): QueueStatus | undefined {
 function bindTx(key: string, txId: string): void {
   cadreService(); // the status listener must be attached before the COMMIT reports
   changes = changes.map((c) => (c.key === key ? { ...c, txId } : c));
+  persist(); // so a restart between COMMIT and afterLocalCommit can find the change in the queue
 }
 
 /** One status from the stack's offline queue. */
@@ -280,8 +293,7 @@ function applyStatus(key: string, txId: string, status: QueueStatus): void {
   if (status.kind === 'committed') {
     followDurability(key, txId);
   } else if (status.kind === 'failed') {
-    const err = status.error as { message?: string } | undefined;
-    fail(key, `${status.reason ? `${status.reason}: ` : ''}${err?.message ?? 'refused'}`);
+    fail(key, `${status.reason ? `${status.reason}: ` : ''}${status.error ? describeError(status.error) : 'refused'}`);
   } else if (c.state !== 'local') {
     // queued / submitting / partially-committed: on this device only, queued for the cadre.
     replace(key, { state: 'local', txId });
@@ -296,6 +308,7 @@ function afterLocalCommit(key: string, txId: string | null): void {
   }
   const status = earlyStatus.get(txId) ?? queueStatus(txId);
   earlyStatus.delete(txId);
+  logger.debug(`committed ${txId.slice(0, 12)}: queue=${status?.kind ?? 'none'}`);
   if (status) {
     replace(key, { state: 'local', txId }); // in the queue: on this device only
     applyStatus(key, txId, status);
@@ -316,6 +329,7 @@ function followDurability(key: string, txId: string | null): void {
   const svc = txId ? cadreService() : null;
   const d = svc && txId ? svc.commitDurability(txId) : undefined;
   const cohort: number = d?.report?.durability?.overall?.cohort ?? 1;
+  logger.debug(`durability ${txId?.slice(0, 12)}: ${d ? `heldElsewhere=${d.heldElsewhere} followed=${d.followed} cohort=${cohort}` : 'none'}`);
   if (!d || d.heldElsewhere || cohort <= 1) {
     settleDone(key); // synced, untracked, or solo (no other machine to wait for)
     return;
@@ -356,18 +370,28 @@ export async function restorePendingChanges(): Promise<void> {
     if (status.kind === 'failed') refused.push([t.key, txId, status]);
   }
   emit();
-  // Deferred so App's failure listener (attached at mount) hears it.
-  if (refused.length) setTimeout(() => { for (const [k, tx, st] of refused) applyStatus(k, tx, st); }, 0);
 
   const records = await readJson<JournalRecord[]>(JOURNAL_KEY, []);
   if (records.length) logger.info(`replaying ${records.length} unsaved change(s) from the last run`);
   const gen = generation;
   for (const r of records) {
+    // Its COMMIT landed before the app closed (the id is bound just before COMMIT): follow it in
+    // the stack's queue rather than writing it again.
+    const status = r.txId ? queueStatus(r.txId) : undefined;
+    if (r.txId && status) {
+      if (status.kind === 'committed') continue;
+      changes = [...changes, { ...r, state: 'local' }];
+      if (status.kind === 'failed') refused.push([r.key, r.txId, status]);
+      continue;
+    }
     if (r.intent.kind === 'create' && USE_QUEREUS && (await getLogEntryById(r.intent.entryId))) continue;
     const change: PendingChange = { ...r, state: 'saving' };
     changes = [...changes, change];
     emit();
     schedule(change, gen);
   }
+  emit();
   persist();
+  // Deferred so App's failure listener (attached at mount) hears it.
+  if (refused.length) setTimeout(() => { for (const [k, tx, st] of refused) applyStatus(k, tx, st); }, 0);
 }
