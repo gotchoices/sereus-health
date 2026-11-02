@@ -16,16 +16,21 @@
  * — `ack` is what the user waits for (the editor closes), `commit` is when the write landed on
  * this device, `synced` when the change left the pending store (held by the cadre, or solo);
  * `pending` if that took longer than five minutes.
+ *
+ * `health://perf/refuse` submits a new entry that reuses the newest entry's id, so the background
+ * save is refused (duplicate key) and the not-saved path runs end to end: marker, alert, dismiss.
+ * It logs `[perf] refuse failed=<ms> error=<message>`.  Nothing is written.
  */
 import { Linking } from 'react-native';
 import { PERF_ENABLED } from './perf';
 import { getDatabase } from './index';
 import { createLogEntry } from './logEntries';
-import { getPendingChanges, onChangeCommitted, subscribePendingChanges, submitLogChange } from '../sync/pendingChanges';
+import { getPendingChanges, onChangeCommitted, onChangeFailed, subscribePendingChanges, submitLogChange } from '../sync/pendingChanges';
 import { newUuid } from '../util/id';
 
 const WRITE_LINK = 'health://perf/write';
 const SUBMIT_LINK = 'health://perf/submit';
+const REFUSE_LINK = 'health://perf/refuse';
 
 async function pickItems(): Promise<{ typeId: string; typeName: string; picked: Array<{ id: string; name: string }> } | null> {
   const db = await getDatabase();
@@ -64,6 +69,25 @@ async function timedSubmit(): Promise<void> {
   console.info(`[perf] submit ack=${ack} commit=${commit} synced=${await synced} items=${choice.picked.length}`);
 }
 
+async function refusedSubmit(): Promise<void> {
+  const choice = await pickItems();
+  const db = await getDatabase();
+  const existing = await db.get('SELECT id FROM log_entries ORDER BY timestamp DESC LIMIT 1');
+  if (!choice || !existing) { console.info('[perf] refuse skipped: no types or entries'); return; }
+  const entryId = existing.id as string;
+  const timestamp = new Date().toISOString();
+  const t0 = Date.now();
+  const failed = new Promise<string>((resolve) => {
+    const off = onChangeFailed((c) => { if (c.intent.entryId === entryId) { off(); resolve(c.error ?? '?'); } });
+  });
+  await submitLogChange(
+    { kind: 'create', entryId, draft: { timestamp, typeId: choice.typeId, comment: 'perf-refuse', items: choice.picked.map((p) => ({ id: p.id, isBundle: false, values: {} })) } },
+    { id: entryId, timestamp, type: choice.typeName, items: choice.picked.map((p) => p.name), comment: 'perf-refuse' },
+  );
+  const error = await failed;
+  console.info(`[perf] refuse failed=${Date.now() - t0} error=${error}`);
+}
+
 async function timedWrite(): Promise<void> {
   const db = await getDatabase();
   const type = await db.get('SELECT id FROM types ORDER BY display_order, name LIMIT 1');
@@ -89,6 +113,7 @@ if (PERF_ENABLED) {
   const onUrl = (url: string | null) => {
     if (url?.startsWith(WRITE_LINK)) timedWrite().catch((err) => console.warn('[perf] write failed:', err));
     else if (url?.startsWith(SUBMIT_LINK)) timedSubmit().catch((err) => console.warn('[perf] submit failed:', err));
+    else if (url?.startsWith(REFUSE_LINK)) refusedSubmit().catch((err) => console.warn('[perf] refuse failed:', err));
   };
   Linking.addEventListener('url', ({ url }) => onUrl(url));
 }

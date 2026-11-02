@@ -353,8 +353,10 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
       before the queue sends, ~5 s pend round, ~3.4 s commit round, the JS thread busy ~40% (block
       decoding in the kit's TextDecoder polyfill 2.4-2.8 s, peer-store localeCompare 0.8 s).  Offline
       mode also fails an autocommit insert ("Path is invalid due to mutation of the tree") with a
-      journal that resolves immediately (repro in tools/stack-bench/repros; draft issue in tmp/,
-      not filed).
+      journal that resolves immediately (repro in tools/stack-bench/repros) — filed optimystic#50.
+      The S7's ~2.7 s before the queue sends is CPU, not a wait: block decoding in JS (~740 ms;
+      RN storage reads bytes via getBuf + TextDecoder polyfill, rn-leveldb's getStr could do it
+      natively) — filed optimystic#51 — plus structuredClone copies, cohort lookup and digests.
 - [ ] Device check of async saves on the S7 (ask first; it is shared with another context)
       — done 2026-10-29 with the offline-mode build (above).
 - [ ] In-app scanner on a real camera; uranus end to end (uranus must move to 1.17+)
