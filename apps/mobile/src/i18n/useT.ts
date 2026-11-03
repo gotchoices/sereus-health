@@ -33,6 +33,10 @@ const en: Dict = {
   'sync.onlyThisDevice': 'Your data is only on this device. Add a node to sync it across your cadre.',
   'sync.waitingDetail': '{count} on this device only, oldest from {time}',
   'sync.notSavedItem': 'Not saved: {what}',
+  'sync.changeNotSavedTitle': 'Change not saved',
+  'sync.catalogChange': 'A catalog change',
+  'sync.entryChange': 'A log entry change',
+  'sync.otherChange': 'A change',
 
   'gettingStarted.welcomeTitle': 'Welcome to Sereus Health',
   'gettingStarted.welcomeBody': 'Log what you do and how you feel to find what helps. First, set up your catalog.',

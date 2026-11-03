@@ -59,7 +59,7 @@ async function timedSubmit(): Promise<void> {
     { id: entryId, timestamp, type: choice.typeName, items: choice.picked.map((p) => p.name), comment: 'perf-write' },
   );
   const ack = Date.now() - t0;
-  const settled = (): boolean => !getPendingChanges().some((c) => c.intent.entryId === entryId && c.state !== 'done');
+  const settled = (): boolean => !getPendingChanges().some((c) => 'entryId' in c.intent && c.intent.entryId === entryId && c.state !== 'done');
   const synced = new Promise<string>((resolve) => {
     const timer = setTimeout(() => { off(); resolve('pending'); }, 300_000);
     const check = () => { if (settled()) { clearTimeout(timer); off(); resolve(String(Date.now() - t0)); } };
@@ -78,7 +78,7 @@ async function refusedSubmit(): Promise<void> {
   const timestamp = new Date().toISOString();
   const t0 = Date.now();
   const failed = new Promise<string>((resolve) => {
-    const off = onChangeFailed((c) => { if (c.intent.entryId === entryId) { off(); resolve(c.error ?? '?'); } });
+    const off = onChangeFailed((c) => { if ('entryId' in c.intent && c.intent.entryId === entryId) { off(); resolve(c.error ?? '?'); } });
   });
   await submitLogChange(
     { kind: 'create', entryId, draft: { timestamp, typeId: choice.typeId, comment: 'perf-refuse', items: choice.picked.map((p) => ({ id: p.id, isBundle: false, values: {} })) } },

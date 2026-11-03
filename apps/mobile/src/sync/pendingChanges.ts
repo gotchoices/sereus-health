@@ -23,6 +23,11 @@
  *
  * A commit made with no other cadre machine in its cohort (a solo user) is not "waiting" for
  * anything, so it is dropped at once and shows no marker.
+ *
+ * Every other queued change to the app's tables (catalog, items, bundles, the assistant's writes)
+ * is followed too, from the stack's statuses alone, as an 'other' change: it counts as waiting,
+ * and a refusal is reported like an entry's. Those editors keep awaiting their own (local) commit,
+ * which is what lets them show validation errors in place; only log entries get History markers.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { USE_OPTIMYSTIC, USE_QUEREUS } from '../db/config';
@@ -50,10 +55,13 @@ export type SyncState = 'saving' | 'local' | 'done' | 'failed';
 /** How long a 'done' change lingers for History to read the stored row. */
 const DONE_LINGER_MS = 10_000;
 
-export type ChangeIntent =
+export type EntryIntent =
   | { kind: 'create'; entryId: string; draft: EntryDraft }
   | { kind: 'update'; entryId: string; draft: EntryDraft }
   | { kind: 'delete'; entryId: string };
+/** A queued change this module did not make: known by the tables it wrote (`app.<table>`). */
+export type OtherIntent = { kind: 'other'; tables: readonly string[] };
+export type ChangeIntent = EntryIntent | OtherIntent;
 
 export interface PendingChange {
   /** This change's own id (one entry can have several changes in flight). */
@@ -71,13 +79,13 @@ export interface PendingChange {
 
 type JournalRecord = Pick<PendingChange, 'key' | 'intent' | 'preview' | 'queuedAt' | 'txId'>;
 /** A queued transaction's entry, kept across restarts; the draft is dropped (the stack holds the rows). */
-type TrackedRecord = { key: string; kind: ChangeIntent['kind']; entryId: string; preview?: HistoryRow; queuedAt: number };
+type TrackedRecord = { key: string; kind: EntryIntent['kind']; entryId: string; preview?: HistoryRow; queuedAt: number };
 
 // ---- store ------------------------------------------------------------------------------
 
 let changes: PendingChange[] = [];
 const listeners = new Set<() => void>();
-const committedListeners = new Set<(c: { kind: ChangeIntent['kind']; entryId: string }) => void>();
+const committedListeners = new Set<(c: { kind: EntryIntent['kind']; entryId: string }) => void>();
 const failureListeners = new Set<(c: PendingChange) => void>();
 let storageChain: Promise<void> = Promise.resolve();
 let generation = 0; // bumped by discardAll(); a job from an older generation writes nothing
@@ -105,7 +113,7 @@ export function subscribePendingChanges(listener: () => void): () => void {
 }
 
 /** Fires once a change is written locally — the moment History can read the real row. */
-export function onChangeCommitted(listener: (c: { kind: ChangeIntent['kind']; entryId: string }) => void): () => void {
+export function onChangeCommitted(listener: (c: { kind: EntryIntent['kind']; entryId: string }) => void): () => void {
   committedListeners.add(listener);
   return () => { committedListeners.delete(listener); };
 }
@@ -140,11 +148,11 @@ export async function discardAll(): Promise<void> {
 /** Rewrite both records from the store. Chained, so an older snapshot never lands after a newer one. */
 function persist(): void {
   const journal: JournalRecord[] = changes
-    .filter((c) => c.state === 'saving')
+    .filter((c) => c.state === 'saving' && c.intent.kind !== 'other')
     .map(({ key, intent, preview, queuedAt, txId }) => ({ key, intent, preview, queuedAt, txId }));
   const tracked: Record<string, TrackedRecord> = {};
   for (const c of changes) {
-    if (c.state === 'local' && c.txId) {
+    if (c.state === 'local' && c.txId && c.intent.kind !== 'other') {
       tracked[c.txId] = { key: c.key, kind: c.intent.kind, entryId: c.intent.entryId, preview: c.preview, queuedAt: c.queuedAt };
     }
   }
@@ -159,8 +167,8 @@ function persist(): void {
  * Queue a log-entry change and return once it is journaled — the caller can close its screen.
  * `preview` is shown in History until the real row can be read.
  */
-export async function submitLogChange(intent: ChangeIntent, preview?: HistoryRow): Promise<void> {
-  const change: PendingChange = { key: newUuid(), intent, preview, state: 'saving', queuedAt: Date.now() };
+export async function submitLogChange(intent: EntryIntent, preview?: HistoryRow): Promise<void> {
+  const change: PendingChange & { intent: EntryIntent } = { key: newUuid(), intent, preview, state: 'saving', queuedAt: Date.now() };
   changes = [...changes, change];
   emit();
   persist();
@@ -168,11 +176,12 @@ export async function submitLogChange(intent: ChangeIntent, preview?: HistoryRow
   schedule(change, generation);
 }
 
-function schedule(change: PendingChange, gen: number): void {
-  withWrite(() => (gen === generation ? write(change.intent, (txId) => bindTx(change.key, txId)) : Promise.resolve(null)))
+function schedule(change: PendingChange & { intent: EntryIntent }, gen: number): void {
+  const intent = change.intent;
+  withWrite(() => (gen === generation ? write(intent, (txId) => bindTx(change.key, txId)) : Promise.resolve(null)))
     .then((txId) => {
       if (gen !== generation) return;
-      for (const l of committedListeners) l({ kind: change.intent.kind, entryId: change.intent.entryId });
+      for (const l of committedListeners) l({ kind: intent.kind, entryId: intent.entryId });
       afterLocalCommit(change.key, txId);
     })
     .catch((e: unknown) => {
@@ -186,7 +195,7 @@ function schedule(change: PendingChange, gen: number): void {
  * `onTxId` hears the id before COMMIT runs, because offline mode reports the transaction's first
  * status from inside the commit.
  */
-async function write(intent: ChangeIntent, onTxId: (txId: string) => void): Promise<string | null> {
+async function write(intent: EntryIntent, onTxId: (txId: string) => void): Promise<string | null> {
   if (!USE_QUEREUS) return null; // mock backend: nothing to write
   if (intent.kind === 'delete') return (await deleteLogEntryTx(intent.entryId, onTxId)).txId;
 
@@ -230,13 +239,33 @@ type QueueStatus = {
   transactionId: string;
   reason?: string;
   error?: { message?: string } | unknown;
+  tables?: readonly string[];
+  queuedAt?: number;
 };
+
+/** Whether a transaction wrote any of the app's own tables (not only Sereus's). */
+function isAppChange(tables: readonly string[] | undefined): boolean {
+  return !!tables?.some((t) => t.startsWith('app.'));
+}
+
+function otherChange(txId: string, tables: readonly string[], queuedAt?: number): PendingChange {
+  return { key: `tx:${txId}`, intent: { kind: 'other', tables }, state: 'local', queuedAt: queuedAt ?? Date.now(), txId };
+}
+
+/** Set once the restore has put back the changes from the last run, so a status the stack
+ *  reports for one of ours before then is not mistaken for someone else's change. */
+let restored = false;
 
 /** The slice of CadreService this module uses (kept loose: no native imports in tests). */
 type CadreLike = {
   commitDurability(txId: string): { heldElsewhere: boolean; followed: boolean; report?: any } | undefined;
   onCommitHeld(handler: (txId: string) => void): () => void;
-  offlineQueue(): { status(txId: string): unknown; acknowledge(txId: string): void } | undefined;
+  offlineQueue(): {
+    status(txId: string): unknown;
+    acknowledge(txId: string): void;
+    entries(): ReadonlyArray<{ transactionId: string; tables: readonly string[]; queuedAt: number; status: unknown }>;
+    outcomes(): ReadonlyArray<unknown>;
+  } | undefined;
   onOfflineStatus(handler: (e: { status: unknown }) => void): () => void;
 };
 let cadre: CadreLike | null = null;
@@ -269,7 +298,9 @@ function queueStatus(txId: string): QueueStatus | undefined {
 /** Learn the change's transaction id before its COMMIT, so statuses from the commit find it. */
 function bindTx(key: string, txId: string): void {
   cadreService(); // the status listener must be attached before the COMMIT reports
-  changes = changes.map((c) => (c.key === key ? { ...c, txId } : c));
+  changes = changes
+    .filter((c) => !(c.intent.kind === 'other' && c.txId === txId))
+    .map((c) => (c.key === key ? { ...c, txId } : c));
   persist(); // so a restart between COMMIT and afterLocalCommit can find the change in the queue
 }
 
@@ -278,6 +309,12 @@ function onQueueStatus(status: QueueStatus): void {
   const txId = status?.transactionId;
   if (!txId) return;
   const c = changes.find((x) => x.txId === txId);
+  // Queued by a write this module did not make: follow it as an 'other' change.
+  if (!c && status.kind === 'queued' && restored && isAppChange(status.tables)) {
+    changes = [...changes, otherChange(txId, status.tables ?? [], status.queuedAt)];
+    emit();
+    return;
+  }
   // Not ours yet (or a 'saving' change whose COMMIT is still resolving): remember it.
   if (!c || c.state === 'saving') {
     earlyStatus.set(txId, status);
@@ -359,6 +396,7 @@ async function readJson<T>(key: string, fallback: T): Promise<T> {
  *    a delete of a missing entry is a no-op.
  */
 export async function restorePendingChanges(): Promise<void> {
+  cadreService(); // follow the queue from the start, whether or not a log entry is saved this run
   const tracked = await readJson<Record<string, TrackedRecord>>(TRACKED_KEY, {});
   const refused: Array<[string, string, QueueStatus]> = [];
   for (const [txId, t] of Object.entries(tracked)) {
@@ -374,7 +412,7 @@ export async function restorePendingChanges(): Promise<void> {
   const records = await readJson<JournalRecord[]>(JOURNAL_KEY, []);
   if (records.length) logger.info(`replaying ${records.length} unsaved change(s) from the last run`);
   const gen = generation;
-  for (const r of records) {
+  for (const r of records as Array<JournalRecord & { intent: EntryIntent }>) {
     // Its COMMIT landed before the app closed (the id is bound just before COMMIT): follow it in
     // the stack's queue rather than writing it again.
     const status = r.txId ? queueStatus(r.txId) : undefined;
@@ -385,11 +423,30 @@ export async function restorePendingChanges(): Promise<void> {
       continue;
     }
     if (r.intent.kind === 'create' && USE_QUEREUS && (await getLogEntryById(r.intent.entryId))) continue;
-    const change: PendingChange = { ...r, state: 'saving' };
+    const change: PendingChange & { intent: EntryIntent } = { ...r, state: 'saving' };
     changes = [...changes, change];
     emit();
     schedule(change, gen);
   }
+  // Every other change of ours still queued, and any the cadre refused while the app was closed.
+  const known = new Set(changes.map((c) => c.txId).filter(Boolean));
+  try {
+    const queue = cadreService()?.offlineQueue();
+    for (const e of queue?.entries() ?? []) {
+      if (known.has(e.transactionId) || !isAppChange(e.tables)) continue;
+      changes = [...changes, otherChange(e.transactionId, e.tables, e.queuedAt)];
+      known.add(e.transactionId);
+    }
+    for (const o of (queue?.outcomes() ?? []) as QueueStatus[]) {
+      if (o.kind !== 'failed' || known.has(o.transactionId) || !isAppChange(o.tables)) continue;
+      const c = otherChange(o.transactionId, o.tables ?? []);
+      changes = [...changes, c];
+      refused.push([c.key, o.transactionId, o]);
+    }
+  } catch (e) {
+    logger.warn('reading the offline queue failed:', e);
+  }
+  restored = true;
   emit();
   persist();
   // Deferred so App's failure listener (attached at mount) hears it.

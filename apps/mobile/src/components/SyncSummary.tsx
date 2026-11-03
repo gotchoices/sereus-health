@@ -6,7 +6,18 @@ import { useT } from '../i18n/useT';
 import { usePendingChanges, summarize } from '../sync/usePendingChanges';
 import { dismissChange, type PendingChange } from '../sync/pendingChanges';
 
-function describe(c: PendingChange): string {
+const CATALOG_TABLES = ['types', 'categories', 'items', 'bundles', 'bundle_members', 'item_quantifiers'];
+
+/** What an 'other' change was, from the tables it wrote (`app.<table>`). */
+export function describeOther(tables: readonly string[], t: ReturnType<typeof useT>): string {
+  const names = tables.map((x) => x.replace(/^app\./, ''));
+  if (names.some((n) => n.startsWith('log_entr'))) return t('sync.entryChange');
+  if (names.some((n) => CATALOG_TABLES.includes(n))) return t('sync.catalogChange');
+  return t('sync.otherChange');
+}
+
+function describe(c: PendingChange, t: ReturnType<typeof useT>): string {
+  if (c.intent.kind === 'other') return describeOther(c.intent.tables, t);
   const p = c.preview;
   if (!p) return c.intent.kind;
   const what = [...(p.bundles ?? []), ...p.items].slice(0, 2).join(', ');
@@ -38,7 +49,7 @@ export default function SyncSummary(props: { hasNodes: boolean }) {
 
   return (
     <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-      {failed.map((c) => line('alert-circle-outline', t('sync.notSavedItem', { what: describe(c) }), theme.error, () => dismissChange(c.key)))}
+      {failed.map((c) => line('alert-circle-outline', t('sync.notSavedItem', { what: describe(c, t) }), theme.error, () => dismissChange(c.key)))}
       {!props.hasNodes
         ? line('phone-portrait-outline', t('sync.onlyThisDevice'))
         : waiting

@@ -28,10 +28,11 @@ export function overlayHistory(rows: readonly HistoryRow[], changes: readonly Pe
   const latest = new Map<string, PendingChange>();
   const marks = new Map<string, EntryMark>();
   for (const c of changes) {
-    if (c.state === 'failed') continue;
-    latest.set(c.intent.entryId, c);
+    if (c.state === 'failed' || c.intent.kind === 'other') continue; // 'other': not a History row
+    const { entryId } = c.intent;
+    latest.set(entryId, c);
     // Any unsettled change marks the entry; 'saving' outranks 'local'. 'done' marks nothing.
-    if (c.state !== 'done' && marks.get(c.intent.entryId) !== 'saving') marks.set(c.intent.entryId, c.state);
+    if (c.state !== 'done' && marks.get(entryId) !== 'saving') marks.set(entryId, c.state);
   }
   if (!latest.size) return { rows: rows as HistoryRow[], marks };
 
@@ -47,7 +48,7 @@ export function overlayHistory(rows: readonly HistoryRow[], changes: readonly Pe
     // delete: hidden
   }
   for (const c of latest.values()) {
-    if (c.intent.kind === 'delete' || seen.has(c.intent.entryId) || !c.preview) continue;
+    if (c.intent.kind === 'delete' || c.intent.kind === 'other' || seen.has(c.intent.entryId) || !c.preview) continue;
     out.push(c.preview);
   }
   // Newest first; Array.prototype.sort is stable, so database order holds among equal times.

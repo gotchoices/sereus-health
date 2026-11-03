@@ -83,6 +83,12 @@ describe('overlayHistory', () => {
     expect(o.marks.size).toBe(0);
   });
 
+  it('ignores a queued change that is not a log entry (catalog edits)', () => {
+    const o = overlayHistory(db, [change({ intent: { kind: 'other', tables: ['app.items'] }, state: 'local', txId: 't1' })]);
+    expect(o.rows.map((r) => r.id)).toEqual(['e3', 'e2', 'e1']);
+    expect(o.marks.size).toBe(0);
+  });
+
   it('returns the rows untouched when nothing is pending', () => {
     expect(overlayHistory(db, []).rows).toBe(db);
   });

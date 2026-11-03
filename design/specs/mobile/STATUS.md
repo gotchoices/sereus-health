@@ -337,6 +337,10 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
       Not yet: Re-enter for a not-saved entry (alert has OK only); markers for written-but-unsynced
       changes do not survive a restart (cadre-core keeps durability in memory); catalog/item/bundle
       editors still await their writes (now serialized through the lane).
+      2026-11-02: with offline mode those editors' saves return at the local commit, as the spec
+      asks, and keep their in-place validation, so they stay awaited; their queued changes are now
+      followed as 'other' changes (counted as waiting, refusals reported, restored after a restart
+      from the stack's queue and outcomes).
 - [x] Offline mode (2026-10-29): cadre 1.19.1 / optimystic 1.20.1 / quereus 4.21.1.  Health strand
       runs in offline mode (`CadreNodeConfig.strandOffline`, journal in the strand's LevelDB);
       `src/sync/pendingChanges.ts` follows the stack's queue (`strand:offline-status`), W6 backed out.

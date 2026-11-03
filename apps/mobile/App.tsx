@@ -215,7 +215,7 @@ function AppContent() {
   // (global/async-activity.md → Sync status → Not saved). It also stays listed under
   // Sereus Connections → Sync until dismissed.
   useEffect(() => onChangeFailed((c) => {
-    Alert.alert(t('sync.notSavedTitle'), t('sync.notSavedBody', { reason: c.error ?? '' }), [
+    Alert.alert(t(c.intent.kind === 'other' ? 'sync.changeNotSavedTitle' : 'sync.notSavedTitle'), t('sync.notSavedBody', { reason: c.error ?? '' }), [
       { text: t('sync.dismiss') },
     ]);
   }), [t]);
