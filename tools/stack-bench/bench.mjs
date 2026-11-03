@@ -71,6 +71,7 @@ const QUERIES = {
   'category item counts (Catalog)': [`SELECT i.category_id AS id, count(*) AS n FROM items i JOIN categories c ON c.id = i.category_id WHERE c.type_id = ? GROUP BY i.category_id`, (ids) => [ids.activity]],
   'history entries (History)': [`SELECT e.id, e.timestamp, e.type_id AS typeId, t.name AS typeName, e.comment, e.event_utc_offset_minutes AS eventUtcOffsetMinutes FROM log_entries e JOIN types t ON t.id = e.type_id ORDER BY e.timestamp DESC`, () => []],
   'history items (History)': [`SELECT lei.entry_id AS entryId, i.id AS itemId, i.name AS name, c.id AS categoryId, c.name AS categoryName, lei.source_bundle_id AS sourceBundleId, b.name AS sourceBundleName FROM log_entry_items lei JOIN items i ON i.id = lei.item_id JOIN categories c ON c.id = i.category_id LEFT JOIN bundles b ON b.id = lei.source_bundle_id ORDER BY i.name ASC`, () => []],
+  'history page items (History)': [`SELECT lei.entry_id AS entryId, i.id AS itemId, i.name AS name, c.id AS categoryId, c.name AS categoryName, lei.source_bundle_id AS sourceBundleId, b.name AS sourceBundleName FROM log_entry_items lei JOIN items i ON i.id = lei.item_id JOIN categories c ON c.id = i.category_id LEFT JOIN bundles b ON b.id = lei.source_bundle_id WHERE lei.entry_id IN (${Array(31).fill('?').join(',')}) ORDER BY i.name ASC`, (ids) => ids.page],
   'count log_entry_items': [`SELECT count(*) AS n FROM log_entry_items`, () => []],
   // Rewrites: one table each, no join, so no per-row lookups (filter by type in JS).
   'REWRITE item usage counts': [`SELECT item_id AS id, count(*) AS n FROM log_entry_items GROUP BY item_id`, () => []],
@@ -291,6 +292,7 @@ async function waitForMarkers(nodeDirs, markers, ms) {
 }
 
 async function load(db) {
+  const entryIds = [];
   const ids = { types: new Map(), cats: new Map(), items: new Map() };
   const t0 = Date.now();
   let n = 0;
@@ -304,6 +306,7 @@ async function load(db) {
     await db.exec('INSERT INTO log_entries (id, timestamp, type_id, comment, event_utc_offset_minutes) VALUES (?, ?, ?, ?, ?)',
       [id, l.timestampUtc.replace('Z', ''), ids.types.get(l.typeName), l.comment ?? null, l.eventUtcOffsetMinutes ?? null]);
     entries++;
+    entryIds.push(id);
     const seen = new Set();
     for (const li of l.items ?? []) {
       const itemId = ids.items.get(`${li.categoryName}\0${li.itemName}`);
@@ -314,7 +317,8 @@ async function load(db) {
     }
   }
   const tLogs = Date.now();
-  return { ids: { activity: ids.types.get('Activity') }, catalogMs: tCatalog - t0, logsMs: tLogs - tCatalog, entries, links };
+  // History shows the newest page (31 entries) and reads its items with `entry_id IN (…)`.
+  return { ids: { activity: ids.types.get('Activity'), page: entryIds.slice(-31) }, catalogMs: tCatalog - t0, logsMs: tLogs - tCatalog, entries, links };
 }
 
 async function timeQuery(db, sql, params) {

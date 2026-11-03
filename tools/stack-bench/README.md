@@ -48,6 +48,7 @@ the cadre), like chat's CLI.
 - `callers.mjs` — calling-module chains in a CPU profile.
 - `restart-test.mjs` — does a phone-like node reopen its strand after a restart (nodes up / offline / one removed)?
 - `divergence-test.mjs` — control-database writes after nodes restart (sereus#53 scenarios).
+- `repros/offline-commit-cost-repro.mjs` — offline mode's cost per small transaction on one machine, by queue depth (vs `MODE=online`).
 - `repros/strand-unconnected-repro.mjs` — after a claim, how long the phone's strand stays unconnected to its nodes (committing alone, cohort 1).
 - `repros/control-fork-repro.mjs` — minimal repro for sereus#53 (two nodes starting together fork `CadrePeer`).
 

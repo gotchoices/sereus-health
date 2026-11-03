@@ -368,6 +368,15 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
       Testing over USB needs every port a node listens on reversed, including its strand's
       ephemeral ports: with only the control ports, the phone joins the party but commits its
       strand alone (cohort 1), which the app correctly reports as synced.
+- [x] Upstream leads from the stack bench (2026-11-02; filed sereus#56 and optimystic#53):
+      after a claim the phone's strand stays unconnected ~60 s and commits alone (cohort 1,
+      `knownAbsent: 0`, so offline mode does not hold the writes) — a failed `strand-addr` request
+      is retried only after 60 s (`repros/strand-unconnected-repro.mjs`; same on 1.19.1); offline
+      mode costs a small transaction ~4x online and grows with queue depth, half the CPU in
+      `structuredClone` from `Tracker.tryGet` (`repros/offline-commit-cost-repro.mjs`).
+      History's 8-9 s stall on the S7 is its item query: `log_entry_items … WHERE entry_id IN (31 ids)`
+      plans as nested loops over a seq scan on the strand (Node: 60-125 ms vs 7 ms on memory tables;
+      S7: 7.2 s), while the same joins without the IN stay ~16 ms — reported on optimystic#44; no app workaround.
 - [x] Device check of async saves on the S7 (2026-10-29 offline-mode build; 2026-11-01 on 1.20):
       nodes down → saves, an edit and a delete of still-local entries stay "on this device only"
       with markers; the app killed mid-save recovers each change (replayed before COMMIT, followed
