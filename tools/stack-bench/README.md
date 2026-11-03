@@ -37,6 +37,7 @@ the cadre), like chat's CLI.
 | `IDLE_MS`, `IDLE_PROFILE`, `POSTQ_MS` | idle / after-query background load |
 | `REPL_CHECK=1` | check replication of a marker row to each node |
 | `OFFLINE=1` | the phone's strand in **offline mode**, as health runs it: writes then report `ack` (save returned), `sent` (the cadre committed it) and `held` (every member holds it); `SYNC_WAIT_MS` bounds the wait |
+| `WRITE_GAP_MS=n` | pause between timed writes; with `OFFLINE=1` each one's sync is then timed alone, not behind the writes queued ahead of it |
 | `DOWN_WRITE=1` | with `OFFLINE=1` and `NODES`: at the end, stop every node and write once more, reporting the queue statuses and durability (offline mode should keep it queued); `DOWN_MS`, `DOWN_WATCH_MS` |
 | `JOURNAL=file\|mem\|mem-pause` | offline journal: a file store (default, what a Node host uses), or diagnostic in-memory variants (`mem` never yields; `mem-pause` pauses 1 ms per flush) |
 
@@ -47,6 +48,7 @@ the cadre), like chat's CLI.
 - `callers.mjs` — calling-module chains in a CPU profile.
 - `restart-test.mjs` — does a phone-like node reopen its strand after a restart (nodes up / offline / one removed)?
 - `divergence-test.mjs` — control-database writes after nodes restart (sereus#53 scenarios).
+- `repros/strand-unconnected-repro.mjs` — after a claim, how long the phone's strand stays unconnected to its nodes (committing alone, cohort 1).
 - `repros/control-fork-repro.mjs` — minimal repro for sereus#53 (two nodes starting together fork `CadrePeer`).
 
 Outputs (`*.log`, `*.out`, `*.err`, `*.cpuprofile`) are scratch; don't commit them.

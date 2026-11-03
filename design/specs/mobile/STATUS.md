@@ -364,7 +364,7 @@ the bootstrap-local transactor.  `CadreService.ts` currently hard-codes
       handles on stop (each holds unflushed writes until closed).  Refusal text via cadre-core's
       `describeThrown`.  S7 release, 2 cadre-cli 1.20 nodes: save returns 0.33-0.42 s, local commit
       ~1.0 s, synced 5.8-7.0 s (was 10-13 s); restore of the backup 97 s solo.  Optimystic#50 and
-      #51 fixed; the W1 joins meet their back-out condition in Node (docs/stack-workarounds.md).
+      #51 fixed; W1 backed out (joins restored; docs/stack-workarounds.md → Backed out).
       Testing over USB needs every port a node listens on reversed, including its strand's
       ephemeral ports: with only the control ports, the phone joins the party but commits its
       strand alone (cohort 1), which the app correctly reports as synced.

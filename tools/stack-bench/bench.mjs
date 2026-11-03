@@ -413,7 +413,12 @@ async function timeAll(db, ids, label) {
   if (process.env.WRITES !== '0') {
     const w = [];
     const txs = [];
-    for (let i = 0; i < RUNS; i++) { lastTx = null; w.push(await timeWrite(db, ids)); if (lastTx) txs.push(lastTx); }
+    // WRITE_GAP_MS=n: pause between writes, so with OFFLINE=1 each one's sync is timed alone
+    // instead of behind the writes queued ahead of it.
+    for (let i = 0; i < RUNS; i++) {
+      if (i && process.env.WRITE_GAP_MS) await sleep(Number(process.env.WRITE_GAP_MS));
+      lastTx = null; w.push(await timeWrite(db, ids)); if (lastTx) txs.push(lastTx);
+    }
     results['WRITE 1 entry + 3 items'] ??= {};
     results['WRITE 1 entry + 3 items'][label] = w.map((x) => x.toFixed(0)).join(' / ');
     console.log(`  ${'WRITE 1 entry + 3 items'.padEnd(34)}           ms: ${results['WRITE 1 entry + 3 items'][label]}`);

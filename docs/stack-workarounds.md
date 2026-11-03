@@ -11,41 +11,10 @@ When a stack release lands, check each entry's **Back out when** and **Check** l
 
 | ID | Workaround | Waiting on | Where |
 |---|---|---|---|
-| W1 | Single-table count queries, filtered in JS, instead of joins | optimystic#44, optimystic#45 | `src/db/stats.ts`, `src/db/catalog.ts` |
 | W2 | Time-boxed control-DB reads + last-known snapshot on Sereus Connections | consistent control reads that block on a solo or reconnecting cohort | `src/data/sereusConnections.ts` |
 | W3 | Startup renders without waiting for the DB (catalog flag + 20 s cap) | strand open that is fast and never hangs | `App.tsx` |
 | W4 | Local TextDecoder `{ fatal: true }` polyfill | cadre-rn polyfills covering RN 0.82's native TextDecoder | `src/polyfills/textdecoder-fatal.js` |
 | W5 | Time-boxed control operations (genesis, publish, claim, remove) | control writes/reads that cannot wedge | `src/services/CadreService.ts`, `src/services/cadreAsync.ts` |
-
-## W1 — Single-table count queries instead of joins
-
-**What.** `getItemsForType` (`src/db/stats.ts`) and `getCategoriesWithCounts` (`src/db/catalog.ts`)
-read one table per query (`SELECT … GROUP BY` on `log_entry_items` or `items`; categories and
-items separately) and filter by Type in JS. The natural form joins `log_entry_items ⋈ items ⋈
-categories WHERE c.type_id = ?`.
-
-**Why.** On optimystic tables a join with a filter on the inner table plans as a nested loop, one
-primary-key block read per outer row, ignoring the `type_id` secondary indexes; memory tables get a
-hash join and an index seek for the same SQL. And each block read re-assembles its serving cohort
-from the libp2p peerStore, so reads get slower with every connected cadre node. On the real backup
-(172 items, 177 entries) the joined usage count took 126 ms solo and 325–1,600 ms with two nodes in
-Node.js (seconds on a phone); the single-table form takes 2–9 ms either way.
-
-**Upstream.** [optimystic#44](https://github.com/gotchoices/Optimystic/issues/44) (joins plan as nested
-loops, secondary indexes unused) and [optimystic#45](https://github.com/gotchoices/Optimystic/issues/45)
-(every block read re-assembles its serving cohort; a cache removes the per-node penalty).
-
-**Back out when** the original joined SQL runs within about 2× of the rewrites, solo and with
-2–3 nodes.
-
-**Check.** `cd tools/stack-bench && SYNTH=1 MODES=memory,strand NODES=2 WRITES=0 node bench.mjs`.
-The table lists the original queries next to the `REWRITE` ones; the original SQL is in its
-`QUERIES`.
-
-**Status (2026-11-01, sereus 1.20.0 / optimystic 1.23.0 / quereus 4.24.0).** Back-out condition met
-in Node: the joined item usage count takes 21–25 ms solo and with 1–2 nodes (the rewrite's three
-queries ~11–13 ms), category item counts 6 ms (rewrite ~4 ms), and the joins on the strand now match
-the same joins on memory tables. Not yet backed out or measured on a phone.
 
 ## W2 — Time-boxed control reads and a last-known snapshot (Sereus Connections)
 
@@ -105,6 +74,15 @@ error, in every cohort state.
 app-side timeout to return.
 
 ## Backed out
+
+- **W1 — Single-table count queries instead of joins** (2026-10 → 2026-11-02). `getItemsForType`
+  (`src/db/stats.ts`) and `getCategoriesWithCounts` (`src/db/catalog.ts`) read one table per query
+  and filtered by Type in JS, because on optimystic tables the joins planned as nested loops and
+  every block read re-assembled its cohort, so they slowed with each cadre node (optimystic#44,
+  #45). Backed out on sereus 1.20.0 / optimystic 1.23.0 / quereus 4.24.0: in Node the joins run as
+  on memory tables, solo and with 1–2 nodes (item usage 21–25 ms vs the rewrite's ~11–13 ms). On
+  the S7 (release, 2 nodes) they cost more than the rewrite: New Entry's queries ~1.2–1.45 s vs
+  ~1.1 s, Catalog's ~0.32–0.38 s vs ~0.23 s — accepted for the simpler code.
 
 - **W6 — App-side journal for background saves** (2026-10-28 → 2026-10-29). Replaced by Sereus
   1.19.1's offline mode for strand databases (optimystic 1.20.1): the stack journals each queued
